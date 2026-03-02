@@ -1,3 +1,3 @@
 #!/bin/bash
-find "$1" -maxdepth 1 -type f -name "*.log" | xargs -I {} mv "{}" "{}.old"
+find "$1" -maxdepth 1 -type f -name "*.log" -print0 | xargs -0 -I {} mv "{}" "{}.old"
 
