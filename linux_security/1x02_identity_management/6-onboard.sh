@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 useradd -m "$1"
 passwd -l "$1"
 mkdir -p /home/"$1"/.ssh
