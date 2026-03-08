@@ -1,2 +1,2 @@
 #!/bin/bash
-journalctl -t sshd --since "30 minutes ago"
+date --date='30 minutes ago' '+%b %e %H:%M' | xargs -I{} grep "{}" $1 | grep sshd
