@@ -1,2 +1,2 @@
 #!/bin/bash
-dmesg | grep segfault
+grep -i segfault "$1"
