@@ -1,2 +1,1 @@
-#!/bin/bash
-date --date='30 minutes ago' '+%b %e %H:%M' | xargs -I{} grep "{}" $1 | grep sshd
+931713a9ef3b20d60d01a71dbc05fd99
