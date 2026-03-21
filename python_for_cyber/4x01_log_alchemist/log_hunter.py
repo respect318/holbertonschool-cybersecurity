@@ -33,7 +33,8 @@ SQLI_PATTERNS = [
 XSS_PATTERNS = [
     re.compile(r"<script>", re.IGNORECASE),
     re.compile(r"javascript:", re.IGNORECASE),
-    re.compile(r"onload=", re.IGNORECASE)
+    re.compile(r"onload=", re.IGNORECASE),
+    re.compile(r"onerror=", re.IGNORECASE)
 ]
 
 # Pre-compiled Regex for Apache Common Log Format
