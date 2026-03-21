@@ -9,16 +9,16 @@ import sys
 import re
 from typing import Generator, Optional, Dict
 
-# Pre-compiled Regex for Apache Common Log Format with Named Groups
+# Daha geniş əhatəli Apache Regex Pattern
 APACHE_PATTERN = re.compile(
     r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'       # IP Address
     r' - - \['                               # Constant separator
     r'(?P<date>[^\]]+)\] "'                  # Date inside []
-    r'(?P<method>GET|POST|PUT|DELETE|HEAD) '  # HTTP Method
+    r'(?P<method>[A-Z]+) '                   # Any Uppercase Method (GET, POST, etc.)
     r'(?P<path>[^ ]+) '                      # Request Path
-    r'HTTP/\d\.\d\" '                        # Protocol
+    r'HTTP/\d\.\d\" '                        # Protocol (1.0, 1.1, etc.)
     r'(?P<status>\d{3}) '                    # HTTP Status Code
-    r'(?P<size>\d+|-)'                       # Response Size
+    r'(?P<size>\d+|-)'                       # Response Size (rəqəm və ya -)
 )
 
 
@@ -71,7 +71,6 @@ def main() -> None:
             apache_count += 1
 
     if not has_data:
-        # If the file exists but is empty
         print("[!] No data to process. Exiting.")
         sys.exit(1)
 
