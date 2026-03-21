@@ -27,9 +27,9 @@ def check_port(ip: str, port: int) -> bool:
             # Try to connect to the target IP and port
             sock.connect((ip, port))
             return True
-    except Exception:
-        # Catch ANY exception (OSError, ValueError, OverflowError, etc.)
-        # Handles invalid IPs, negative ports, or unreachable hosts.
+    except Exception as e:
+        # Catch errors and print a user-friendly message to stderr
+        print(f"[ERROR] Connection failed: {e}", file=sys.stderr)
         return False
 
 
@@ -45,7 +45,7 @@ def main() -> None:
         print("\n[!] Execution interrupted by user. Exiting.")
         sys.exit(1)
     except Exception as e:
-        print(f"[ERROR] An unexpected error occurred: {e}")
+        print(f"[ERROR] An unexpected error occurred: {e}", file=sys.stderr)
         sys.exit(1)
 
 
