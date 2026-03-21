@@ -8,6 +8,7 @@ GeoIP enrichment, bot detection, threat intelligence, and attack detection.
 import argparse
 import sys
 import re
+from collections import Counter
 from typing import Generator, Optional, Dict, Iterable
 
 # Simulated GeoIP Database
@@ -238,6 +239,31 @@ def detect_xss(log_entry: LogEntry) -> None:
             break
 
 
+def detect_bruteforce(
+    entries: Iterable[LogEntry]
+) -> Generator[dict, None, None]:
+    """
+    Detects volumetric authentication attacks (Brute Force).
+    Counts IPs with HTTP 401 or 'Failed password' in message.
+    """
+    failures = Counter()
+    for entry in entries:
+        status = getattr(entry, 'status', None)
+        message = getattr(entry, 'message', '')
+
+        if status == 401 or "Failed password" in message:
+            if entry.ip:
+                failures[entry.ip] += 1
+
+    for ip, count in failures.most_common():
+        if count > 5:
+            yield {
+                'ip': ip,
+                'count': count,
+                'alert_type': 'BRUTE_FORCE'
+            }
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -333,6 +359,13 @@ def main() -> None:
     print("--- Attack Detection ---")
     print(f"[*] SQLi attempts: {sqli_count}")
     print(f"[*] XSS attempts:  {xss_count}")
+
+    # Brute Force Section
+    bf_alerts = list(detect_bruteforce(parsed_entries))
+    print("--- Brute Force ---")
+    print(f"[*] BRUTE_FORCE alerts: {len(bf_alerts)}")
+    for alert in bf_alerts:
+        print(f"    {alert['ip']}: {alert['count']} failures")
 
     # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
