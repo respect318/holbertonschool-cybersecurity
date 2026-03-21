@@ -85,7 +85,6 @@ def main() -> None:
 
     for line in log_gen:
         has_data = True
-        
         # 1. Try to parse as Apache format
         parsed_apache = parse_apache_line(line)
         if parsed_apache:
