@@ -375,7 +375,7 @@ def process_chunk(lines: list) -> list:
     for line in lines:
         line_clean = line.strip()
         parsed_apache = parse_apache_line(line_clean)
-        
+
         if parsed_apache:
             entry = normalize_entry(parsed_apache, 'apache', line_clean)
         else:
@@ -453,7 +453,7 @@ def main() -> None:
         for line in log_gen:
             line_clean = line.strip()
             parsed_apache = parse_apache_line(line_clean)
-            
+
             if parsed_apache:
                 entry = normalize_entry(
                     parsed_apache, 'apache', line_clean
