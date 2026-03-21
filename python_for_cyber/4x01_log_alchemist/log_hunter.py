@@ -45,8 +45,11 @@ class LogEntry:
     Standardized Log Entry object to hold parsed log data uniformly.
     """
 
-    def __init__(self, ip: str = "", timestamp: str = "", service: str = "",
-                 message: str = "", raw_line: str = "", **kwargs):
+    def __init__(
+        self, ip: str = "", timestamp: str = "",
+        service: str = "", message: str = "",
+        raw_line: str = "", **kwargs
+    ):
         self.ip = ip
         self.timestamp = timestamp
         self.service = service
@@ -54,7 +57,7 @@ class LogEntry:
         self.raw_line = raw_line
         self.is_bot = False
 
-        # Əlavə arqumentləri (user_agent, method, status və s.) atribut kimi əlavə edir
+        # Əlavə arqumentləri qəbul edir (user_agent, method və s.)
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -207,7 +210,9 @@ def main() -> None:
             parsed_syslog = parse_syslog_line(line_clean)
             if parsed_syslog:
                 syslog_count += 1
-                entry = normalize_entry(parsed_syslog, 'syslog', line_clean)
+                entry = normalize_entry(
+                    parsed_syslog, 'syslog', line_clean
+                )
                 parsed_entries.append(entry)
 
     if not has_data:
