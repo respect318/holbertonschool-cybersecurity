@@ -2,7 +2,7 @@
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
-and GeoIP enrichment.
+GeoIP enrichment, and bot detection.
 """
 
 import argparse
@@ -15,6 +15,9 @@ GEOIP_DB = {
     '1.2.3.4': 'US',
     '5.6.7.8': 'RU'
 }
+
+# Known Bot Signatures
+BOT_SIGNATURES = ['sqlmap', 'nikto', 'curl', 'python']
 
 # Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
@@ -49,7 +52,8 @@ class LogEntry:
         self.service = service
         self.message = message
         self.raw_line = raw_line
-        # Dynamically added later: status, method, path, country
+        # Dynamically added later
+        self.is_bot = False
 
 
 def read_stream(file_path: str) -> Generator[str, None, None]:
@@ -127,7 +131,6 @@ def filter_logs(
 ) -> Generator[LogEntry, None, None]:
     """
     Filters log entries, yielding only those with matching status codes.
-    Entries without a status attribute are silently skipped.
     """
     for entry in stream:
         status = getattr(entry, 'status', None)
@@ -138,10 +141,30 @@ def filter_logs(
 def enrich_ip(log_entry: LogEntry) -> None:
     """
     Looks up the entry's IP in GEOIP_DB and adds a country attribute.
-    Defaults to 'UNKNOWN' if the IP is not found.
     """
     country = GEOIP_DB.get(log_entry.ip, 'UNKNOWN')
     log_entry.country = country
+
+
+def analyze_user_agent(log_entry: LogEntry) -> None:
+    """
+    Detects known bot signatures in user_agent, message, or raw_line.
+    Sets log_entry.is_bot to True if found.
+    """
+    log_entry.is_bot = False
+    
+    # Safely get attributes that might not exist for every log type
+    user_agent = getattr(log_entry, 'user_agent', '')
+    message = getattr(log_entry, 'message', '')
+    raw_line = getattr(log_entry, 'raw_line', '')
+
+    # Combine text and lower it for case-insensitive search
+    combined_text = f"{user_agent} {message} {raw_line}".lower()
+
+    for signature in BOT_SIGNATURES:
+        if signature in combined_text:
+            log_entry.is_bot = True
+            break
 
 
 def main() -> None:
@@ -193,16 +216,25 @@ def main() -> None:
 
     # Enrichment Section
     known_ips_count = 0
+    bots_count = 0
+    
     for entry in parsed_entries:
+        # IP Enrichment
         enrich_ip(entry)
-        if entry.country != 'UNKNOWN':
+        if getattr(entry, 'country', 'UNKNOWN') != 'UNKNOWN':
             known_ips_count += 1
+            
+        # Bot Analysis
+        analyze_user_agent(entry)
+        if entry.is_bot:
+            bots_count += 1
 
     print("--- Enrichment ---")
     print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
           f"({known_ips_count} known IPs)")
+    print(f"[*] Bots detected: {bots_count}")
 
-    # Filtering Section (Keeping it as requested in Task 4)
+    # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
     print("--- Filtering ---")
     print(f"[*] Suspicious (404, 500): {len(suspicious_entries)}")
