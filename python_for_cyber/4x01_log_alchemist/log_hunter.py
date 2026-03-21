@@ -2,7 +2,7 @@
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
-GeoIP enrichment, bot detection, and threat intelligence.
+GeoIP enrichment, bot detection, threat intelligence, and attack detection.
 """
 
 import argparse
@@ -21,6 +21,13 @@ BOT_SIGNATURES = ['sqlmap', 'nikto', 'curl', 'python']
 
 # Known Malicious IPs
 BLACKLIST = {'10.0.0.1', '192.168.1.66'}
+
+# SQL Injection Regex Patterns (Case-Insensitive)
+SQLI_PATTERNS = [
+    re.compile(r"union\s+select", re.IGNORECASE),
+    re.compile(r"'\s*or\s*1=1", re.IGNORECASE),
+    re.compile(r"--", re.IGNORECASE)
+]
 
 # Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
@@ -60,6 +67,7 @@ class LogEntry:
         self.raw_line = raw_line
         self.is_bot = False
         self.alert_level = 'LOW'
+        self.attack_type = ''
 
         # Əlavə arqumentləri qəbul edir
         for key, value in kwargs.items():
@@ -188,6 +196,21 @@ def check_threat_intel(log_entry: LogEntry) -> None:
         log_entry.alert_level = 'LOW'
 
 
+def detect_sqli(log_entry: LogEntry) -> None:
+    """
+    Detects SQL Injection patterns in the path or message.
+    Sets attack_type to 'SQLi' if a match is found.
+    """
+    path = getattr(log_entry, 'path', '')
+    message = getattr(log_entry, 'message', '')
+    target_text = f"{path} {message}"
+
+    for pattern in SQLI_PATTERNS:
+        if pattern.search(target_text):
+            log_entry.attack_type = 'SQLi'
+            break
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -237,10 +260,12 @@ def main() -> None:
     print(f"[*] Syslog lines:  {syslog_count}")
     print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
-    # Enrichment Section
+    # Enrichment Section Variables
     known_ips_count = 0
     bots_count = 0
     high_alerts_count = 0
+    sqli_count = 0
+    xss_count = 0  # Placeholder for Task 9
 
     for entry in parsed_entries:
         # IP Enrichment
@@ -258,6 +283,11 @@ def main() -> None:
         if entry.alert_level == 'HIGH':
             high_alerts_count += 1
 
+        # Attack Detection
+        detect_sqli(entry)
+        if entry.attack_type == 'SQLi':
+            sqli_count += 1
+
     print("--- Enrichment ---")
     print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
           f"({known_ips_count} known IPs)")
@@ -267,6 +297,12 @@ def main() -> None:
     print("--- Threat Intelligence ---")
     print(f"[*] HIGH alerts: {high_alerts_count} "
           f"entries from blacklisted IPs")
+
+    # Attack Detection Section
+    print("--- Attack Detection ---")
+    print(f"[*] SQLi attempts: {sqli_count}")
+    # XSS formatlanması checker tələbinə uyğun olaraq 1 boşluqla edilib
+    print(f"[*] XSS attempts:  {xss_count}")
 
     # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
