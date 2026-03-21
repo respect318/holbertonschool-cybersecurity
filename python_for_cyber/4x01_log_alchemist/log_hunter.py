@@ -3,15 +3,16 @@
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
 GeoIP enrichment, bot detection, threat intelligence, attack detection,
-burst/rate-limit detection, and event correlation.
+burst/rate-limit detection, event correlation, and reporting.
 """
 
 import argparse
 import sys
 import re
+import json
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
-from typing import Generator, Optional, Dict, Iterable
+from typing import Generator, Optional, Dict, Iterable, Any
 
 # Simulated GeoIP Database
 GEOIP_DB = {
@@ -350,6 +351,25 @@ def correlate_events(
             state[entry.ip].clear()
 
 
+def export_report(alerts: list, filename: str, format: str = 'json') -> None:
+    """
+    Exports a list of alerts to a file.
+    Handles both dict and LogEntry objects.
+    """
+    output_data = []
+    for item in alerts:
+        if isinstance(item, dict):
+            output_data.append(item)
+        elif hasattr(item, '__dict__'):
+            output_data.append(vars(item))
+        else:
+            output_data.append(str(item))
+
+    if format == 'json':
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(output_data, f, indent=2)
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -358,6 +378,9 @@ def main() -> None:
         description="LogHunter - Log Analysis Engine"
     )
     parser.add_argument("file", help="Path to the log file to analyze")
+    parser.add_argument(
+        "--report", help="Export alerts to a JSON file", type=str
+    )
     args = parser.parse_args()
 
     print("[*] LogHunter - Log Analysis Engine")
@@ -465,6 +488,16 @@ def main() -> None:
     suspicious_entries = list(filter_logs(parsed_entries))
     print("--- Filtering ---")
     print(f"[*] Suspicious (404, 500): {len(suspicious_entries)}")
+
+    # Reporting Section
+    all_alerts = bf_alerts + burst_alerts + correlated_alerts
+    print("")
+    if args.report:
+        export_report(all_alerts, args.report)
+        print(f"[*] Report exported: {args.report} ({len(all_alerts)} alerts)")
+    else:
+        print(f"[*] Total alerts: {len(all_alerts)}")
+        print("[*] Use --report <file> to export.")
 
 
 if __name__ == "__main__":
