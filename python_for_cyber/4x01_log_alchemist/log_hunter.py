@@ -53,7 +53,7 @@ class LogEntry:
         self.message = message
         self.raw_line = raw_line
         self.is_bot = False
-        
+
         # Accept any extra keyword arguments (like method, user_agent, etc.)
         # and set them as attributes dynamically.
         for key, value in kwargs.items():
