@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 import argparse
+import sys
+
+def read_file(filename: str) -> list:
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            return f.readlines()
+    except FileNotFoundError:
+        print(f"[ERROR] File not found: {filename}", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print(f"[ERROR] Permission denied: {filename}", file=sys.stderr)
+        sys.exit(1)
 
 def main():
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
@@ -11,6 +23,8 @@ def main():
     args = parser.parse_args()
 
     print("BreachCheck v1.0 startup...")
+    
+    file_content = read_file(args.file)
 
 if __name__ == "__main__":
     main()
