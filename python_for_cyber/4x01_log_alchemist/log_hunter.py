@@ -14,7 +14,7 @@ APACHE_PATTERN = re.compile(
     r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'       # IP Address
     r' - - \['                               # Constant separator
     r'(?P<date>[^\]]+)\] "'                  # Date inside []
-    r'(?P<method>GET|POST|PUT|DELETE|HEAD) ' # HTTP Method
+    r'(?P<method>GET|POST|PUT|DELETE|HEAD) '  # HTTP Method
     r'(?P<path>[^ ]+) '                      # Request Path
     r'HTTP/\d\.\d\" '                        # Protocol
     r'(?P<status>\d{3}) '                    # HTTP Status Code
@@ -38,12 +38,6 @@ def read_stream(file_path: str) -> Generator[str, None, None]:
 def parse_apache_line(line: str) -> Optional[Dict[str, str]]:
     """
     Parses a single Apache log line using Regex Named Groups.
-
-    Args:
-        line (str): Raw log line.
-
-    Returns:
-        dict: Extracted fields or None if no match.
     """
     match = APACHE_PATTERN.search(line)
     if match:
@@ -65,8 +59,8 @@ def main() -> None:
     print(f"[*] Reading: {args.file}")
 
     apache_count = 0
-    syslog_count = 0  # To be implemented in Task 2
-    
+    syslog_count = 0
+
     log_gen = read_stream(args.file)
     has_data = False
 
@@ -75,13 +69,11 @@ def main() -> None:
         parsed_apache = parse_apache_line(line)
         if parsed_apache:
             apache_count += 1
-    
+
     if not has_data:
-        # Check if file was missing or empty
-        # If read_stream caught FileNotFoundError, it returned early
-        if not hasattr(log_gen, 'gi_frame'): # Basic check for empty/missing
-             print("[!] No data to process. Exiting.")
-             sys.exit(1)
+        # If the file exists but is empty
+        print("[!] No data to process. Exiting.")
+        sys.exit(1)
 
     print("--- Parsing ---")
     print(f"[*] Apache lines:  {apache_count}")
