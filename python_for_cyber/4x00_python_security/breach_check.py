@@ -4,6 +4,10 @@ import sys
 import re
 import logging
 import hashlib
+import configparser
+import os
+
+config = configparser.ConfigParser()
 
 def setup_logger():
     logger = logging.getLogger()
@@ -46,8 +50,11 @@ def validate_line(line: str) -> bool:
     return bool(re.match(pattern, line))
 
 def check_policy(password: str) -> str:
-    common_passwords = ["password", "123456", "12345678", "123456789", "qwerty"]
-    if len(password) < 8 or password.isalpha() or password in common_passwords:
+    min_length = int(config.get('SECURITY', 'MinLength', fallback=8))
+    common_passwords_str = config.get('SECURITY', 'CommonPasswords', fallback="password,123456")
+    common_passwords = [p.strip() for p in common_passwords_str.split(',')]
+    
+    if len(password) < min_length or password.isalpha() or password in common_passwords:
         return 'WEAK'
     return 'COMPLIANT'
 
@@ -56,8 +63,29 @@ def hash_password(password: str, salt: str) -> str:
     return hashlib.sha256(salted_password.encode('utf-8')).hexdigest()
 
 def main():
+    if not os.path.exists("config.ini"):
+        print("[ERROR] Config file missing", file=sys.stderr)
+        sys.exit(1)
+    
+    config.read("config.ini")
+
     setup_logger()
 
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
     
-    parser.add_argument
+    parser.add_argument("-f", "--file", required=True, type=str, help="Input file path")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose mode")
+    parser.add_argument("-o", "--output", type=str, help="Output report file path")
+
+    args = parser.parse_args()
+
+    logging.info("BreachCheck v1.0 startup...")
+    
+    salt = config.get("SECURITY", "Salt", fallback="default_salt")
+    
+    raw_lines = read_file(args.file)
+    clean_lines = clean_data(raw_lines)
+    valid_lines = [line for line in clean_lines if validate_line(line)]
+
+if __name__ == "__main__":
+    main()
