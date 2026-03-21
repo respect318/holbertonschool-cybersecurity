@@ -27,8 +27,9 @@ def check_port(ip: str, port: int) -> bool:
             # Try to connect to the target IP and port
             sock.connect((ip, port))
             return True
-    except (socket.timeout, ConnectionRefusedError, OSError):
-        # Catch common connection errors (timeout, refused, unreachable)
+    except Exception:
+        # Catch ANY exception (OSError, ValueError, OverflowError, etc.)
+        # This handles invalid IPs, negative ports, or unreachable hosts gracefully
         return False
 
 
@@ -38,11 +39,8 @@ def main() -> None:
     """
     try:
         print("NetProbe v1.0 initialized...")
-
-        # Test code exactly as requested in the task
         print(f"Port 80 is open: {check_port('google.com', 80)}")
         print(f"Port 81 is open: {check_port('google.com', 81)}")
-
     except KeyboardInterrupt:
         print("\n[!] Execution interrupted by user. Exiting.")
         sys.exit(1)
