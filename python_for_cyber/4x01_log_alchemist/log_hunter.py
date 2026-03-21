@@ -45,8 +45,8 @@ class LogEntry:
     Standardized Log Entry object to hold parsed log data uniformly.
     """
 
-    def __init__(self, ip: str, timestamp: str, service: str,
-                 message: str, raw_line: str, **kwargs):
+    def __init__(self, ip: str = "", timestamp: str = "", service: str = "",
+                 message: str = "", raw_line: str = "", **kwargs):
         self.ip = ip
         self.timestamp = timestamp
         self.service = service
@@ -54,8 +54,7 @@ class LogEntry:
         self.raw_line = raw_line
         self.is_bot = False
 
-        # Accept any extra keyword arguments (like method, user_agent, etc.)
-        # and set them as attributes dynamically.
+        # Əlavə arqumentləri (user_agent, method, status və s.) atribut kimi əlavə edir
         for key, value in kwargs.items():
             setattr(self, key, value)
 
