@@ -331,7 +331,7 @@ def correlate_events(
     for entry in entries:
         if not entry.ip:
             continue
-            
+
         status = getattr(entry, 'status', None)
         attack_type = getattr(entry, 'attack_type', '')
 
