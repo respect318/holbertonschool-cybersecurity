@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
-This module handles log streaming and Apache log parsing using Regex.
+This module handles log streaming, Apache, and Syslog parsing using Regex.
 """
 
 import argparse
@@ -9,16 +9,25 @@ import sys
 import re
 from typing import Generator, Optional, Dict
 
-# Pre-compiled Regex for Apache Common Log Format with Named Groups
+# Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
     r'(?P<ip>\S+)\s+'                # IP Address (IPv4 or IPv6)
-    r'\S+\s+\S+\s+\['                # Logname and User (often -, or username)
+    r'\S+\s+\S+\s+\['                # Logname and User
     r'(?P<date>[^\]]+)\]\s+"'        # Date inside []
     r'(?P<method>[A-Z]+)\s+'         # HTTP Method
     r'(?P<path>[^\s"]+)\s+'          # Request Path
     r'HTTP/[0-9.]+"\s+'              # Protocol version
     r'(?P<status>\d{3})\s+'          # Status Code
     r'(?P<size>\d+|-)'               # Response Size
+)
+
+# Pre-compiled Regex for Syslog Format
+# Handles 1 or 2 spaces for single-digit days with \s+
+SYSLOG_PATTERN = re.compile(
+    r'^(?P<date>[A-Z][a-z]{2}\s+\d{1,2}\s\d{2}:\d{2}:\d{2})\s+'  # Date
+    r'(?P<host>\S+)\s+'                                          # Host
+    r'(?P<process>[^:]+):\s+'                                    # Process
+    r'(?P<message>.*)$'                                          # Message
 )
 
 
@@ -45,6 +54,16 @@ def parse_apache_line(line: str) -> Optional[Dict[str, str]]:
     return None
 
 
+def parse_syslog_line(line: str) -> Optional[Dict[str, str]]:
+    """
+    Parses a single Syslog line using Regex Named Groups.
+    """
+    match = SYSLOG_PATTERN.search(line)
+    if match:
+        return match.groupdict()
+    return None
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -66,9 +85,16 @@ def main() -> None:
 
     for line in log_gen:
         has_data = True
+        
+        # 1. Try to parse as Apache format
         parsed_apache = parse_apache_line(line)
         if parsed_apache:
             apache_count += 1
+        else:
+            # 2. If Apache fails, try Syslog format
+            parsed_syslog = parse_syslog_line(line)
+            if parsed_syslog:
+                syslog_count += 1
 
     if not has_data:
         print("[!] No data to process. Exiting.")
