@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 import re
 import hashlib
+import sys
+import logging
+
+
+def read_file(filename: str):
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            for line in f:
+                yield line
+    except FileNotFoundError:
+        logging.error(f"File not found: {filename}")
+        sys.exit(1)
+    except PermissionError:
+        logging.error(f"Permission denied: {filename}")
+        sys.exit(1)
 
 
 def clean_data(lines):
