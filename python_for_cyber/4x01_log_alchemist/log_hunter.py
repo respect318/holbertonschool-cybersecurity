@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
-This module handles log streaming, parsing, and normalization.
+This module handles log streaming, parsing, normalization, and filtering.
 """
 
 import argparse
 import sys
 import re
-from typing import Generator, Optional, Dict
+from typing import Generator, Optional, Dict, Iterable
 
 # Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
@@ -42,12 +42,7 @@ class LogEntry:
         self.service = service
         self.message = message
         self.raw_line = raw_line
-
-        # Additional optional attributes
-        self.method = ""
-        self.path = ""
-        self.status = 0
-        self.user_agent = ""
+        # Note: 'status', 'method', 'path' are added dynamically for Apache
 
 
 def read_stream(file_path: str) -> Generator[str, None, None]:
@@ -93,12 +88,13 @@ def normalize_entry(
         ip = parsed_dict.get('ip', '')
         timestamp = parsed_dict.get('date', '')
         service = 'http'
-        # Message for Apache can be a combination of method and path
-        message = f"{parsed_dict.get('method', '')} {parsed_dict.get('path')}"
+        method = parsed_dict.get('method', '')
+        path = parsed_dict.get('path', '')
+        message = f"{method} {path}"
 
         entry = LogEntry(ip, timestamp, service, message, raw_line)
-        entry.method = parsed_dict.get('method', '')
-        entry.path = parsed_dict.get('path', '')
+        entry.method = method
+        entry.path = path
         entry.status = int(parsed_dict.get('status', 0))
         entry.user_agent = parsed_dict.get('user_agent', '')
         return entry
@@ -108,7 +104,6 @@ def normalize_entry(
         service = 'ssh'
         message = parsed_dict.get('message', '')
 
-        # Attempt to extract an IPv4 address from the syslog message
         ip = ""
         ip_match = re.search(r'\d{1,3}(?:\.\d{1,3}){3}', message)
         if ip_match:
@@ -117,8 +112,21 @@ def normalize_entry(
         entry = LogEntry(ip, timestamp, service, message, raw_line)
         return entry
 
-    # Fallback for unknown log types
     return LogEntry("", "", "unknown", "", raw_line)
+
+
+def filter_logs(
+    stream: Iterable[LogEntry], status_codes: list = [404, 500]
+) -> Generator[LogEntry, None, None]:
+    """
+    Filters log entries, yielding only those with matching status codes.
+    Entries without a status attribute are silently skipped.
+    """
+    for entry in stream:
+        # Safely get status, defaults to None if attribute doesn't exist
+        status = getattr(entry, 'status', None)
+        if status in status_codes:
+            yield entry
 
 
 def main() -> None:
@@ -136,7 +144,7 @@ def main() -> None:
 
     apache_count = 0
     syslog_count = 0
-    sample_entry = None
+    parsed_entries = []
 
     log_gen = read_stream(args.file)
     has_data = False
@@ -150,16 +158,14 @@ def main() -> None:
         if parsed_apache:
             apache_count += 1
             entry = normalize_entry(parsed_apache, 'apache', line_clean)
-            if not sample_entry:
-                sample_entry = entry
+            parsed_entries.append(entry)
         else:
             # 2. If Apache fails, try Syslog format
             parsed_syslog = parse_syslog_line(line_clean)
             if parsed_syslog:
                 syslog_count += 1
                 entry = normalize_entry(parsed_syslog, 'syslog', line_clean)
-                if not sample_entry:
-                    sample_entry = entry
+                parsed_entries.append(entry)
 
     if not has_data:
         print("[!] No data to process. Exiting.")
@@ -170,14 +176,10 @@ def main() -> None:
     print(f"[*] Syslog lines:  {syslog_count}")
     print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
-    if sample_entry:
-        print("[*] Sample entry:")
-        if sample_entry.service == 'http':
-            print(f"    ip={sample_entry.ip} | service={sample_entry.service} "
-                  f"| status={sample_entry.status} | path={sample_entry.path}")
-        else:
-            print(f"    ip={sample_entry.ip} | service={sample_entry.service} "
-                  f"| message={sample_entry.message}")
+    # Filtering Section
+    suspicious_entries = list(filter_logs(parsed_entries))
+    print("--- Filtering ---")
+    print(f"[*] Suspicious (404, 500): {len(suspicious_entries)}")
 
 
 if __name__ == "__main__":
