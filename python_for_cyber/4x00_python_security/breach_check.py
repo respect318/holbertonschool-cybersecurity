@@ -3,6 +3,7 @@ import argparse
 import sys
 import re
 import logging
+import hashlib
 
 def setup_logger():
     logger = logging.getLogger()
@@ -46,28 +47,17 @@ def validate_line(line: str) -> bool:
 
 def check_policy(password: str) -> str:
     common_passwords = ["password", "123456", "12345678", "123456789", "qwerty"]
-    
     if len(password) < 8 or password.isalpha() or password in common_passwords:
         return 'WEAK'
-    
     return 'COMPLIANT'
+
+def hash_password(password: str, salt: str) -> str:
+    salted_password = password + salt
+    return hashlib.sha256(salted_password.encode('utf-8')).hexdigest()
 
 def main():
     setup_logger()
 
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
     
-    parser.add_argument("-f", "--file", required=True, type=str, help="Input file path")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose mode")
-    parser.add_argument("-o", "--output", type=str, help="Output report file path")
-
-    args = parser.parse_args()
-
-    logging.info("BreachCheck v1.0 startup...")
-    
-    raw_lines = read_file(args.file)
-    clean_lines = clean_data(raw_lines)
-    valid_lines = [line for line in clean_lines if validate_line(line)]
-
-if __name__ == "__main__":
-    main()
+    parser.add_argument
