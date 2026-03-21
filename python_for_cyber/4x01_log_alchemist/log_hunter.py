@@ -9,16 +9,17 @@ import sys
 import re
 from typing import Generator, Optional, Dict
 
-# Daha geniş əhatəli Apache Regex Pattern
+# Pre-compiled Regex for Apache Common Log Format with Named Groups
+# Broken into multiple strings to respect the 79-character limit (E501)
 APACHE_PATTERN = re.compile(
     r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'       # IP Address
     r' - - \['                               # Constant separator
     r'(?P<date>[^\]]+)\] "'                  # Date inside []
-    r'(?P<method>[A-Z]+) '                   # Any Uppercase Method (GET, POST, etc.)
+    r'(?P<method>[A-Z]+) '                   # HTTP Method
     r'(?P<path>[^ ]+) '                      # Request Path
-    r'HTTP/\d\.\d\" '                        # Protocol (1.0, 1.1, etc.)
+    r'HTTP/\d\.\d\" '                        # Protocol
     r'(?P<status>\d{3}) '                    # HTTP Status Code
-    r'(?P<size>\d+|-)'                       # Response Size (rəqəm və ya -)
+    r'(?P<size>\d+|-)'                       # Response Size
 )
 
 
