@@ -44,6 +44,14 @@ def validate_line(line: str) -> bool:
     pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+:.+$"
     return bool(re.match(pattern, line))
 
+def check_policy(password: str) -> str:
+    common_passwords = ["password", "123456", "12345678", "123456789", "qwerty"]
+    
+    if len(password) < 8 or password.isalpha() or password in common_passwords:
+        return 'WEAK'
+    
+    return 'COMPLIANT'
+
 def main():
     setup_logger()
 
