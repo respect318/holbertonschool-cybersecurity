@@ -2,16 +2,34 @@
 import argparse
 import sys
 import re
+import logging
+
+def setup_logger():
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.INFO)
+    console_handler.setFormatter(formatter)
+
+    file_handler = logging.FileHandler("breach_check.log")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
 def read_file(filename: str) -> list:
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             return f.readlines()
     except FileNotFoundError:
-        print(f"[ERROR] File not found: {filename}", file=sys.stderr)
+        logging.error(f"File not found: {filename}")
         sys.exit(1)
     except PermissionError:
-        print(f"[ERROR] Permission denied: {filename}", file=sys.stderr)
+        logging.error(f"Permission denied: {filename}")
         sys.exit(1)
 
 def clean_data(lines: list) -> list:
@@ -27,6 +45,8 @@ def validate_line(line: str) -> bool:
     return bool(re.match(pattern, line))
 
 def main():
+    setup_logger()
+
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
     
     parser.add_argument("-f", "--file", required=True, type=str, help="Input file path")
@@ -35,7 +55,7 @@ def main():
 
     args = parser.parse_args()
 
-    print("BreachCheck v1.0 startup...")
+    logging.info("BreachCheck v1.0 startup...")
     
     raw_lines = read_file(args.file)
     clean_lines = clean_data(raw_lines)
