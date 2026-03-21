@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import argparse
 import sys
-import re
 import logging
-import hashlib
 import configparser
 import os
+from utils import clean_data, validate_line, hash_password
 
 config = configparser.ConfigParser()
 
@@ -37,18 +36,6 @@ def read_file(filename: str) -> list:
         logging.error(f"Permission denied: {filename}")
         sys.exit(1)
 
-def clean_data(lines: list) -> list:
-    cleaned_lines = []
-    for line in lines:
-        stripped_line = line.strip()
-        if stripped_line and not stripped_line.startswith("#"):
-            cleaned_lines.append(stripped_line)
-    return cleaned_lines
-
-def validate_line(line: str) -> bool:
-    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+:.+$"
-    return bool(re.match(pattern, line))
-
 def check_policy(password: str) -> str:
     min_length = int(config.get('SECURITY', 'MinLength', fallback=8))
     common_passwords_str = config.get('SECURITY', 'CommonPasswords', fallback="password,123456")
@@ -57,10 +44,6 @@ def check_policy(password: str) -> str:
     if len(password) < min_length or password.isalpha() or password in common_passwords:
         return 'WEAK'
     return 'COMPLIANT'
-
-def hash_password(password: str, salt: str) -> str:
-    salted_password = password + salt
-    return hashlib.sha256(salted_password.encode('utf-8')).hexdigest()
 
 def main():
     if not os.path.exists("config.ini"):
