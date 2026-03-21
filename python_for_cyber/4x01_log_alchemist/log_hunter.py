@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+\#!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
@@ -27,6 +27,13 @@ SQLI_PATTERNS = [
     re.compile(r"union\s+select", re.IGNORECASE),
     re.compile(r"'\s*or\s*1=1", re.IGNORECASE),
     re.compile(r"--", re.IGNORECASE)
+]
+
+# XSS Regex Patterns (Case-Insensitive)
+XSS_PATTERNS = [
+    re.compile(r"<script>", re.IGNORECASE),
+    re.compile(r"javascript:", re.IGNORECASE),
+    re.compile(r"onload=", re.IGNORECASE)
 ]
 
 # Pre-compiled Regex for Apache Common Log Format
@@ -211,6 +218,26 @@ def detect_sqli(log_entry: LogEntry) -> None:
             break
 
 
+def detect_xss(log_entry: LogEntry) -> None:
+    """
+    Detects Cross-Site Scripting (XSS) patterns in the path.
+    Sets attack_type to 'XSS' if a match is found.
+    Will not overwrite existing attack_type (e.g., SQLi).
+    """
+    # Əgər artıq fərqli bir hücum (məs. SQLi) təyin olunubsa, heç nə etmə
+    if log_entry.attack_type:
+        return
+
+    path = getattr(log_entry, 'path', '')
+    message = getattr(log_entry, 'message', '')
+    target_text = f"{path} {message}"
+
+    for pattern in XSS_PATTERNS:
+        if pattern.search(target_text):
+            log_entry.attack_type = 'XSS'
+            break
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -260,12 +287,12 @@ def main() -> None:
     print(f"[*] Syslog lines:  {syslog_count}")
     print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
-    # Enrichment Section Variables
+    # Enrichment & Detection Section Variables
     known_ips_count = 0
     bots_count = 0
     high_alerts_count = 0
     sqli_count = 0
-    xss_count = 0  # Placeholder for Task 9
+    xss_count = 0
 
     for entry in parsed_entries:
         # IP Enrichment
@@ -283,10 +310,14 @@ def main() -> None:
         if entry.alert_level == 'HIGH':
             high_alerts_count += 1
 
-        # Attack Detection
+        # Attack Detection Pipeline
         detect_sqli(entry)
+        detect_xss(entry)
+        
         if entry.attack_type == 'SQLi':
             sqli_count += 1
+        elif entry.attack_type == 'XSS':
+            xss_count += 1
 
     print("--- Enrichment ---")
     print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
@@ -301,7 +332,6 @@ def main() -> None:
     # Attack Detection Section
     print("--- Attack Detection ---")
     print(f"[*] SQLi attempts: {sqli_count}")
-    # XSS formatlanması checker tələbinə uyğun olaraq 1 boşluqla edilib
     print(f"[*] XSS attempts:  {xss_count}")
 
     # Filtering Section
