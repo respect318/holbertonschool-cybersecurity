@@ -13,6 +13,14 @@ def read_file(filename: str) -> list:
         print(f"[ERROR] Permission denied: {filename}", file=sys.stderr)
         sys.exit(1)
 
+def clean_data(lines: list) -> list:
+    cleaned_lines = []
+    for line in lines:
+        stripped_line = line.strip()
+        if stripped_line and not stripped_line.startswith("#"):
+            cleaned_lines.append(stripped_line)
+    return cleaned_lines
+
 def main():
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
     
@@ -24,7 +32,8 @@ def main():
 
     print("BreachCheck v1.0 startup...")
     
-    file_content = read_file(args.file)
+    raw_lines = read_file(args.file)
+    clean_lines = clean_data(raw_lines)
 
 if __name__ == "__main__":
     main()
