@@ -46,14 +46,18 @@ class LogEntry:
     """
 
     def __init__(self, ip: str, timestamp: str, service: str,
-                 message: str, raw_line: str):
+                 message: str, raw_line: str, **kwargs):
         self.ip = ip
         self.timestamp = timestamp
         self.service = service
         self.message = message
         self.raw_line = raw_line
-        # Dynamically added later
         self.is_bot = False
+        
+        # Accept any extra keyword arguments (like method, user_agent, etc.)
+        # and set them as attributes dynamically.
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 def read_stream(file_path: str) -> Generator[str, None, None]:
@@ -103,11 +107,13 @@ def normalize_entry(
         path = parsed_dict.get('path', '')
         message = f"{method} {path}"
 
-        entry = LogEntry(ip, timestamp, service, message, raw_line)
-        entry.method = method
-        entry.path = path
-        entry.status = int(parsed_dict.get('status', 0))
-        entry.user_agent = parsed_dict.get('user_agent', '')
+        entry = LogEntry(
+            ip, timestamp, service, message, raw_line,
+            method=method,
+            path=path,
+            status=int(parsed_dict.get('status', 0)),
+            user_agent=parsed_dict.get('user_agent', '')
+        )
         return entry
 
     elif log_type == 'syslog':
