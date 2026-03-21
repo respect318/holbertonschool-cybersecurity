@@ -3,7 +3,7 @@
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
 GeoIP enrichment, bot detection, threat intelligence, attack detection,
-and burst/rate-limit detection.
+burst/rate-limit detection, and event correlation.
 """
 
 import argparse
@@ -272,18 +272,15 @@ def parse_timestamp(ts_str: str) -> Optional[datetime]:
     if not ts_str:
         return None
 
-    # Apache format: 11/Feb/2026:14:01:24 +0000
     try:
         dt = datetime.strptime(ts_str, '%d/%b/%Y:%H:%M:%S %z')
         return dt.replace(tzinfo=None)
     except ValueError:
         pass
 
-    # Syslog format: Feb 11 14:31:24
     try:
         ts_norm = re.sub(r'\s+', ' ', ts_str.strip())
         dt = datetime.strptime(ts_norm, '%b %d %H:%M:%S')
-        # Syslog doesn't include year, default to current year
         return dt.replace(year=datetime.now().year)
     except ValueError:
         pass
@@ -309,11 +306,9 @@ def detect_burst(
         ip = entry.ip
         window_tracker[ip].append(dt)
 
-        # Sürüşən pəncərə (Sliding window): pəncərədən köhnə vaxtları silirik
         cutoff = dt - timedelta(seconds=window_seconds)
         window_tracker[ip] = [t for t in window_tracker[ip] if t >= cutoff]
 
-        # Əgər cəhdlərin sayı threshold-u keçibsə və xəbərdarlıq edilməyibsə
         if len(window_tracker[ip]) >= threshold and ip not in alerted_ips:
             yield {
                 'ip': ip,
@@ -322,6 +317,37 @@ def detect_burst(
                 'alert_type': 'BURST'
             }
             alerted_ips.add(ip)
+
+
+def correlate_events(
+    entries: Iterable[LogEntry]
+) -> Generator[dict, None, None]:
+    """
+    Correlates multiple log events to find chained attacks.
+    Alerts if an IP does a scan (404) followed by an exploit (SQLi).
+    """
+    state = defaultdict(set)
+
+    for entry in entries:
+        if not entry.ip:
+            continue
+            
+        status = getattr(entry, 'status', None)
+        attack_type = getattr(entry, 'attack_type', '')
+
+        if str(status) == '404':
+            state[entry.ip].add('scanner')
+
+        if attack_type == 'SQLi':
+            state[entry.ip].add('sqli')
+
+        if 'scanner' in state[entry.ip] and 'sqli' in state[entry.ip]:
+            yield {
+                'ip': entry.ip,
+                'stages': ['scanner', 'sqli'],
+                'alert_type': 'CRITICAL INCIDENT'
+            }
+            state[entry.ip].clear()
 
 
 def main() -> None:
@@ -348,14 +374,12 @@ def main() -> None:
         has_data = True
         line_clean = line.strip()
 
-        # Try Apache first
         parsed_apache = parse_apache_line(line_clean)
         if parsed_apache:
             apache_count += 1
             entry = normalize_entry(parsed_apache, 'apache', line_clean)
             parsed_entries.append(entry)
         else:
-            # Try Syslog second
             parsed_syslog = parse_syslog_line(line_clean)
             if parsed_syslog:
                 syslog_count += 1
@@ -373,7 +397,6 @@ def main() -> None:
     print(f"[*] Syslog lines:  {syslog_count}")
     print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
-    # Enrichment & Detection Section Variables
     known_ips_count = 0
     bots_count = 0
     high_alerts_count = 0
@@ -381,22 +404,18 @@ def main() -> None:
     xss_count = 0
 
     for entry in parsed_entries:
-        # IP Enrichment
         enrich_ip(entry)
         if getattr(entry, 'country', 'UNKNOWN') != 'UNKNOWN':
             known_ips_count += 1
 
-        # Bot Analysis
         analyze_user_agent(entry)
         if entry.is_bot:
             bots_count += 1
 
-        # Threat Intel
         check_threat_intel(entry)
         if entry.alert_level == 'HIGH':
             high_alerts_count += 1
 
-        # Attack Detection Pipeline
         detect_sqli(entry)
         detect_xss(entry)
 
@@ -410,12 +429,10 @@ def main() -> None:
           f"({known_ips_count} known IPs)")
     print(f"[*] Bots detected: {bots_count}")
 
-    # Threat Intelligence Section
     print("--- Threat Intelligence ---")
     print(f"[*] HIGH alerts: {high_alerts_count} "
           f"entries from blacklisted IPs")
 
-    # Attack Detection Section
     print("--- Attack Detection ---")
     print(f"[*] SQLi attempts: {sqli_count}")
     print(f"[*] XSS attempts:  {xss_count}")
@@ -434,6 +451,15 @@ def main() -> None:
     for alert in burst_alerts:
         print(f"    {alert['ip']}: {alert['count']} requests in "
               f"{alert['window']}s window")
+
+    # Correlation Section
+    correlated_alerts = list(correlate_events(parsed_entries))
+    if correlated_alerts:
+        print("--- Correlation ---")
+        print("[*] CRITICAL INCIDENTS:")
+        for alert in correlated_alerts:
+            stages_str = " -> ".join(alert['stages'])
+            print(f"    {alert['ip']}: {stages_str}")
 
     # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
