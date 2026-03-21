@@ -1,23 +1,30 @@
 #!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
-This module handles efficient log streaming using generators.
+This module handles log streaming and Apache log parsing using Regex.
 """
 
 import argparse
 import sys
-from typing import Generator
+import re
+from typing import Generator, Optional, Dict
+
+# Pre-compiled Regex for Apache Common Log Format with Named Groups
+APACHE_PATTERN = re.compile(
+    r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'       # IP Address
+    r' - - \['                               # Constant separator
+    r'(?P<date>[^\]]+)\] "'                  # Date inside []
+    r'(?P<method>GET|POST|PUT|DELETE|HEAD) ' # HTTP Method
+    r'(?P<path>[^ ]+) '                      # Request Path
+    r'HTTP/\d\.\d\" '                        # Protocol
+    r'(?P<status>\d{3}) '                    # HTTP Status Code
+    r'(?P<size>\d+|-)'                       # Response Size
+)
 
 
 def read_stream(file_path: str) -> Generator[str, None, None]:
     """
-    Reads a file line by line using a generator to save memory.
-
-    Args:
-        file_path (str): The path to the log file.
-
-    Yields:
-        str: The next line in the file.
+    Reads a file line by line using a generator.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -28,10 +35,25 @@ def read_stream(file_path: str) -> Generator[str, None, None]:
         return
 
 
+def parse_apache_line(line: str) -> Optional[Dict[str, str]]:
+    """
+    Parses a single Apache log line using Regex Named Groups.
+
+    Args:
+        line (str): Raw log line.
+
+    Returns:
+        dict: Extracted fields or None if no match.
+    """
+    match = APACHE_PATTERN.search(line)
+    if match:
+        return match.groupdict()
+    return None
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
-    Parses arguments and processes the log stream.
     """
     parser = argparse.ArgumentParser(
         description="LogHunter - Log Analysis Engine"
@@ -42,24 +64,29 @@ def main() -> None:
     print("[*] LogHunter - Log Analysis Engine")
     print(f"[*] Reading: {args.file}")
 
-    line_count = 0
-    try:
-        # Initializing the generator
-        log_gen = read_stream(args.file)
+    apache_count = 0
+    syslog_count = 0  # To be implemented in Task 2
+    
+    log_gen = read_stream(args.file)
+    has_data = False
 
-        # Iterating through the generator to count lines
-        for _ in log_gen:
-            line_count += 1
+    for line in log_gen:
+        has_data = True
+        parsed_apache = parse_apache_line(line)
+        if parsed_apache:
+            apache_count += 1
+    
+    if not has_data:
+        # Check if file was missing or empty
+        # If read_stream caught FileNotFoundError, it returned early
+        if not hasattr(log_gen, 'gi_frame'): # Basic check for empty/missing
+             print("[!] No data to process. Exiting.")
+             sys.exit(1)
 
-        if line_count == 0:
-            print("[!] No data to process. Exiting.")
-            sys.exit(1)
-
-        print(f"[*] Lines read: {line_count}")
-
-    except Exception as e:
-        print(f"[ERROR] An unexpected error occurred: {e}")
-        sys.exit(1)
+    print("--- Parsing ---")
+    print(f"[*] Apache lines:  {apache_count}")
+    print(f"[*] Syslog lines:  {syslog_count}")
+    print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
 
 if __name__ == "__main__":
