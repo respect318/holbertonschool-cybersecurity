@@ -38,11 +38,11 @@ def main() -> None:
     """
     try:
         print("NetProbe v1.0 initialized...")
-        
+
         # Test code exactly as requested in the task
         print(f"Port 80 is open: {check_port('google.com', 80)}")
         print(f"Port 81 is open: {check_port('google.com', 81)}")
-        
+
     except KeyboardInterrupt:
         print("\n[!] Execution interrupted by user. Exiting.")
         sys.exit(1)
