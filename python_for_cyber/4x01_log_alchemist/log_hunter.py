@@ -18,9 +18,6 @@ def read_stream(file_path: str) -> Generator[str, None, None]:
 
     Yields:
         str: The next line in the file.
-
-    Raises:
-        FileNotFoundError: If the file does not exist.
     """
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -36,7 +33,9 @@ def main() -> None:
     Main entry point for LogHunter.
     Parses arguments and processes the log stream.
     """
-    parser = argparse.ArgumentParser(description="LogHunter - Log Analysis Engine")
+    parser = argparse.ArgumentParser(
+        description="LogHunter - Log Analysis Engine"
+    )
     parser.add_argument("file", help="Path to the log file to analyze")
     args = parser.parse_args()
 
@@ -47,16 +46,13 @@ def main() -> None:
     try:
         # Initializing the generator
         log_gen = read_stream(args.file)
-        
+
         # Iterating through the generator to count lines
         for _ in log_gen:
             line_count += 1
 
         if line_count == 0:
-            # If generator returned nothing (file not found or empty)
-            # read_stream handles the print, we just exit.
-            if line_count == 0 and not sys.exc_info()[0]:
-                 print("[!] No data to process. Exiting.")
+            print("[!] No data to process. Exiting.")
             sys.exit(1)
 
         print(f"[*] Lines read: {line_count}")
