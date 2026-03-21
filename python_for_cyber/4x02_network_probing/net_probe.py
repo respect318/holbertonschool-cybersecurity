@@ -4,7 +4,32 @@ NetProbe - A custom network scanning and banner grabbing tool.
 This module serves as the entry point for the network prober.
 """
 
+import socket
 import sys
+
+
+def check_port(ip: str, port: int) -> bool:
+    """
+    Checks if a specific TCP port is open on a target IP or hostname.
+
+    Args:
+        ip (str): The target IP address or hostname.
+        port (int): The target TCP port number to check.
+
+    Returns:
+        bool: True if the connection succeeds (port is open), False otherwise.
+    """
+    try:
+        # Create a socket object (IPv4, TCP)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # Set a 1-second timeout to prevent hanging on dropped packets
+            sock.settimeout(1.0)
+            # Try to connect to the target IP and port
+            sock.connect((ip, port))
+            return True
+    except (socket.timeout, ConnectionRefusedError, OSError):
+        # Catch common connection errors (timeout, refused, unreachable)
+        return False
 
 
 def main() -> None:
@@ -13,6 +38,11 @@ def main() -> None:
     """
     try:
         print("NetProbe v1.0 initialized...")
+        
+        # Test code exactly as requested in the task
+        print(f"Port 80 is open: {check_port('google.com', 80)}")
+        print(f"Port 81 is open: {check_port('google.com', 81)}")
+        
     except KeyboardInterrupt:
         print("\n[!] Execution interrupted by user. Exiting.")
         sys.exit(1)
