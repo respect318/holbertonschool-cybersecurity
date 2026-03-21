@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
-This module handles log streaming, parsing, normalization, and filtering.
+This module handles log streaming, parsing, normalization, filtering,
+and GeoIP enrichment.
 """
 
 import argparse
 import sys
 import re
 from typing import Generator, Optional, Dict, Iterable
+
+# Simulated GeoIP Database
+GEOIP_DB = {
+    '1.2.3.4': 'US',
+    '5.6.7.8': 'RU'
+}
 
 # Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
@@ -42,7 +49,7 @@ class LogEntry:
         self.service = service
         self.message = message
         self.raw_line = raw_line
-        # Note: 'status', 'method', 'path' are added dynamically for Apache
+        # Dynamically added later: status, method, path, country
 
 
 def read_stream(file_path: str) -> Generator[str, None, None]:
@@ -123,10 +130,18 @@ def filter_logs(
     Entries without a status attribute are silently skipped.
     """
     for entry in stream:
-        # Safely get status, defaults to None if attribute doesn't exist
         status = getattr(entry, 'status', None)
         if status in status_codes:
             yield entry
+
+
+def enrich_ip(log_entry: LogEntry) -> None:
+    """
+    Looks up the entry's IP in GEOIP_DB and adds a country attribute.
+    Defaults to 'UNKNOWN' if the IP is not found.
+    """
+    country = GEOIP_DB.get(log_entry.ip, 'UNKNOWN')
+    log_entry.country = country
 
 
 def main() -> None:
@@ -153,14 +168,14 @@ def main() -> None:
         has_data = True
         line_clean = line.strip()
 
-        # 1. Try to parse as Apache format
+        # Try Apache first
         parsed_apache = parse_apache_line(line_clean)
         if parsed_apache:
             apache_count += 1
             entry = normalize_entry(parsed_apache, 'apache', line_clean)
             parsed_entries.append(entry)
         else:
-            # 2. If Apache fails, try Syslog format
+            # Try Syslog second
             parsed_syslog = parse_syslog_line(line_clean)
             if parsed_syslog:
                 syslog_count += 1
@@ -176,7 +191,18 @@ def main() -> None:
     print(f"[*] Syslog lines:  {syslog_count}")
     print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
-    # Filtering Section
+    # Enrichment Section
+    known_ips_count = 0
+    for entry in parsed_entries:
+        enrich_ip(entry)
+        if entry.country != 'UNKNOWN':
+            known_ips_count += 1
+
+    print("--- Enrichment ---")
+    print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
+          f"({known_ips_count} known IPs)")
+
+    # Filtering Section (Keeping it as requested in Task 4)
     suspicious_entries = list(filter_logs(parsed_entries))
     print("--- Filtering ---")
     print(f"[*] Suspicious (404, 500): {len(suspicious_entries)}")
