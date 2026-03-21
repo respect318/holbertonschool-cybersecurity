@@ -3,16 +3,17 @@
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
 GeoIP enrichment, bot detection, threat intelligence, attack detection,
-burst/rate-limit detection, event correlation, and reporting.
+burst/rate-limit detection, event correlation, reporting, and multiprocessing.
 """
 
 import argparse
-import sys
-import re
 import json
+import multiprocessing
+import re
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
-from typing import Generator, Optional, Dict, Iterable, Any
+from typing import Generator, Optional, Dict, Iterable
 
 # Simulated GeoIP Database
 GEOIP_DB = {
@@ -226,7 +227,6 @@ def detect_xss(log_entry: LogEntry) -> None:
     """
     Detects Cross-Site Scripting (XSS) patterns in the path.
     Sets attack_type to 'XSS' if a match is found.
-    Will not overwrite existing attack_type (e.g., SQLi).
     """
     if log_entry.attack_type:
         return
@@ -246,7 +246,6 @@ def detect_bruteforce(
 ) -> Generator[dict, None, None]:
     """
     Detects volumetric authentication attacks (Brute Force).
-    Counts IPs with HTTP 401 or 'Failed password' in message.
     """
     failures = Counter()
     for entry in entries:
@@ -294,7 +293,6 @@ def detect_burst(
 ) -> Generator[dict, None, None]:
     """
     Detects bursts of activity from a single IP.
-    Yields an alert if an IP sends >= threshold requests within the window.
     """
     window_tracker = defaultdict(list)
     alerted_ips = set()
@@ -325,7 +323,6 @@ def correlate_events(
 ) -> Generator[dict, None, None]:
     """
     Correlates multiple log events to find chained attacks.
-    Alerts if an IP does a scan (404) followed by an exploit (SQLi).
     """
     state = defaultdict(set)
 
@@ -354,7 +351,6 @@ def correlate_events(
 def export_report(alerts: list, filename: str, format: str = 'json') -> None:
     """
     Exports a list of alerts to a file.
-    Handles both dict and LogEntry objects.
     """
     output_data = []
     for item in alerts:
@@ -370,6 +366,60 @@ def export_report(alerts: list, filename: str, format: str = 'json') -> None:
             json.dump(output_data, f, indent=2)
 
 
+def process_chunk(lines: list) -> list:
+    """
+    Worker function that processes a chunk of raw log lines.
+    Returns a list of parsed, normalized, and enriched results.
+    """
+    results = []
+    for line in lines:
+        line_clean = line.strip()
+        parsed_apache = parse_apache_line(line_clean)
+        if parsed_apache:
+            entry = normalize_entry(parsed_apache, 'apache', line_clean)
+        else:
+            parsed_syslog = parse_syslog_line(line_clean)
+            if parsed_syslog:
+                entry = normalize_entry(parsed_syslog, 'syslog', line_clean)
+            else:
+                continue
+
+        enrich_ip(entry)
+        analyze_user_agent(entry)
+        check_threat_intel(entry)
+        detect_sqli(entry)
+        detect_xss(entry)
+        results.append(entry)
+
+    return results
+
+
+def parallel_analyze(
+    file_path: str, num_workers: int, chunk_size: int = 10000
+) -> list:
+    """
+    Reads the file, distributes chunks via multiprocessing.Pool.map.
+    """
+    results = []
+    chunks = []
+
+    with open(file_path, 'r', encoding='utf-8') as f:
+        chunk = []
+        for line in f:
+            chunk.append(line)
+            if len(chunk) == chunk_size:
+                chunks.append(chunk)
+                chunk = []
+        if chunk:
+            chunks.append(chunk)
+
+    with multiprocessing.Pool(processes=num_workers) as pool:
+        for chunk_res in pool.map(process_chunk, chunks):
+            results.extend(chunk_res)
+
+    return results
+
+
 def main() -> None:
     """
     Main entry point for LogHunter.
@@ -381,45 +431,54 @@ def main() -> None:
     parser.add_argument(
         "--report", help="Export alerts to a JSON file", type=str
     )
+    parser.add_argument(
+        "--workers",
+        help="Number of worker processes (0 = single-threaded)",
+        type=int,
+        default=0
+    )
     args = parser.parse_args()
 
     print("[*] LogHunter - Log Analysis Engine")
-    print(f"[*] Reading: {args.file}")
 
-    apache_count = 0
-    syslog_count = 0
-    parsed_entries = []
-
-    log_gen = read_stream(args.file)
-    has_data = False
-
-    for line in log_gen:
-        has_data = True
-        line_clean = line.strip()
-
-        parsed_apache = parse_apache_line(line_clean)
-        if parsed_apache:
-            apache_count += 1
-            entry = normalize_entry(parsed_apache, 'apache', line_clean)
-            parsed_entries.append(entry)
-        else:
-            parsed_syslog = parse_syslog_line(line_clean)
-            if parsed_syslog:
-                syslog_count += 1
+    if args.workers > 0:
+        print(f"[*] Reading: {args.file} "
+              f"(parallel: {args.workers} workers)")
+        parsed_entries = parallel_analyze(args.file, args.workers)
+    else:
+        print(f"[*] Reading: {args.file}")
+        parsed_entries = []
+        log_gen = read_stream(args.file)
+        for line in log_gen:
+            line_clean = line.strip()
+            parsed_apache = parse_apache_line(line_clean)
+            if parsed_apache:
                 entry = normalize_entry(
-                    parsed_syslog, 'syslog', line_clean
+                    parsed_apache, 'apache', line_clean
                 )
                 parsed_entries.append(entry)
+            else:
+                parsed_syslog = parse_syslog_line(line_clean)
+                if parsed_syslog:
+                    entry = normalize_entry(
+                        parsed_syslog, 'syslog', line_clean
+                    )
+                    parsed_entries.append(entry)
 
-    if not has_data:
+        for entry in parsed_entries:
+            enrich_ip(entry)
+            analyze_user_agent(entry)
+            check_threat_intel(entry)
+            detect_sqli(entry)
+            detect_xss(entry)
+
+    if not parsed_entries:
         print("[!] No data to process. Exiting.")
         sys.exit(1)
 
-    print("--- Parsing ---")
-    print(f"[*] Apache lines:  {apache_count}")
-    print(f"[*] Syslog lines:  {syslog_count}")
-    print(f"[*] Total parsed:  {apache_count + syslog_count}")
-
+    # Unified Statistics Counting
+    apache_count = 0
+    syslog_count = 0
     known_ips_count = 0
     bots_count = 0
     high_alerts_count = 0
@@ -427,25 +486,26 @@ def main() -> None:
     xss_count = 0
 
     for entry in parsed_entries:
-        enrich_ip(entry)
+        if getattr(entry, 'service', '') == 'http':
+            apache_count += 1
+        elif getattr(entry, 'service', '') == 'ssh':
+            syslog_count += 1
+
         if getattr(entry, 'country', 'UNKNOWN') != 'UNKNOWN':
             known_ips_count += 1
-
-        analyze_user_agent(entry)
-        if entry.is_bot:
+        if getattr(entry, 'is_bot', False):
             bots_count += 1
-
-        check_threat_intel(entry)
-        if entry.alert_level == 'HIGH':
+        if getattr(entry, 'alert_level', 'LOW') == 'HIGH':
             high_alerts_count += 1
-
-        detect_sqli(entry)
-        detect_xss(entry)
-
-        if entry.attack_type == 'SQLi':
+        if getattr(entry, 'attack_type', '') == 'SQLi':
             sqli_count += 1
-        elif entry.attack_type == 'XSS':
+        elif getattr(entry, 'attack_type', '') == 'XSS':
             xss_count += 1
+
+    print("--- Parsing ---")
+    print(f"[*] Apache lines:  {apache_count}")
+    print(f"[*] Syslog lines:  {syslog_count}")
+    print(f"[*] Total parsed:  {apache_count + syslog_count}")
 
     print("--- Enrichment ---")
     print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
@@ -460,14 +520,12 @@ def main() -> None:
     print(f"[*] SQLi attempts: {sqli_count}")
     print(f"[*] XSS attempts:  {xss_count}")
 
-    # Brute Force Section
     bf_alerts = list(detect_bruteforce(parsed_entries))
     print("--- Brute Force ---")
     print(f"[*] BRUTE_FORCE alerts: {len(bf_alerts)}")
     for alert in bf_alerts:
         print(f"    {alert['ip']}: {alert['count']} failures")
 
-    # Burst Detection Section
     burst_alerts = list(detect_burst(parsed_entries))
     print("--- Burst Detection ---")
     print(f"[*] BURST alerts: {len(burst_alerts)}")
@@ -475,7 +533,6 @@ def main() -> None:
         print(f"    {alert['ip']}: {alert['count']} requests in "
               f"{alert['window']}s window")
 
-    # Correlation Section
     correlated_alerts = list(correlate_events(parsed_entries))
     if correlated_alerts:
         print("--- Correlation ---")
@@ -484,12 +541,10 @@ def main() -> None:
             stages_str = " -> ".join(alert['stages'])
             print(f"    {alert['ip']}: {stages_str}")
 
-    # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
     print("--- Filtering ---")
     print(f"[*] Suspicious (404, 500): {len(suspicious_entries)}")
 
-    # Reporting Section
     all_alerts = bf_alerts + burst_alerts + correlated_alerts
     print("")
     if args.report:
