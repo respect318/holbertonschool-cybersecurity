@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import sys
+import re
 
 def read_file(filename: str) -> list:
     try:
@@ -21,6 +22,10 @@ def clean_data(lines: list) -> list:
             cleaned_lines.append(stripped_line)
     return cleaned_lines
 
+def validate_line(line: str) -> bool:
+    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+:.+$"
+    return bool(re.match(pattern, line))
+
 def main():
     parser = argparse.ArgumentParser(description="BreachCheck - Security Analysis Tool")
     
@@ -34,6 +39,7 @@ def main():
     
     raw_lines = read_file(args.file)
     clean_lines = clean_data(raw_lines)
+    valid_lines = [line for line in clean_lines if validate_line(line)]
 
 if __name__ == "__main__":
     main()
