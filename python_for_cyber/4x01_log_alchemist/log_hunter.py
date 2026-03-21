@@ -10,16 +10,16 @@ import re
 from typing import Generator, Optional, Dict
 
 # Pre-compiled Regex for Apache Common Log Format with Named Groups
-# Standard format: IP - - [Date] "Method Path Protocol" Status Size
+# We use a more flexible pattern to match various HTTP methods and status codes
 APACHE_PATTERN = re.compile(
-    r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'
-    r'\s-\s-\s\['
-    r'(?P<date>[^\]]+)\]\s"'
-    r'(?P<method>[A-Z]+)\s'
-    r'(?P<path>[^ ]+)\s'
-    r'HTTP/\d\.\d"\s'
-    r'(?P<status>\d{3})\s'
-    r'(?P<size>\d+|-)'
+    r'(?P<ip>\d{1,3}(?:\.\d{1,3}){3})'       # IP
+    r'\s+-\s+-\s+\['                         # Separator
+    r'(?P<date>[^\]]+)\]\s+'                 # Date
+    r'"(?P<method>[A-Z]+)\s+'                # Method
+    r'(?P<path>[^ ]+)\s+'                    # Path
+    r'HTTP/\d\.\d"\s+'                       # Protocol
+    r'(?P<status>\d{3})\s+'                  # Status
+    r'(?P<size>\d+|-)'                       # Size
 )
 
 
