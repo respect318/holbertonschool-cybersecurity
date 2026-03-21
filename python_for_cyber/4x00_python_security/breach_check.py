@@ -64,7 +64,7 @@ def hash_password(password: str, salt: str) -> str:
 
 def main():
     if not os.path.exists("config.ini"):
-        print("[ERROR] Config file missing", file=sys.stderr)
+        print("[ERROR] config file missing", file=sys.stderr)
         sys.exit(1)
     
     config.read("config.ini")
