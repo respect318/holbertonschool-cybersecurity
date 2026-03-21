@@ -3,13 +3,11 @@ import re
 import hashlib
 
 
-def clean_data(lines: list) -> list:
-    cleaned_lines = []
+def clean_data(lines):
     for line in lines:
         stripped_line = line.strip()
         if stripped_line and not stripped_line.startswith("#"):
-            cleaned_lines.append(stripped_line)
-    return cleaned_lines
+            yield stripped_line
 
 
 def validate_line(line: str) -> bool:

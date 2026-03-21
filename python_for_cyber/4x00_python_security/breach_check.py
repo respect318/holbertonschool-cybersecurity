@@ -8,6 +8,7 @@ from utils import clean_data, validate_line, hash_password
 
 config = configparser.ConfigParser()
 
+
 def setup_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -25,16 +26,19 @@ def setup_logger():
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
-def read_file(filename: str) -> list:
+
+def read_file(filename: str):
     try:
         with open(filename, 'r', encoding='utf-8') as f:
-            return f.readlines()
+            for line in f:
+                yield line
     except FileNotFoundError:
         logging.error(f"File not found: {filename}")
         sys.exit(1)
     except PermissionError:
         logging.error(f"Permission denied: {filename}")
         sys.exit(1)
+
 
 def check_policy(password: str) -> str:
     min_length = int(config.get('SECURITY', 'MinLength', fallback=8))
@@ -44,6 +48,7 @@ def check_policy(password: str) -> str:
     if len(password) < min_length or password.isalpha() or password in common_passwords:
         return 'WEAK'
     return 'COMPLIANT'
+
 
 def main():
     if not os.path.exists("config.ini"):
@@ -68,7 +73,8 @@ def main():
     
     raw_lines = read_file(args.file)
     clean_lines = clean_data(raw_lines)
-    valid_lines = [line for line in clean_lines if validate_line(line)]
+    valid_lines = (line for line in clean_lines if validate_line(line))
+
 
 if __name__ == "__main__":
     main()
