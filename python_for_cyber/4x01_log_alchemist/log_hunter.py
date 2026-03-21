@@ -375,6 +375,7 @@ def process_chunk(lines: list) -> list:
     for line in lines:
         line_clean = line.strip()
         parsed_apache = parse_apache_line(line_clean)
+        
         if parsed_apache:
             entry = normalize_entry(parsed_apache, 'apache', line_clean)
         else:
@@ -382,7 +383,7 @@ def process_chunk(lines: list) -> list:
             if parsed_syslog:
                 entry = normalize_entry(parsed_syslog, 'syslog', line_clean)
             else:
-                continue
+                entry = normalize_entry({}, 'unknown', line_clean)
 
         enrich_ip(entry)
         analyze_user_agent(entry)
@@ -452,31 +453,31 @@ def main() -> None:
         for line in log_gen:
             line_clean = line.strip()
             parsed_apache = parse_apache_line(line_clean)
+            
             if parsed_apache:
                 entry = normalize_entry(
                     parsed_apache, 'apache', line_clean
                 )
-                parsed_entries.append(entry)
             else:
                 parsed_syslog = parse_syslog_line(line_clean)
                 if parsed_syslog:
                     entry = normalize_entry(
                         parsed_syslog, 'syslog', line_clean
                     )
-                    parsed_entries.append(entry)
+                else:
+                    entry = normalize_entry({}, 'unknown', line_clean)
 
-        for entry in parsed_entries:
             enrich_ip(entry)
             analyze_user_agent(entry)
             check_threat_intel(entry)
             detect_sqli(entry)
             detect_xss(entry)
+            parsed_entries.append(entry)
 
     if not parsed_entries:
         print("[!] No data to process. Exiting.")
         sys.exit(1)
 
-    # Unified Statistics Counting
     apache_count = 0
     syslog_count = 0
     known_ips_count = 0
