@@ -2,7 +2,7 @@
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
-GeoIP enrichment, and bot detection.
+GeoIP enrichment, bot detection, and threat intelligence.
 """
 
 import argparse
@@ -18,6 +18,9 @@ GEOIP_DB = {
 
 # Known Bot Signatures
 BOT_SIGNATURES = ['sqlmap', 'nikto', 'curl', 'python']
+
+# Known Malicious IPs
+BLACKLIST = {'10.0.0.1', '192.168.1.66'}
 
 # Pre-compiled Regex for Apache Common Log Format
 APACHE_PATTERN = re.compile(
@@ -56,8 +59,9 @@ class LogEntry:
         self.message = message
         self.raw_line = raw_line
         self.is_bot = False
+        self.alert_level = 'LOW'
 
-        # Əlavə arqumentləri qəbul edir (user_agent, method və s.)
+        # Əlavə arqumentləri qəbul edir
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -161,18 +165,27 @@ def analyze_user_agent(log_entry: LogEntry) -> None:
     """
     log_entry.is_bot = False
 
-    # Safely get attributes that might not exist for every log type
     user_agent = getattr(log_entry, 'user_agent', '')
     message = getattr(log_entry, 'message', '')
     raw_line = getattr(log_entry, 'raw_line', '')
 
-    # Combine text and lower it for case-insensitive search
     combined_text = f"{user_agent} {message} {raw_line}".lower()
 
     for signature in BOT_SIGNATURES:
         if signature in combined_text:
             log_entry.is_bot = True
             break
+
+
+def check_threat_intel(log_entry: LogEntry) -> None:
+    """
+    Checks if the IP is in the BLACKLIST.
+    Sets alert_level to HIGH if malicious, LOW otherwise.
+    """
+    if log_entry.ip in BLACKLIST:
+        log_entry.alert_level = 'HIGH'
+    else:
+        log_entry.alert_level = 'LOW'
 
 
 def main() -> None:
@@ -227,6 +240,7 @@ def main() -> None:
     # Enrichment Section
     known_ips_count = 0
     bots_count = 0
+    high_alerts_count = 0
 
     for entry in parsed_entries:
         # IP Enrichment
@@ -239,10 +253,20 @@ def main() -> None:
         if entry.is_bot:
             bots_count += 1
 
+        # Threat Intel
+        check_threat_intel(entry)
+        if entry.alert_level == 'HIGH':
+            high_alerts_count += 1
+
     print("--- Enrichment ---")
     print(f"[*] GeoIP: {len(parsed_entries)} entries enriched "
           f"({known_ips_count} known IPs)")
     print(f"[*] Bots detected: {bots_count}")
+
+    # Threat Intelligence Section
+    print("--- Threat Intelligence ---")
+    print(f"[*] HIGH alerts: {high_alerts_count} "
+          f"entries from blacklisted IPs")
 
     # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
