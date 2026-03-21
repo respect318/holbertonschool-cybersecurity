@@ -17,19 +17,19 @@ def check_port(ip: str, port: int) -> bool:
         port (int): The target TCP port number to check.
 
     Returns:
-        bool: True if the connection succeeds (port is open), False otherwise.
+        bool: True if connection succeeds (port is open), False otherwise.
     """
     try:
         # Create a socket object (IPv4, TCP)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # Set a 1-second timeout to prevent hanging on dropped packets
+            # Set a 1-second timeout to prevent hanging on packets
             sock.settimeout(1.0)
             # Try to connect to the target IP and port
             sock.connect((ip, port))
             return True
     except Exception:
         # Catch ANY exception (OSError, ValueError, OverflowError, etc.)
-        # This handles invalid IPs, negative ports, or unreachable hosts gracefully
+        # Handles invalid IPs, negative ports, or unreachable hosts.
         return False
 
 
