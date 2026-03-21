@@ -2,13 +2,15 @@
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
-GeoIP enrichment, bot detection, threat intelligence, and attack detection.
+GeoIP enrichment, bot detection, threat intelligence, attack detection,
+and burst/rate-limit detection.
 """
 
 import argparse
 import sys
 import re
-from collections import Counter
+from collections import Counter, defaultdict
+from datetime import datetime, timedelta
 from typing import Generator, Optional, Dict, Iterable
 
 # Simulated GeoIP Database
@@ -78,7 +80,6 @@ class LogEntry:
         self.alert_level = 'LOW'
         self.attack_type = ''
 
-        # Əlavə arqumentləri qəbul edir
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -251,7 +252,6 @@ def detect_bruteforce(
         status = getattr(entry, 'status', None)
         message = getattr(entry, 'message', '')
 
-        # Şərt həm string, həm də integer formatında olan 401 üçün tənzimləndi
         if str(status) == '401' or "Failed password" in message:
             if entry.ip:
                 failures[entry.ip] += 1
@@ -263,6 +263,65 @@ def detect_bruteforce(
                 'count': count,
                 'alert_type': 'BRUTE_FORCE'
             }
+
+
+def parse_timestamp(ts_str: str) -> Optional[datetime]:
+    """
+    Parses Apache and Syslog timestamps into naive datetime objects.
+    """
+    if not ts_str:
+        return None
+
+    # Apache format: 11/Feb/2026:14:01:24 +0000
+    try:
+        dt = datetime.strptime(ts_str, '%d/%b/%Y:%H:%M:%S %z')
+        return dt.replace(tzinfo=None)
+    except ValueError:
+        pass
+
+    # Syslog format: Feb 11 14:31:24
+    try:
+        ts_norm = re.sub(r'\s+', ' ', ts_str.strip())
+        dt = datetime.strptime(ts_norm, '%b %d %H:%M:%S')
+        # Syslog doesn't include year, default to current year
+        return dt.replace(year=datetime.now().year)
+    except ValueError:
+        pass
+
+    return None
+
+
+def detect_burst(
+    entries: Iterable[LogEntry], window_seconds: int = 60, threshold: int = 10
+) -> Generator[dict, None, None]:
+    """
+    Detects bursts of activity from a single IP.
+    Yields an alert if an IP sends >= threshold requests within the window.
+    """
+    window_tracker = defaultdict(list)
+    alerted_ips = set()
+
+    for entry in entries:
+        dt = parse_timestamp(entry.timestamp)
+        if not dt or not entry.ip:
+            continue
+
+        ip = entry.ip
+        window_tracker[ip].append(dt)
+
+        # Sürüşən pəncərə (Sliding window): pəncərədən köhnə vaxtları silirik
+        cutoff = dt - timedelta(seconds=window_seconds)
+        window_tracker[ip] = [t for t in window_tracker[ip] if t >= cutoff]
+
+        # Əgər cəhdlərin sayı threshold-u keçibsə və xəbərdarlıq edilməyibsə
+        if len(window_tracker[ip]) >= threshold and ip not in alerted_ips:
+            yield {
+                'ip': ip,
+                'count': len(window_tracker[ip]),
+                'window': window_seconds,
+                'alert_type': 'BURST'
+            }
+            alerted_ips.add(ip)
 
 
 def main() -> None:
@@ -367,6 +426,14 @@ def main() -> None:
     print(f"[*] BRUTE_FORCE alerts: {len(bf_alerts)}")
     for alert in bf_alerts:
         print(f"    {alert['ip']}: {alert['count']} failures")
+
+    # Burst Detection Section
+    burst_alerts = list(detect_burst(parsed_entries))
+    print("--- Burst Detection ---")
+    print(f"[*] BURST alerts: {len(burst_alerts)}")
+    for alert in burst_alerts:
+        print(f"    {alert['ip']}: {alert['count']} requests in "
+              f"{alert['window']}s window")
 
     # Filtering Section
     suspicious_entries = list(filter_logs(parsed_entries))
