@@ -1,4 +1,4 @@
-\#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 LogHunter - A high-performance log analysis engine.
 This module handles log streaming, parsing, normalization, filtering,
@@ -224,7 +224,6 @@ def detect_xss(log_entry: LogEntry) -> None:
     Sets attack_type to 'XSS' if a match is found.
     Will not overwrite existing attack_type (e.g., SQLi).
     """
-    # Əgər artıq fərqli bir hücum (məs. SQLi) təyin olunubsa, heç nə etmə
     if log_entry.attack_type:
         return
 
@@ -313,7 +312,7 @@ def main() -> None:
         # Attack Detection Pipeline
         detect_sqli(entry)
         detect_xss(entry)
-        
+
         if entry.attack_type == 'SQLi':
             sqli_count += 1
         elif entry.attack_type == 'XSS':
