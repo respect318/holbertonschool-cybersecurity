@@ -251,7 +251,8 @@ def detect_bruteforce(
         status = getattr(entry, 'status', None)
         message = getattr(entry, 'message', '')
 
-        if status == 401 or "Failed password" in message:
+        # Şərt həm string, həm də integer formatında olan 401 üçün tənzimləndi
+        if str(status) == '401' or "Failed password" in message:
             if entry.ip:
                 failures[entry.ip] += 1
 
