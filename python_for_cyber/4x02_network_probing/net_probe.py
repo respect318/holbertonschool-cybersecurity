@@ -3,7 +3,7 @@
 Network Probing Module
 
 This module provides functionalities to probe network targets using standard
-TCP sockets. It allows checking if specific ports are open and handles 
+TCP sockets. It allows checking if specific ports are open and handles
 socket connections gracefully.
 """
 
@@ -15,7 +15,7 @@ def check_port(ip: str, port: int) -> bool:
     Checks if a specific TCP port is open on a target IP or hostname.
 
     This function attempts to establish a TCP Three-Way Handshake with the
-    target. If the connect() call succeeds within the timeout period, the 
+    target. If the connect() call succeeds within the timeout period, the
     port is considered open.
 
     Args:
@@ -23,22 +23,22 @@ def check_port(ip: str, port: int) -> bool:
         port (int): The target port number to check.
 
     Returns:
-        bool: True if the port is open, False if connection is refused, 
+        bool: True if the port is open, False if connection is refused,
               timed out, or if an error occurs.
     """
     try:
         # Create a socket using IPv4 (AF_INET) and TCP (SOCK_STREAM)
-        # Using a context manager (with) ensures the socket is closed automatically
+        # A context manager ensures the socket closes automatically
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # Set a timeout of 1 second as per requirements
             s.settimeout(1.0)
-            
+
             # Attempt to connect to the IP and Port
             s.connect((ip, port))
-            
-            # If connect() succeeds without throwing an exception, port is open
+
+            # If connect() succeeds without an exception, port is open
             return True
-            
+
     except (socket.timeout, ConnectionRefusedError):
         # The port is closed or filtered
         return False
@@ -47,8 +47,8 @@ def check_port(ip: str, port: int) -> bool:
         print(f"[ERROR] Failed to resolve hostname: {ip}")
         return False
     except Exception as e:
-        # Catch any other unexpected errors gracefully to prevent raw tracebacks
-        print(f"[ERROR] An unexpected error occurred while checking port {port}: {e}")
+        # Catch unexpected errors gracefully to prevent raw tracebacks
+        print(f"[ERROR] Error checking port {port}: {e}")
         return False
 
 
