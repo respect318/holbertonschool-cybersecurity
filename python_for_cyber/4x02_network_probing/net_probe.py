@@ -20,17 +20,17 @@ def check_port(ip: str, port: int) -> bool:
     try:
         # Create a socket object (AF_INET for IPv4, SOCK_STREAM for TCP)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # Set a timeout of 1 second
+            # Set a timeout of 1 second as requested
             sock.settimeout(1.0)
             # Try to connect to the IP/Port
             sock.connect((ip, port))
             return True
     except Exception:
-        # Return False if connection refused, timed out, or invalid input
+        # Gracefully handle ALL invalid inputs, negative ports, or timeouts
         return False
 
 
 if __name__ == "__main__":
-    # Test code as requested in the instructions
+    # Test cases from the project instructions
     print(f"Port 80 is open: {check_port('google.com', 80)}")
     print(f"Port 81 is open: {check_port('google.com', 81)}")
