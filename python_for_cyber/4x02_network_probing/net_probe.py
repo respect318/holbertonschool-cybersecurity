@@ -28,7 +28,6 @@ def check_port(ip: str, port: int) -> bool:
     """
     try:
         # Create a socket using IPv4 (AF_INET) and TCP (SOCK_STREAM)
-        # A context manager ensures the socket closes automatically
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # Set a timeout of 1 second as per requirements
             s.settimeout(1.0)
@@ -44,11 +43,9 @@ def check_port(ip: str, port: int) -> bool:
         return False
     except socket.gaierror:
         # Address-related error (e.g., hostname could not be resolved)
-        print(f"[ERROR] Failed to resolve hostname: {ip}")
         return False
-    except Exception as e:
+    except Exception:
         # Catch unexpected errors gracefully to prevent raw tracebacks
-        print(f"[ERROR] Error checking port {port}: {e}")
         return False
 
 
