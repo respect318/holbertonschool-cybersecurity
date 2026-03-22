@@ -32,6 +32,6 @@ def check_port(ip: str, port: int) -> bool:
             s.connect((ip, port))
             return True
     except Exception:
-        # Silently return False for ALL errors (invalid port, hostname, timeout)
-        # Absolutely NO print statements here to avoid length mismatches.
+        # Silently return False for ALL errors (invalid port, timeout)
+        # NO print statements here to avoid length mismatches.
         return False
