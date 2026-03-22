@@ -1,44 +1,62 @@
 #!/usr/bin/env python3
 """
-NetProbe - A custom network scanning and banner grabbing tool.
+Network Probing Module
+
+This module provides functionalities to probe network targets using standard
+TCP sockets. It allows checking if specific ports are open and handles 
+socket connections gracefully.
 """
 
 import socket
-import sys
 
 
 def check_port(ip: str, port: int) -> bool:
     """
-    Checks if a specific TCP port is open on a target IP.
+    Checks if a specific TCP port is open on a target IP or hostname.
+
+    This function attempts to establish a TCP Three-Way Handshake with the
+    target. If the connect() call succeeds within the timeout period, the 
+    port is considered open.
 
     Args:
-        ip (str): Target IP address or hostname.
-        port (int): Target TCP port number.
+        ip (str): The target IP address or hostname.
+        port (int): The target port number to check.
 
     Returns:
-        bool: True if connection succeeds, False otherwise.
+        bool: True if the port is open, False if connection is refused, 
+              timed out, or if an error occurs.
     """
     try:
-        # Create a socket object (AF_INET for IPv4, SOCK_STREAM for TCP)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # Set a timeout of 1 second
-            sock.settimeout(1.0)
-            # Try to connect to the IP/Port
-            sock.connect((ip, port))
+        # Create a socket using IPv4 (AF_INET) and TCP (SOCK_STREAM)
+        # Using a context manager (with) ensures the socket is closed automatically
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Set a timeout of 1 second as per requirements
+            s.settimeout(1.0)
+            
+            # Attempt to connect to the IP and Port
+            s.connect((ip, port))
+            
+            # If connect() succeeds without throwing an exception, port is open
             return True
-    except Exception:
-        # Gracefully handle invalid inputs or connection failures
+            
+    except (socket.timeout, ConnectionRefusedError):
+        # The port is closed or filtered
+        return False
+    except socket.gaierror:
+        # Address-related error (e.g., hostname could not be resolved)
+        print(f"[ERROR] Failed to resolve hostname: {ip}")
+        return False
+    except Exception as e:
+        # Catch any other unexpected errors gracefully to prevent raw tracebacks
+        print(f"[ERROR] An unexpected error occurred while checking port {port}: {e}")
         return False
 
 
 if __name__ == "__main__":
-    # To match the checker's 17-byte requirement (False\nFalse\nFalse),
-    # we manually control the output to avoid the final newline.
-    results = [
-        check_port('google.com', 80),
-        check_port('google.com', 81),
-        check_port('invalid_host', -1)
-    ]
-    # This joins results with \n but doesn't add one at the very end
-    output = "\n".join(str(res) for res in results)
-    sys.stdout.write(output)
+    try:
+        print(f"Port 80 is open: {check_port('google.com', 80)}")
+        print(f"Port 81 is open: {check_port('google.com', 81)}")
+    except KeyboardInterrupt:
+        print("\n[ERROR] Execution interrupted by user.")
+    except Exception as e:
+        print(f"[ERROR] Main execution failed: {e}")
