@@ -35,3 +35,30 @@ def check_port(ip: str, port: int) -> bool:
         # Silently return False for ALL errors (invalid port, timeout)
         # NO print statements here to avoid length mismatches.
         return False
+
+
+def ping_sweep(subnet: str) -> list:
+    """
+    Performs a ping sweep on a /24 subnet by checking port 80.
+
+    Iterates through all possible hosts in a /24 subnet (from .1 to .254)
+    and attempts to connect to port 80 using the check_port function.
+
+    Args:
+        subnet (str): The first 3 octets of the subnet (e.g., '192.168.1').
+
+    Returns:
+        list: A list of strings containing IP addresses with port 80 open.
+    """
+    live_hosts = []
+    try:
+        # A /24 subnet has usable IPs from .1 to .254
+        for host in range(1, 255):
+            ip = f"{subnet}.{host}"
+            if check_port(ip, 80):
+                live_hosts.append(ip)
+    except Exception:
+        # Fulfills the "wrap expected failure points in try/except" rule
+        pass
+        
+    return live_hosts
