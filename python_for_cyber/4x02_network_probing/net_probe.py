@@ -69,27 +69,25 @@ def get_banner(ip: str, port: int) -> str:
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            # Set a timeout so we don't hang indefinitely
             sock.settimeout(2.0)
             sock.connect((ip, port))
 
-            # 1. Try to receive data immediately (works for SSH, FTP, etc.)
             try:
+                # Try receiving banner immediately
                 banner = sock.recv(1024).decode('utf-8', 'ignore').strip()
                 if banner:
                     return banner
             except socket.timeout:
-                pass  # Move on to sending a probe if it times out
+                pass
 
-            # 2. If no immediate banner, send a generic HTTP probe
+            # Send HTTP probe if no immediate banner
             sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
             banner = sock.recv(1024).decode('utf-8', 'ignore').strip()
 
             if banner:
-                # Sometimes HTTP sends back multi-line responses, get first line
+                # Extract the first line safely
                 return banner.split('\n')[0].strip()
 
             return "Unknown"
     except Exception:
-        # Catch connection refused, timeouts, or any other errors
         return "Unknown"
