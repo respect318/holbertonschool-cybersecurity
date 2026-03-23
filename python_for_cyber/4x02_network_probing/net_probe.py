@@ -38,12 +38,12 @@ def ping_sweep(subnet: str) -> list:
         list: A list of IP addresses that have port 80 open.
     """
     active_hosts = []
-    
+
     # Iterate from 1 to 254 for a /24 subnet
     for i in range(1, 255):
         ip = f"{subnet}.{i}"
         # Test if port 80 is open on this specific IP
         if check_port(ip, 80):
             active_hosts.append(ip)
-            
+
     return active_hosts
