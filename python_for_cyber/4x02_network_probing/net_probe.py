@@ -189,6 +189,23 @@ def get_service_info(ip: str, port: int) -> str:
     return banner
 
 
+def check_vulnerability(banner: str) -> str:
+    """
+    Checks if the banner contains known vulnerable versions.
+
+    Args:
+        banner (str): The service banner to check.
+
+    Returns:
+        str: '[VULNERABLE]' if found, else an empty string.
+    """
+    bad_signatures = ["vsftpd 2.3.4", "Apache 2.2.8"]
+    for sig in bad_signatures:
+        if sig in banner:
+            return "[VULNERABLE]"
+    return ""
+
+
 def scan_ports(ip: str, start_port: int, end_port: int) -> list:
     """
     Scans a range of ports concurrently on a target IP using threads.
@@ -208,6 +225,12 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
         """Helper function to scan a single port and grab its banner."""
         if check_port(ip, port):
             banner = get_service_info(ip, port)
+            vuln = check_vulnerability(banner)
+
+            # Append vulnerability tag if found
+            if vuln:
+                banner = f"{banner} {vuln}"
+
             print(f"[+] Port {port} Open: {banner}")
             return {'port': port, 'service': banner}
         return None
