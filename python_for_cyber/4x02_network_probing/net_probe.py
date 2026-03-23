@@ -9,6 +9,7 @@ import concurrent.futures
 import json
 import socket
 import sys
+import time
 
 
 class _OutputCatcher:
@@ -50,6 +51,7 @@ def _flush_output():
             if not line.startswith("Scanning ")
             and not line.startswith("[+] ")
             and not line.startswith("Results saved")
+            and not line.startswith("[DEBUG] ")
         ]
         out = '\n'.join(filtered)
 
@@ -208,7 +210,9 @@ def check_vulnerability(banner: str) -> str:
     return ""
 
 
-def scan_ports(ip: str, start_port: int, end_port: int) -> list:
+def scan_ports(
+    ip: str, start_port: int, end_port: int, delay: float = 0.0
+) -> list:
     """
     Scans a range of ports concurrently on a target IP using threads.
 
@@ -216,6 +220,7 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
         ip (str): Target IP address.
         start_port (int): The starting port number.
         end_port (int): The ending port number.
+        delay (float): Delay in seconds between scans.
 
     Returns:
         list: A list of dictionaries with open ports and services.
@@ -225,6 +230,10 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
 
     def scan_single_port(port: int):
         """Helper function to scan a single port and grab its banner."""
+        if delay > 0:
+            print(f"[DEBUG] Sleeping {delay}s before next packet...")
+            time.sleep(delay)
+
         if check_port(ip, port):
             banner = get_service_info(ip, port)
             vuln = check_vulnerability(banner)
@@ -263,16 +272,22 @@ if __name__ == "__main__":
         required=True
     )
     parser.add_argument("-o", "--output", help="Output JSON file")
+    parser.add_argument(
+        "-d", "--delay",
+        type=float,
+        default=0.0,
+        help="Delay between scans in seconds"
+    )
 
     args = parser.parse_args()
 
     try:
         start_p, end_p = map(int, args.ports.split('-'))
     except ValueError:
-        print("Invalid port range format. Use 'start-end' (e.g., '1-1000').")
+        print("Invalid port range format. Use 'start-end'.")
         sys.exit(1)
 
-    scan_res = scan_ports(args.target, start_p, end_p)
+    scan_res = scan_ports(args.target, start_p, end_p, args.delay)
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as json_file:
