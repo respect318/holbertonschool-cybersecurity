@@ -3,6 +3,7 @@
 NetProbe - A custom network scanning and banner grabbing tool.
 """
 
+import concurrent.futures
 import socket
 
 
@@ -23,13 +24,12 @@ def check_port(ip: str, port: int) -> bool:
             sock.connect((ip, port))
             return True
     except Exception:
-        # Gracefully handle all invalid inputs or timeouts
         return False
 
 
 def ping_sweep(subnet: str) -> list:
     """
-    Scans a /24 subnet to identify active hosts by checking port 80.
+    Scans a /24 subnet concurrently to identify active hosts.
 
     Args:
         subnet (str): The first 3 octets of the subnet (e.g., '192.168.1').
@@ -38,12 +38,22 @@ def ping_sweep(subnet: str) -> list:
         list: A list of IP addresses that have port 80 open.
     """
     active_hosts = []
+    ips = [f"{subnet}.{i}" for i in range(1, 255)]
 
-    # Iterate from 1 to 254 for a /24 subnet
-    for i in range(1, 255):
-        ip = f"{subnet}.{i}"
-        # Test if port 80 is open on this specific IP
+    def scan_ip(ip: str) -> str:
+        """Helper function to return IP if port 80 is open."""
         if check_port(ip, 80):
-            active_hosts.append(ip)
+            return ip
+        return ""
+
+    # Use ThreadPoolExecutor to scan multiple IPs at the same time
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+        # executor.map runs the scan_ip function for all IPs in parallel
+        results = executor.map(scan_ip, ips)
+
+    # Filter out empty strings and keep only active IPs
+    for res in results:
+        if res:
+            active_hosts.append(res)
 
     return active_hosts
