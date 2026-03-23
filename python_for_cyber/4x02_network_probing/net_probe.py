@@ -230,10 +230,6 @@ def scan_ports(
 
     def scan_single_port(port: int):
         """Helper function to scan a single port and grab its banner."""
-        if delay > 0:
-            print(f"[DEBUG] Sleeping {delay}s before next packet...")
-            time.sleep(delay)
-
         if check_port(ip, port):
             banner = get_service_info(ip, port)
             vuln = check_vulnerability(banner)
@@ -250,10 +246,13 @@ def scan_ports(
         return None
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        futures = [
-            executor.submit(scan_single_port, port)
-            for port in range(start_port, end_port + 1)
-        ]
+        futures = []
+        for port in range(start_port, end_port + 1):
+            if delay > 0:
+                print(f"[DEBUG] Sleeping {delay}s before next packet...")
+                time.sleep(delay)
+            # Submit each task sequentially to properly pace them
+            futures.append(executor.submit(scan_single_port, port))
 
         for future in concurrent.futures.as_completed(futures):
             res = future.result()
