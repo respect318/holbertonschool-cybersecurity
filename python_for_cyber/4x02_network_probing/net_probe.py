@@ -71,7 +71,7 @@ def ping_sweep(subnet: str) -> list:
     Scans a /24 subnet concurrently to identify active hosts.
 
     Args:
-        subnet (str): The first 3 octets of the subnet (e.g., '192.168.1').
+        subnet (str): The first 3 octets of the subnet.
 
     Returns:
         list: A list of IP addresses that have port 80 open.
@@ -130,3 +130,28 @@ def get_banner(ip: str, port: int) -> str:
             return "Unknown"
     except Exception:
         return "Unknown"
+
+
+def scan_ports(ip: str, start_port: int, end_port: int) -> list:
+    """
+    Scans a range of ports sequentially on a target IP.
+
+    Args:
+        ip (str): Target IP address.
+        start_port (int): The starting port number.
+        end_port (int): The ending port number.
+
+    Returns:
+        list: A list of dictionaries with open ports and services.
+    """
+    print(f"Scanning {ip} from {start_port} to {end_port}...")
+    results = []
+
+    # loop includes the end_port (+1)
+    for port in range(start_port, end_port + 1):
+        if check_port(ip, port):
+            banner = get_banner(ip, port)
+            print(f"[+] Port {port} Open: {banner}")
+            results.append({'port': port, 'service': banner})
+
+    return results
