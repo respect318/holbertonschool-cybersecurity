@@ -149,7 +149,7 @@ def get_banner(ip: str, port: int) -> str:
 
 def scan_ports(ip: str, start_port: int, end_port: int) -> list:
     """
-    Scans a range of ports sequentially on a target IP.
+    Scans a range of ports concurrently on a target IP using threads.
 
     Args:
         ip (str): Target IP address.
@@ -162,11 +162,27 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
     print(f"Scanning {ip} from {start_port} to {end_port}...")
     results = []
 
-    # loop includes the end_port (+1)
-    for port in range(start_port, end_port + 1):
+    def scan_single_port(port: int):
+        """Helper function to scan a single port and grab its banner."""
         if check_port(ip, port):
             banner = get_banner(ip, port)
             print(f"[+] Port {port} Open: {banner}")
-            results.append({'port': port, 'service': banner})
+            return {'port': port, 'service': banner}
+        return None
 
-    return results
+    # Max workers set to 50 to avoid crashing the network stack
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        # Submit tasks to the pool
+        futures = [
+            executor.submit(scan_single_port, port)
+            for port in range(start_port, end_port + 1)
+        ]
+
+        # Collect results as they complete
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            if res:
+                results.append(res)
+
+    # Sort the final list by port number so it's always ordered correctly
+    return sorted(results, key=lambda x: x['port'])
