@@ -46,14 +46,50 @@ def ping_sweep(subnet: str) -> list:
             return ip
         return ""
 
-    # Use ThreadPoolExecutor to scan multiple IPs at the same time
     with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
-        # executor.map runs the scan_ip function for all IPs in parallel
         results = executor.map(scan_ip, ips)
 
-    # Filter out empty strings and keep only active IPs
     for res in results:
         if res:
             active_hosts.append(res)
 
     return active_hosts
+
+
+def get_banner(ip: str, port: int) -> str:
+    """
+    Connects to a port and retrieves its service banner.
+
+    Args:
+        ip (str): Target IP address.
+        port (int): Target port number.
+
+    Returns:
+        str: The decoded banner string or "Unknown" if it fails.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            # Set a timeout so we don't hang indefinitely
+            sock.settimeout(2.0)
+            sock.connect((ip, port))
+
+            # 1. Try to receive data immediately (works for SSH, FTP, etc.)
+            try:
+                banner = sock.recv(1024).decode('utf-8', 'ignore').strip()
+                if banner:
+                    return banner
+            except socket.timeout:
+                pass  # Move on to sending a probe if it times out
+
+            # 2. If no immediate banner, send a generic HTTP probe
+            sock.sendall(b"HEAD / HTTP/1.0\r\n\r\n")
+            banner = sock.recv(1024).decode('utf-8', 'ignore').strip()
+
+            if banner:
+                # Sometimes HTTP sends back multi-line responses, get first line
+                return banner.split('\n')[0].strip()
+
+            return "Unknown"
+    except Exception:
+        # Catch connection refused, timeouts, or any other errors
+        return "Unknown"
