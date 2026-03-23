@@ -257,7 +257,11 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="NetProbe Scanning Tool")
     parser.add_argument("-t", "--target", help="Target IP", required=True)
-    parser.add_argument("-p", "--ports", help="Port range (e.g., '1-1000')", required=True)
+    parser.add_argument(
+        "-p", "--ports",
+        help="Port range (e.g., '1-1000')",
+        required=True
+    )
     parser.add_argument("-o", "--output", help="Output JSON file")
 
     args = parser.parse_args()
