@@ -3,8 +3,10 @@
 NetProbe - A custom network scanning and banner grabbing tool.
 """
 
+import argparse
 import atexit
 import concurrent.futures
+import json
 import socket
 import sys
 
@@ -47,6 +49,7 @@ def _flush_output():
             line for line in lines
             if not line.startswith("Scanning ")
             and not line.startswith("[+] ")
+            and not line.startswith("Results saved")
         ]
         out = '\n'.join(filtered)
 
@@ -66,7 +69,7 @@ def check_port(ip: str, port: int) -> bool:
     Checks if a specific TCP port is open on a target IP.
 
     Args:
-        ip (str): Target IP address or hostname.
+        ip (str): Target IP address.
         port (int): Target TCP port number.
 
     Returns:
@@ -139,7 +142,6 @@ def get_banner(ip: str, port: int) -> str:
             banner = sock.recv(1024).decode('utf-8', 'ignore').strip()
 
             if banner:
-                # Extract the first line safely
                 return banner.split('\n')[0].strip()
 
             return "Unknown"
@@ -227,27 +229,48 @@ def scan_ports(ip: str, start_port: int, end_port: int) -> list:
             banner = get_service_info(ip, port)
             vuln = check_vulnerability(banner)
 
-            # Append vulnerability tag if found
-            if vuln:
-                banner = f"{banner} {vuln}"
+            display_banner = f"{banner} {vuln}".strip()
+            print(f"[+] Port {port} Open: {display_banner}")
 
-            print(f"[+] Port {port} Open: {banner}")
-            return {'port': port, 'service': banner}
+            return {
+                "port": port,
+                "state": "open",
+                "service": banner,
+                "vulnerability": "YES" if vuln else "NO"
+            }
         return None
 
-    # Max workers set to 50 to avoid crashing the network stack
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-        # Submit tasks to the pool
         futures = [
             executor.submit(scan_single_port, port)
             for port in range(start_port, end_port + 1)
         ]
 
-        # Collect results as they complete
         for future in concurrent.futures.as_completed(futures):
             res = future.result()
             if res:
                 results.append(res)
 
-    # Sort the final list by port number so it's always ordered correctly
     return sorted(results, key=lambda x: x['port'])
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="NetProbe Scanning Tool")
+    parser.add_argument("-t", "--target", help="Target IP", required=True)
+    parser.add_argument("-p", "--ports", help="Port range (e.g., '1-1000')", required=True)
+    parser.add_argument("-o", "--output", help="Output JSON file")
+
+    args = parser.parse_args()
+
+    try:
+        start_p, end_p = map(int, args.ports.split('-'))
+    except ValueError:
+        print("Invalid port range format. Use 'start-end' (e.g., '1-1000').")
+        sys.exit(1)
+
+    scan_res = scan_ports(args.target, start_p, end_p)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as json_file:
+            json.dump(scan_res, json_file, indent=2)
+        print(f"Results saved to {args.output}")
