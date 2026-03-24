@@ -54,28 +54,21 @@ def parse_nmap_xml(xml_data: str) -> list:
 
     open_ports = []
     try:
-        # XML mətnini strukturlu ağaca (tree) çeviririk
         root = ET.fromstring(xml_data)
-        
-        # Bütün 'port' elementlərini tapırıq
         for port in root.findall(".//port"):
             state = port.find("state")
-            
-            # Portun vəziyyəti 'open' (açıq) olub-olmadığını yoxlayırıq
             if state is not None and state.get("state") == "open":
                 portid = port.get("portid")
                 if portid:
-                    open_ports.append(int(portid))  # Rəqəm (int) kimi əlavə edirik
+                    open_ports.append(int(portid))
     except ET.ParseError:
-        # XML oxunmaz haldadırsa (məsələn Nmap xəta veribsə), boş siyahı qayıdır
         pass
 
     return open_ports
 
 
 if __name__ == "__main__":
-    # Test üçün
     target_ip = "127.0.0.1"
     xml_output = run_nmap(target_ip)
     ports = parse_nmap_xml(xml_output)
-    print(f"Open ports for {target_ip}: {ports}")
+    print(f"Open ports: {ports}")
