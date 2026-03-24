@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Final version: Includes robust HTTP error handling for API resilience.
+Final version: Graceful error handling for API resilience.
 """
 import asyncio
 import sys
@@ -55,15 +55,15 @@ def save_cache(cache):
 
 
 async def fetch_api(session, url, sem):
-    """Fetches API data with HTTP error handling."""
+    """Fetches API data with graceful error handling."""
     async with sem:
         try:
             async with session.get(url, timeout=5) as response:
                 if response.status == 200:
                     return await response.json()
-                return {"error": "Unavailable"}
         except Exception:
-            return {"error": "Unavailable"}
+            pass
+        return "unavailable"
 
 
 async def run_nmap_async(ip: str, sem):
