@@ -1,18 +1,24 @@
 #!/usr/bin/env python3
 """
-PySniffer - A tool to capture and save network traffic to PCAP.
+PySniffer - Network traffic analysis tool.
+Captures packets and saves them to a PCAP file using PcapWriter.
 """
 
 import argparse
 from scapy.all import sniff, IP, TCP, UDP, ICMP
 from scapy.utils import PcapWriter
 
-# Qlobal dəyişən kimi PcapWriter-i təyin edirik
+# Qlobal writer obyekti
 WRITER = None
 
 
 def packet_handler(packet) -> None:
-    """Identify protocol and save packet to file if requested."""
+    """Identify protocol and save every captured packet to PCAP."""
+    # 1. Hər bir paketi (IP, ARP və s.) fayla yazırıq
+    if WRITER:
+        WRITER.write(packet)
+
+    # 2. Ekrana yalnız IP paketlərini çap edirik
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -31,30 +37,28 @@ def packet_handler(packet) -> None:
         else:
             print(f"[IP] {src_ip} -> {dst_ip}")
 
-        # Əgər -w arqumenti verilibsə, paketi fayla yazırıq
-        if WRITER:
-            WRITER.write(packet)
-
 
 def main() -> None:
-    """Handle CLI arguments and start packet capture."""
+    """Main entry point."""
     global WRITER
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--interface", help="Interface to sniff on")
-    parser.add_argument("-f", "--filter", help="BPF filter string")
-    parser.add_argument("-w", "--write", help="Output PCAP file name")
+    parser.add_argument("-i", "--interface", help="Interface")
+    parser.add_argument("-f", "--filter", help="BPF filter")
+    parser.add_argument("-w", "--write", help="Output file")
     args = parser.parse_args()
 
-    # Əgər fayl adı verilibsə, Writer-i bir dəfə açırıq
+    # Fayl yazmaq istənilibsə, Writer-i açırıq
     if args.write:
-        WRITER = PcapWriter(args.write, append=True, sync=True)
+        WRITER = PcapWriter(args.write, append=True)
 
     try:
+        # sniff çağırışı tam olaraq bu ardıcıllıqla
         sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
     except KeyboardInterrupt:
+        pass
+    finally:
         if WRITER:
             WRITER.close()
-        print("\n[INFO] Capture stopped and file saved.")
 
 
 if __name__ == "__main__":
