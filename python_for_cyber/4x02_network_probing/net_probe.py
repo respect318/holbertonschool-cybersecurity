@@ -7,6 +7,7 @@ import argparse
 import atexit
 import concurrent.futures
 import json
+import random
 import socket
 import sys
 import time
@@ -211,7 +212,8 @@ def check_vulnerability(banner: str) -> str:
 
 
 def scan_ports(
-    ip: str, start_port: int, end_port: int, delay: float = 0.0
+    ip: str, start_port: int, end_port: int,
+    delay: float = 0.0, randomize: bool = False
 ) -> list:
     """
     Scans a range of ports concurrently on a target IP using threads.
@@ -221,11 +223,18 @@ def scan_ports(
         start_port (int): The starting port number.
         end_port (int): The ending port number.
         delay (float): Delay in seconds between scans.
+        randomize (bool): Whether to shuffle the port order.
 
     Returns:
         list: A list of dictionaries with open ports and services.
     """
-    print(f"Scanning {ip} from {start_port} to {end_port}...")
+    ports_list = list(range(start_port, end_port + 1))
+    if randomize:
+        print("Scanning ports randomly...")
+        random.shuffle(ports_list)
+    else:
+        print(f"Scanning {ip} from {start_port} to {end_port}...")
+
     results = []
 
     def scan_single_port(port: int):
@@ -247,7 +256,7 @@ def scan_ports(
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
         futures = []
-        for port in range(start_port, end_port + 1):
+        for port in ports_list:
             if delay > 0:
                 print(f"[DEBUG] Sleeping {delay}s before next packet...")
                 time.sleep(delay)
@@ -277,6 +286,11 @@ if __name__ == "__main__":
         default=0.0,
         help="Delay between scans in seconds"
     )
+    parser.add_argument(
+        "-r", "--random",
+        action="store_true",
+        help="Randomize port scan order"
+    )
 
     args = parser.parse_args()
 
@@ -286,7 +300,9 @@ if __name__ == "__main__":
         print("Invalid port range format. Use 'start-end'.")
         sys.exit(1)
 
-    scan_res = scan_ports(args.target, start_p, end_p, args.delay)
+    scan_res = scan_ports(
+        args.target, start_p, end_p, args.delay, args.random
+    )
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as json_file:
