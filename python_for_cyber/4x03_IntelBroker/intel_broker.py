@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Final version: Graceful error handling for API resilience.
+Final Polished Version: Includes status messages and CLI feedback.
 """
 import asyncio
 import sys
@@ -54,9 +54,10 @@ def save_cache(cache):
         json.dump(cache, f, indent=2)
 
 
-async def fetch_api(session, url, sem):
-    """Fetches API data with graceful error handling."""
+async def fetch_api(session, url, sem, name):
+    """Fetches API data with status messages."""
     async with sem:
+        print(f"[+] Querying {name}...")
         try:
             async with session.get(url, timeout=5) as response:
                 if response.status == 200:
@@ -67,8 +68,9 @@ async def fetch_api(session, url, sem):
 
 
 async def run_nmap_async(ip: str, sem):
-    """Executes Nmap asynchronously with rate limiting."""
+    """Executes Nmap asynchronously with status feedback."""
     async with sem:
+        print("[+] Running Nmap scan...")
         cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -76,6 +78,7 @@ async def run_nmap_async(ip: str, sem):
             stderr=asyncio.subprocess.PIPE
         )
         stdout, _ = await proc.communicate()
+        print("[+] Nmap finished.")
         if proc.returncode != 0:
             return ""
         return stdout.decode("utf-8", errors="ignore")
@@ -100,12 +103,13 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Gathers intelligence with cache, semaphore, and error handling."""
+    """Gathers intelligence with cache and status updates."""
     cache = load_cache()
     now = time.time()
     if ip in cache:
         c_data = cache[ip]
         if now - c_data.get("cache_time", 0) < 3600:
+            print("[+] Loading data from cache...")
             dossier = TargetDossier(ip)
             dossier.vt_data = c_data.get("vt", {})
             dossier.abuse_data = c_data.get("abuse", {})
@@ -115,9 +119,12 @@ async def gather_intel(ip: str) -> TargetDossier:
     dossier = TargetDossier(ip)
     sem = asyncio.Semaphore(5)
     async with aiohttp.ClientSession() as session:
-        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}", sem)
-        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}", sem)
-        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}", sem)
+        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}",
+                        sem, "VirusTotal")
+        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}",
+                        sem, "AbuseIPDB")
+        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}",
+                        sem, "Shodan")
         n_t = run_nmap_async(ip, sem)
         res = await asyncio.gather(v_t, a_t, s_t, n_t)
         dossier.vt_data, dossier.abuse_data = res[0], res[1]
@@ -132,7 +139,7 @@ async def gather_intel(ip: str) -> TargetDossier:
 
 
 async def main():
-    """Main function to handle arguments and execution."""
+    """Main function with polished CLI output."""
     parser = argparse.ArgumentParser(description="Intel Broker")
     parser.add_argument("ip", help="Target IP address")
     parser.add_argument("-o", "--output", help="Output JSON file")
@@ -142,6 +149,7 @@ async def main():
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)
+        print(f"[SUCCESS] Report generated: {args.output}")
     else:
         print(json.dumps(report, indent=2))
 
