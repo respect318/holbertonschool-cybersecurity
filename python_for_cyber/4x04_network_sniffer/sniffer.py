@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-This module initializes the sniffer and verifies environment requirements.
+This module captures and displays a summary of network packets.
 """
 
 import sys
 import os
+from scapy.all import sniff, Packet
 
 
 def check_permissions() -> None:
@@ -13,20 +14,36 @@ def check_permissions() -> None:
     Check if the script is running with root privileges.
     Sniffing raw packets requires administrative access.
     """
-    if os.geteuid() != 0:
+    if os.getuid() != 0:
         print("[ERROR] PySniffer requires root privileges (sudo).")
         sys.exit(1)
+
+
+def packet_handler(packet: Packet) -> None:
+    """
+    Callback function to process each captured packet.
+    
+    Args:
+        packet (Packet): The Scapy packet object captured from the wire.
+    """
+    print(packet.summary())
 
 
 def main() -> None:
     """
     Entry point for the PySniffer application.
-    Initializes the tool and confirms readiness.
+    Captures 5 packets and prints their summaries.
     """
     try:
-        # Permission check is crucial for Scapy's sniff() functionality later
         check_permissions()
-        print("[INFO] PySniffer initialized.")
+        print("[INFO] PySniffer initialized. Capturing 5 packets...")
+        
+        # count=5 stops the sniffer after 5 packets are received
+        # prn specifies the callback function to run on each packet
+        sniff(count=5, prn=packet_handler)
+        
+    except PermissionError:
+        print("[ERROR] Permission denied. Please run with sudo.")
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
         sys.exit(1)
