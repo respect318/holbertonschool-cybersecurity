@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-This module captures packets and identifies protocols manually.
+This module captures and displays a summary of network packets.
 """
 
 import sys
 import os
-from scapy.all import sniff, Packet, IP, TCP, UDP, ICMP
+from scapy.all import sniff, Packet
 
 
 def check_permissions() -> None:
@@ -21,36 +21,25 @@ def check_permissions() -> None:
 
 def packet_handler(packet: Packet) -> None:
     """
-    Identify and format the protocol and IP addresses of a packet.
+    Callback function to process each captured packet.
 
     Args:
         packet (Packet): The Scapy packet object captured from the wire.
     """
-    if packet.haslayer(IP):
-        src_ip = packet[IP].src
-        dst_ip = packet[IP].dst
-        proto = "IP"
-
-        if packet.haslayer(TCP):
-            proto = "TCP"
-        elif packet.haslayer(UDP):
-            proto = "UDP"
-        elif packet.haslayer(ICMP):
-            proto = "ICMP"
-
-        print(f"[{proto}] {src_ip} -> {dst_ip}")
+    print(packet.summary())
 
 
 def main() -> None:
     """
     Entry point for the PySniffer application.
-    Captures 5 packets and identifies their protocols.
+    Captures 5 packets and prints their summaries.
     """
     try:
         check_permissions()
         print("[INFO] PySniffer initialized. Capturing 5 packets...")
 
-        # Capture 5 packets using the manual dispatcher
+        # count=5 stops the sniffer after 5 packets are received
+        # prn specifies the callback function to run on each packet
         sniff(count=5, prn=packet_handler)
 
     except PermissionError:
