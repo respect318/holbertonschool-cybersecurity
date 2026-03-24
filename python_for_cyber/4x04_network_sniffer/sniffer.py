@@ -47,10 +47,9 @@ def main() -> None:
     """
     check_permissions()
     try:
-        # count=5 silindi, artıq sonsuza qədər (və ya dayandırılana qədər) dinləyir
+        # Sniff continuously without the count argument
         sniff(prn=packet_handler)
     except KeyboardInterrupt:
-        # İstisnaları (Ctrl+C) tutur və zərif şəkildə bağlanır
         print("[INFO] Stopping capture...")
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
