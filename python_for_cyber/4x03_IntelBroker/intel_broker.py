@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Final version: Generates a structured JSON report for SOC ingestion.
+Includes a JSON caching mechanism to avoid redundant API calls.
 """
 import asyncio
 import sys
 import json
 import argparse
+import os
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
 import aiohttp
@@ -35,6 +37,23 @@ class TargetDossier:
         }
 
 
+def load_cache():
+    """Loads the cache from cache.json if it exists."""
+    if os.path.exists("cache.json"):
+        try:
+            with open("cache.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+
+def save_cache(cache):
+    """Saves the current cache to cache.json."""
+    with open("cache.json", "w", encoding="utf-8") as f:
+        json.dump(cache, f, indent=2)
+
+
 async def fetch_api(session, url):
     """Asynchronous function to fetch data from an API."""
     try:
@@ -44,24 +63,6 @@ async def fetch_api(session, url):
     except Exception:
         pass
     return {}
-
-
-async def query_virustotal(session, ip: str) -> dict:
-    """Queries the mock VirusTotal API."""
-    url = f"http://localhost:5000/virustotal/{ip}"
-    return await fetch_api(session, url)
-
-
-async def query_abuseipdb(session, ip: str) -> dict:
-    """Queries the mock AbuseIPDB API."""
-    url = f"http://localhost:5000/abuseipdb/{ip}"
-    return await fetch_api(session, url)
-
-
-async def query_shodan(session, ip: str) -> dict:
-    """Queries the mock Shodan API."""
-    url = f"http://localhost:5000/shodan/{ip}"
-    return await fetch_api(session, url)
 
 
 async def run_nmap_async(ip: str) -> str:
@@ -97,18 +98,38 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Gathers all intelligence in parallel."""
+    """Gathers intelligence using cache or API calls."""
+    cache = load_cache()
+    now = time.time()
+    # Cache yoxlanışı: IP varmı və 1 saatdan (3600 san) köhnə deyilmi?
+    if ip in cache:
+        c_data = cache[ip]
+        if now - c_data.get("cache_time", 0) < 3600:
+            dossier = TargetDossier(ip)
+            dossier.vt_data = c_data.get("vt", {})
+            dossier.abuse_data = c_data.get("abuse", {})
+            dossier.shodan_data = c_data.get("shodan", {})
+            dossier.nmap_ports = c_data.get("ports", [])
+            return dossier
     dossier = TargetDossier(ip)
     async with aiohttp.ClientSession() as session:
-        v_t = query_virustotal(session, ip)
-        a_t = query_abuseipdb(session, ip)
-        s_t = query_shodan(session, ip)
+        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}")
+        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}")
+        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}")
         n_t = run_nmap_async(ip)
         res = await asyncio.gather(v_t, a_t, s_t, n_t)
-        dossier.vt_data = res[0]
-        dossier.abuse_data = res[1]
-        dossier.shodan_data = res[2]
-        dossier.nmap_ports = parse_nmap_xml(res[3])
+        dossier.vt_data, dossier.abuse_data = res[0], res[1]
+        dossier.shodan_data, n_xml = res[2], res[3]
+        dossier.nmap_ports = parse_nmap_xml(n_xml)
+    # Yeni məlumatı keşə yazırıq
+    cache[ip] = {
+        "cache_time": now,
+        "vt": dossier.vt_data,
+        "abuse": dossier.abuse_data,
+        "shodan": dossier.shodan_data,
+        "ports": dossier.nmap_ports
+    }
+    save_cache(cache)
     return dossier
 
 
