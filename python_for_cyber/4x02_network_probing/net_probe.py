@@ -87,6 +87,35 @@ def check_port(ip: str, port: int) -> bool:
         return False
 
 
+def scan_udp(ip: str, port: int) -> bool:
+    """
+    Scans a UDP port to check if it's Open/Filtered.
+
+    Args:
+        ip (str): Target IP address.
+        port (int): Target UDP port number.
+
+    Returns:
+        bool: True if Open or Filtered, False if Closed.
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.settimeout(2.0)
+            # Send empty bytes to trigger a response or ICMP error
+            sock.sendto(b"", (ip, port))
+            try:
+                sock.recvfrom(1024)
+                return True
+            except socket.timeout:
+                # No response usually means Open or Filtered in UDP
+                return True
+            except (ConnectionRefusedError, OSError):
+                # ICMP Destination/Port Unreachable received
+                return False
+    except Exception:
+        return False
+
+
 def ping_sweep(subnet: str) -> list:
     """
     Scans a /24 subnet concurrently to identify active hosts.
