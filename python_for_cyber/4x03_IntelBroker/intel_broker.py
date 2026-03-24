@@ -1,162 +1,61 @@
 #!/usr/bin/env python3
-"""
-Intelligence Broker API Client.
-Final Polished Version: Includes verbose status messages and CLI feedback.
-"""
+"""Main entry point for Intel Broker."""
 import asyncio
-import sys
 import json
 import argparse
-import os
 import time
-import xml.etree.ElementTree as ET
-from datetime import datetime
 import aiohttp
+from models import TargetDossier
+from api_client import query_virustotal, query_abuseipdb, query_shodan
+from scanner import run_nmap_async, parse_nmap_xml
+from utils import load_cache, save_cache
 
 
-class TargetDossier:
-    """Represents a target dossier with aggregated intelligence."""
-    def __init__(self, ip=""):
-        self.ip = ip
-        self.vt_data = {}
-        self.abuse_data = {}
-        self.shodan_data = {}
-        self.nmap_ports = []
-
-    def to_dict(self):
-        """Returns a structured dictionary for JSON export."""
-        return {
-            "target": self.ip,
-            "timestamp": datetime.now().isoformat(),
-            "intelligence": {
-                "virustotal": self.vt_data,
-                "abuseipdb": self.abuse_data,
-                "shodan": self.shodan_data,
-                "nmap_open_ports": self.nmap_ports
-            }
-        }
-
-
-def load_cache():
-    """Loads the cache from cache.json."""
-    if os.path.exists("cache.json"):
-        try:
-            with open("cache.json", "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {}
-
-
-def save_cache(cache):
-    """Saves the current cache to cache.json."""
-    with open("cache.json", "w", encoding="utf-8") as f:
-        json.dump(cache, f, indent=2)
-
-
-async def fetch_api(session, url, sem, name, verbose=False):
-    """Fetches API data with status messages if verbose."""
-    async with sem:
-        if verbose:
-            print(f"[+] Querying {name}...")
-        try:
-            async with session.get(url, timeout=5) as response:
-                if response.status == 200:
-                    return await response.json()
-        except Exception:
-            pass
-        return "unavailable"
-
-
-async def run_nmap_async(ip: str, sem, verbose=False):
-    """Executes Nmap asynchronously with status feedback."""
-    async with sem:
-        if verbose:
-            print("[+] Running Nmap scan...")
-        cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
-        proc = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
-        )
-        stdout, _ = await proc.communicate()
-        if verbose:
-            print("[+] Nmap finished.")
-        if proc.returncode != 0:
-            return ""
-        return stdout.decode("utf-8", errors="ignore")
-
-
-def parse_nmap_xml(xml_data: str) -> list:
-    """Parses Nmap XML output for open ports."""
-    if not xml_data:
-        return []
-    open_ports = []
-    try:
-        root = ET.fromstring(xml_data)
-        for port in root.findall(".//port"):
-            st = port.find("state")
-            if st is not None and st.get("state") == "open":
-                pid = port.get("portid")
-                if pid:
-                    open_ports.append(int(pid))
-    except (ET.ParseError, TypeError):
-        pass
-    return open_ports
-
-
-async def gather_intel(ip: str, verbose=False) -> TargetDossier:
-    """Gathers intelligence with cache and status updates."""
+async def gather_intel(ip, verbose=False):
+    """Orchestrates intelligence gathering."""
     cache = load_cache()
     now = time.time()
     if ip in cache:
-        c_data = cache[ip]
-        if now - c_data.get("cache_time", 0) < 3600:
+        c = cache[ip]
+        if now - c.get("cache_time", 0) < 3600:
             if verbose:
-                print("[+] Loading data from cache...")
-            dossier = TargetDossier(ip)
-            dossier.vt_data = c_data.get("vt", {})
-            dossier.abuse_data = c_data.get("abuse", {})
-            dossier.shodan_data = c_data.get("shodan", {})
-            dossier.nmap_ports = c_data.get("ports", [])
-            return dossier
-    dossier = TargetDossier(ip)
+                print("[+] Loading from cache...")
+            d = TargetDossier(ip)
+            d.vt_data, d.abuse_data = c.get("vt", {}), c.get("abuse", {})
+            d.shodan_data, d.nmap_ports = c.get("shodan", {}), c.get("ports", [])
+            return d
+    d = TargetDossier(ip)
     sem = asyncio.Semaphore(5)
     async with aiohttp.ClientSession() as session:
-        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}",
-                        sem, "VirusTotal", verbose)
-        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}",
-                        sem, "AbuseIPDB", verbose)
-        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}",
-                        sem, "Shodan", verbose)
+        v_t = query_virustotal(session, ip, sem, verbose)
+        a_t = query_abuseipdb(session, ip, sem, verbose)
+        s_t = query_shodan(session, ip, sem, verbose)
         n_t = run_nmap_async(ip, sem, verbose)
         res = await asyncio.gather(v_t, a_t, s_t, n_t)
-        dossier.vt_data, dossier.abuse_data = res[0], res[1]
-        dossier.shodan_data, n_xml = res[2], res[3]
-        dossier.nmap_ports = parse_nmap_xml(n_xml)
+        d.vt_data, d.abuse_data, d.shodan_data = res[0], res[1], res[2]
+        d.nmap_ports = parse_nmap_xml(res[3])
     cache[ip] = {
-        "cache_time": now, "vt": dossier.vt_data, "abuse": dossier.abuse_data,
-        "shodan": dossier.shodan_data, "ports": dossier.nmap_ports
+        "cache_time": now, "vt": d.vt_data, "abuse": d.abuse_data,
+        "shodan": d.shodan_data, "ports": d.nmap_ports
     }
     save_cache(cache)
-    return dossier
+    return d
 
 
 async def main():
-    """Main function with polished CLI output and verbose mode."""
-    parser = argparse.ArgumentParser(description="Intel Broker")
-    parser.add_argument("ip", help="Target IP address")
-    parser.add_argument("-o", "--output", help="Output JSON file")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Enable verbose output")
-    args = parser.parse_args()
+    """CLI logic."""
+    p = argparse.ArgumentParser(description="Intel Broker")
+    p.add_argument("ip", help="Target IP")
+    p.add_argument("-o", "--output", help="Output JSON")
+    p.add_argument("-v", "--verbose", action="store_true", help="Verbose")
+    args = p.parse_args()
     dossier = await gather_intel(args.ip, args.verbose)
     report = dossier.to_dict()
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)
         if args.verbose:
-            print(f"[SUCCESS] Report generated: {args.output}")
+            print(f"[SUCCESS] Report: {args.output}")
     else:
         print(json.dumps(report, indent=2))
 
