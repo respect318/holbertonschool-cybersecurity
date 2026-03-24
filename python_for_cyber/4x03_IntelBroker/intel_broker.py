@@ -83,20 +83,12 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: ./intel_broker.py <IP_ADDRESS>")
         sys.exit(1)
-
     target_ip = sys.argv[1]
-    
-    # 1. Dosyeni yaradırıq
     dossier = TargetDossier(target_ip)
-
-    # 2. Sorğuları ardıcıl işlədirik və nəticələri obyektə yazırıq
     dossier.vt_data = query_virustotal(target_ip)
     dossier.abuse_data = query_abuseipdb(target_ip)
-    
     nmap_xml = run_nmap(target_ip)
     dossier.nmap_ports = parse_nmap_xml(nmap_xml)
-
-    # 3. Yekun xülasəni çap edirik
     print(f"--- Dossier for {dossier.ip} ---")
     print(f"VirusTotal Data: {dossier.vt_data}")
     print(f"AbuseIPDB Data: {dossier.abuse_data}")
