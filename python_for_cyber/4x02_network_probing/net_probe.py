@@ -257,11 +257,11 @@ def get_service_info(ip: str, port: int, interface: str = None) -> str:
                     sock.bind((interface, 0))
                 sock.settimeout(2.0)
                 sock.connect((ip, port))
-                
+
                 # Send a proper GET request
                 req = f"GET / HTTP/1.1\r\nHost: {ip}\r\n\r\n"
                 sock.sendall(req.encode('utf-8'))
-                
+
                 # Receive and parse the response headers
                 resp = sock.recv(4096).decode('utf-8', 'ignore')
                 for line in resp.split('\r\n'):
