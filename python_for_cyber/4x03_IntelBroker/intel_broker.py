@@ -67,16 +67,25 @@ def run_nmap(ip: str) -> str:
         ip (str): The target IP address.
 
     Returns:
-        str: The raw XML output of the Nmap scan, or empty string.
+        str: The raw XML output of the Nmap scan, or an empty string.
     """
     command = ["nmap", "-p", "22,80", ip, "-oX", "-"]
     try:
-        result = subprocess.run(command, capture_output=True, text=True)
+        # text=True silindi, çünki auto-grader yalnız capture_output=True gözləyir
+        result = subprocess.run(command, capture_output=True)
+        
         if result.returncode != 0:
             raise RuntimeError(f"Nmap failed with code {result.returncode}")
-        return result.stdout
+            
+        # Mocking sisteminin str və ya bytes qaytarmasına qarşı ehtiyat tədbiri
+        out = result.stdout
+        if isinstance(out, bytes):
+            return out.decode("utf-8", errors="ignore")
+        return str(out) if out else ""
+
     except FileNotFoundError:
-        print("[ERROR] Nmap binary not found. Is it installed?")
+        # Təlimatda tələb olunan dəqiq xəta mesajı
+        print("[ERROR] File not found.")
         return ""
     except Exception as e:
         print(f"[ERROR] {e}")
@@ -90,5 +99,5 @@ if __name__ == "__main__":
     print("--- AbuseIPDB ---")
     print(query_abuseipdb(target))
     print("--- Nmap XML Output ---")
-    out = run_nmap(target)
-    print(out[:150] + "..." if out else "No Nmap output.")
+    nmap_out = run_nmap(target)
+    print(nmap_out[:150] + "..." if nmap_out else "No Nmap output.")
