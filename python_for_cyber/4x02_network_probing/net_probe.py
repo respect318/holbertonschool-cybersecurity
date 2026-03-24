@@ -54,6 +54,7 @@ def _flush_output():
             and not line.startswith("Results saved")
             and not line.startswith("[DEBUG] ")
             and not line.startswith("Target: ")
+            and not line.startswith("[INFO] ")
         ]
         out = '\n'.join(filtered)
 
@@ -85,19 +86,22 @@ def resolve_hostname(ip: str) -> str:
         return ""
 
 
-def check_port(ip: str, port: int) -> bool:
+def check_port(ip: str, port: int, interface: str = None) -> bool:
     """
     Checks if a specific TCP port is open on a target IP.
 
     Args:
         ip (str): Target IP address.
         port (int): Target TCP port number.
+        interface (str, optional): Local IP to bind to.
 
     Returns:
         bool: True if connection succeeds, False otherwise.
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if interface:
+                sock.bind((interface, 0))
             sock.settimeout(1.0)
             sock.connect((ip, port))
             return True
@@ -105,19 +109,22 @@ def check_port(ip: str, port: int) -> bool:
         return False
 
 
-def scan_udp(ip: str, port: int) -> bool:
+def scan_udp(ip: str, port: int, interface: str = None) -> bool:
     """
     Scans a UDP port to check if it's Open/Filtered.
 
     Args:
         ip (str): Target IP address.
         port (int): Target UDP port number.
+        interface (str, optional): Local IP to bind to.
 
     Returns:
         bool: True if Open or Filtered, False if Closed.
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            if interface:
+                sock.bind((interface, 0))
             sock.settimeout(2.0)
             # Send empty bytes to trigger a response or ICMP error
             sock.sendto(b"", (ip, port))
@@ -163,19 +170,22 @@ def ping_sweep(subnet: str) -> list:
     return active_hosts
 
 
-def get_banner(ip: str, port: int) -> str:
+def get_banner(ip: str, port: int, interface: str = None) -> str:
     """
     Connects to a port and retrieves its service banner.
 
     Args:
         ip (str): Target IP address.
         port (int): Target port number.
+        interface (str, optional): Local IP to bind to.
 
     Returns:
         str: The decoded banner string or "Unknown" if it fails.
     """
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            if interface:
+                sock.bind((interface, 0))
             sock.settimeout(2.0)
             sock.connect((ip, port))
 
@@ -224,18 +234,19 @@ def guess_service(port: int) -> str:
     return "Unknown"
 
 
-def get_service_info(ip: str, port: int) -> str:
+def get_service_info(ip: str, port: int, interface: str = None) -> str:
     """
     Gets service info via banner grabbing or guessing.
 
     Args:
         ip (str): Target IP address.
         port (int): Target port number.
+        interface (str, optional): Local IP to bind to.
 
     Returns:
         str: The identified or guessed service.
     """
-    banner = get_banner(ip, port)
+    banner = get_banner(ip, port, interface)
     if banner == "Unknown" or not banner:
         return guess_service(port)
     return banner
@@ -260,7 +271,7 @@ def check_vulnerability(banner: str) -> str:
 
 def scan_ports(
     ip: str, start_port: int, end_port: int,
-    delay: float = 0.0, randomize: bool = False
+    delay: float = 0.0, randomize: bool = False, interface: str = None
 ) -> list:
     """
     Scans a range of ports concurrently on a target IP using threads.
@@ -271,10 +282,14 @@ def scan_ports(
         end_port (int): The ending port number.
         delay (float): Delay in seconds between scans.
         randomize (bool): Whether to shuffle the port order.
+        interface (str, optional): Local interface IP to bind to.
 
     Returns:
         list: A list of dictionaries with open ports and services.
     """
+    if interface:
+        print(f"[INFO] Scanning from source IP: {interface}")
+
     hostname = resolve_hostname(ip)
     if hostname:
         print(f"Target: {ip} ({hostname})")
@@ -292,8 +307,8 @@ def scan_ports(
 
     def scan_single_port(port: int):
         """Helper function to scan a single port and grab its banner."""
-        if check_port(ip, port):
-            banner = get_service_info(ip, port)
+        if check_port(ip, port, interface):
+            banner = get_service_info(ip, port, interface)
             vuln = check_vulnerability(banner)
 
             display_banner = f"{banner} {vuln}".strip()
@@ -344,6 +359,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Randomize port scan order"
     )
+    parser.add_argument(
+        "-i", "--interface",
+        help="Local interface IP to bind to",
+        default=None
+    )
 
     args = parser.parse_args()
 
@@ -354,7 +374,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     scan_res = scan_ports(
-        args.target, start_p, end_p, args.delay, args.random
+        args.target, start_p, end_p,
+        args.delay, args.random, args.interface
     )
 
     if args.output:
