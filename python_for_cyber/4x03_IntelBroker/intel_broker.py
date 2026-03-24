@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Final Polished Version: Includes status messages and CLI feedback.
+Final Polished Version: Includes verbose status messages and CLI feedback.
 """
 import asyncio
 import sys
@@ -54,10 +54,11 @@ def save_cache(cache):
         json.dump(cache, f, indent=2)
 
 
-async def fetch_api(session, url, sem, name):
-    """Fetches API data with status messages."""
+async def fetch_api(session, url, sem, name, verbose=False):
+    """Fetches API data with status messages if verbose."""
     async with sem:
-        print(f"[+] Querying {name}...")
+        if verbose:
+            print(f"[+] Querying {name}...")
         try:
             async with session.get(url, timeout=5) as response:
                 if response.status == 200:
@@ -67,10 +68,11 @@ async def fetch_api(session, url, sem, name):
         return "unavailable"
 
 
-async def run_nmap_async(ip: str, sem):
+async def run_nmap_async(ip: str, sem, verbose=False):
     """Executes Nmap asynchronously with status feedback."""
     async with sem:
-        print("[+] Running Nmap scan...")
+        if verbose:
+            print("[+] Running Nmap scan...")
         cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
         proc = await asyncio.create_subprocess_exec(
             *cmd,
@@ -78,7 +80,8 @@ async def run_nmap_async(ip: str, sem):
             stderr=asyncio.subprocess.PIPE
         )
         stdout, _ = await proc.communicate()
-        print("[+] Nmap finished.")
+        if verbose:
+            print("[+] Nmap finished.")
         if proc.returncode != 0:
             return ""
         return stdout.decode("utf-8", errors="ignore")
@@ -102,14 +105,15 @@ def parse_nmap_xml(xml_data: str) -> list:
     return open_ports
 
 
-async def gather_intel(ip: str) -> TargetDossier:
+async def gather_intel(ip: str, verbose=False) -> TargetDossier:
     """Gathers intelligence with cache and status updates."""
     cache = load_cache()
     now = time.time()
     if ip in cache:
         c_data = cache[ip]
         if now - c_data.get("cache_time", 0) < 3600:
-            print("[+] Loading data from cache...")
+            if verbose:
+                print("[+] Loading data from cache...")
             dossier = TargetDossier(ip)
             dossier.vt_data = c_data.get("vt", {})
             dossier.abuse_data = c_data.get("abuse", {})
@@ -120,12 +124,12 @@ async def gather_intel(ip: str) -> TargetDossier:
     sem = asyncio.Semaphore(5)
     async with aiohttp.ClientSession() as session:
         v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}",
-                        sem, "VirusTotal")
+                        sem, "VirusTotal", verbose)
         a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}",
-                        sem, "AbuseIPDB")
+                        sem, "AbuseIPDB", verbose)
         s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}",
-                        sem, "Shodan")
-        n_t = run_nmap_async(ip, sem)
+                        sem, "Shodan", verbose)
+        n_t = run_nmap_async(ip, sem, verbose)
         res = await asyncio.gather(v_t, a_t, s_t, n_t)
         dossier.vt_data, dossier.abuse_data = res[0], res[1]
         dossier.shodan_data, n_xml = res[2], res[3]
@@ -139,17 +143,20 @@ async def gather_intel(ip: str) -> TargetDossier:
 
 
 async def main():
-    """Main function with polished CLI output."""
+    """Main function with polished CLI output and verbose mode."""
     parser = argparse.ArgumentParser(description="Intel Broker")
     parser.add_argument("ip", help="Target IP address")
     parser.add_argument("-o", "--output", help="Output JSON file")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose output")
     args = parser.parse_args()
-    dossier = await gather_intel(args.ip)
+    dossier = await gather_intel(args.ip, args.verbose)
     report = dossier.to_dict()
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2)
-        print(f"[SUCCESS] Report generated: {args.output}")
+        if args.verbose:
+            print(f"[SUCCESS] Report generated: {args.output}")
     else:
         print(json.dumps(report, indent=2))
 
