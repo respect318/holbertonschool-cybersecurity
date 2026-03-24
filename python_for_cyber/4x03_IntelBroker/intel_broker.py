@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Includes a JSON caching mechanism to avoid redundant API calls.
+Includes a Semaphore-based rate limiter to respect API concurrency limits.
 """
 import asyncio
 import sys
@@ -38,7 +38,7 @@ class TargetDossier:
 
 
 def load_cache():
-    """Loads the cache from cache.json if it exists."""
+    """Loads the cache from cache.json."""
     if os.path.exists("cache.json"):
         try:
             with open("cache.json", "r", encoding="utf-8") as f:
@@ -54,29 +54,31 @@ def save_cache(cache):
         json.dump(cache, f, indent=2)
 
 
-async def fetch_api(session, url):
-    """Asynchronous function to fetch data from an API."""
-    try:
-        async with session.get(url, timeout=5) as response:
-            if response.status == 200:
-                return await response.json()
-    except Exception:
-        pass
-    return {}
+async def fetch_api(session, url, sem):
+    """Asynchronous function to fetch data with rate limiting."""
+    async with sem:
+        try:
+            async with session.get(url, timeout=5) as response:
+                if response.status == 200:
+                    return await response.json()
+        except Exception:
+            pass
+        return {}
 
 
-async def run_nmap_async(ip: str) -> str:
-    """Executes Nmap asynchronously."""
-    cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    stdout, _ = await proc.communicate()
-    if proc.returncode != 0:
-        return ""
-    return stdout.decode("utf-8", errors="ignore")
+async def run_nmap_async(ip: str, sem):
+    """Executes Nmap asynchronously with rate limiting."""
+    async with sem:
+        cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await proc.communicate()
+        if proc.returncode != 0:
+            return ""
+        return stdout.decode("utf-8", errors="ignore")
 
 
 def parse_nmap_xml(xml_data: str) -> list:
@@ -98,10 +100,9 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Gathers intelligence using cache or API calls."""
+    """Gathers intelligence with cache and semaphore limiting."""
     cache = load_cache()
     now = time.time()
-    # Cache yoxlanışı: IP varmı və 1 saatdan (3600 san) köhnə deyilmi?
     if ip in cache:
         c_data = cache[ip]
         if now - c_data.get("cache_time", 0) < 3600:
@@ -112,22 +113,19 @@ async def gather_intel(ip: str) -> TargetDossier:
             dossier.nmap_ports = c_data.get("ports", [])
             return dossier
     dossier = TargetDossier(ip)
+    sem = asyncio.Semaphore(5)
     async with aiohttp.ClientSession() as session:
-        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}")
-        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}")
-        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}")
-        n_t = run_nmap_async(ip)
+        v_t = fetch_api(session, f"http://localhost:5000/virustotal/{ip}", sem)
+        a_t = fetch_api(session, f"http://localhost:5000/abuseipdb/{ip}", sem)
+        s_t = fetch_api(session, f"http://localhost:5000/shodan/{ip}", sem)
+        n_t = run_nmap_async(ip, sem)
         res = await asyncio.gather(v_t, a_t, s_t, n_t)
         dossier.vt_data, dossier.abuse_data = res[0], res[1]
         dossier.shodan_data, n_xml = res[2], res[3]
         dossier.nmap_ports = parse_nmap_xml(n_xml)
-    # Yeni məlumatı keşə yazırıq
     cache[ip] = {
-        "cache_time": now,
-        "vt": dossier.vt_data,
-        "abuse": dossier.abuse_data,
-        "shodan": dossier.shodan_data,
-        "ports": dossier.nmap_ports
+        "cache_time": now, "vt": dossier.vt_data, "abuse": dossier.abuse_data,
+        "shodan": dossier.shodan_data, "ports": dossier.nmap_ports
     }
     save_cache(cache)
     return dossier
