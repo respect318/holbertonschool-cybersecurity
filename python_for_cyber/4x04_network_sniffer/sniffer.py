@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-PySniffer - Network traffic analysis tool.
-Captures packets with BPF filters and interface selection.
+PySniffer - A tool to capture and save network traffic to PCAP.
 """
 
 import argparse
 from scapy.all import sniff, IP, TCP, UDP, ICMP
+from scapy.utils import PcapWriter
+
+# Qlobal dəyişən kimi PcapWriter-i təyin edirik
+WRITER = None
 
 
 def packet_handler(packet) -> None:
-    """Identify and format the protocol, IP addresses and ports."""
+    """Identify protocol and save packet to file if requested."""
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -28,19 +31,30 @@ def packet_handler(packet) -> None:
         else:
             print(f"[IP] {src_ip} -> {dst_ip}")
 
+        # Əgər -w arqumenti verilibsə, paketi fayla yazırıq
+        if WRITER:
+            WRITER.write(packet)
+
 
 def main() -> None:
-    """Entry point for the network sniffer."""
+    """Handle CLI arguments and start packet capture."""
+    global WRITER
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--interface")
-    parser.add_argument("-f", "--filter")
+    parser.add_argument("-i", "--interface", help="Interface to sniff on")
+    parser.add_argument("-f", "--filter", help="BPF filter string")
+    parser.add_argument("-w", "--write", help="Output PCAP file name")
     args = parser.parse_args()
 
+    # Əgər fayl adı verilibsə, Writer-i bir dəfə açırıq
+    if args.write:
+        WRITER = PcapWriter(args.write, append=True, sync=True)
+
     try:
-        # iface və filter parametrləri tam olaraq bu ardıcıllıqla olmalıdır
         sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
     except KeyboardInterrupt:
-        pass
+        if WRITER:
+            WRITER.close()
+        print("\n[INFO] Capture stopped and file saved.")
 
 
 if __name__ == "__main__":
