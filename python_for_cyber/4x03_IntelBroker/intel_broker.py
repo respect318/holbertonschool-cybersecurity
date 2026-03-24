@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Final version: Fully asynchronous including Nmap subprocess.
+Final version: Generates a structured JSON report for SOC ingestion.
 """
 import asyncio
 import sys
+import json
+import argparse
 import xml.etree.ElementTree as ET
+from datetime import datetime
 import aiohttp
 
 
@@ -17,6 +20,19 @@ class TargetDossier:
         self.abuse_data = {}
         self.shodan_data = {}
         self.nmap_ports = []
+
+    def to_dict(self):
+        """Returns a structured dictionary for JSON export."""
+        return {
+            "target": self.ip,
+            "timestamp": datetime.now().isoformat(),
+            "intelligence": {
+                "virustotal": self.vt_data,
+                "abuseipdb": self.abuse_data,
+                "shodan": self.shodan_data,
+                "nmap_open_ports": self.nmap_ports
+            }
+        }
 
 
 async def fetch_api(session, url):
@@ -49,7 +65,7 @@ async def query_shodan(session, ip: str) -> dict:
 
 
 async def run_nmap_async(ip: str) -> str:
-    """Executes Nmap asynchronously using create_subprocess_exec."""
+    """Executes Nmap asynchronously."""
     cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
     proc = await asyncio.create_subprocess_exec(
         *cmd,
@@ -63,7 +79,7 @@ async def run_nmap_async(ip: str) -> str:
 
 
 def parse_nmap_xml(xml_data: str) -> list:
-    """Parses Nmap XML output and returns a list of open ports."""
+    """Parses Nmap XML output for open ports."""
     if not xml_data:
         return []
     open_ports = []
@@ -75,13 +91,13 @@ def parse_nmap_xml(xml_data: str) -> list:
                 pid = port.get("portid")
                 if pid:
                     open_ports.append(int(pid))
-    except ET.ParseError:
+    except (ET.ParseError, TypeError):
         pass
     return open_ports
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Launches all API tasks and Nmap together."""
+    """Gathers all intelligence in parallel."""
     dossier = TargetDossier(ip)
     async with aiohttp.ClientSession() as session:
         v_t = query_virustotal(session, ip)
@@ -97,16 +113,18 @@ async def gather_intel(ip: str) -> TargetDossier:
 
 
 async def main():
-    """Main entry point: Runs the full scan."""
-    if len(sys.argv) != 2:
-        return
-    target_ip = sys.argv[1]
-    dossier = await gather_intel(target_ip)
-    print(f"--- Dossier for {dossier.ip} ---")
-    print(f"VirusTotal Data: {dossier.vt_data}")
-    print(f"AbuseIPDB Data: {dossier.abuse_data}")
-    print(f"Shodan Data: {dossier.shodan_data}")
-    print(f"Open Ports: {dossier.nmap_ports}")
+    """Main function to handle arguments and execution."""
+    parser = argparse.ArgumentParser(description="Intel Broker")
+    parser.add_argument("ip", help="Target IP address")
+    parser.add_argument("-o", "--output", help="Output JSON file")
+    args = parser.parse_args()
+    dossier = await gather_intel(args.ip)
+    report = dossier.to_dict()
+    if args.output:
+        with open(args.output, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2)
+    else:
+        print(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":
