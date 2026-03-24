@@ -28,12 +28,11 @@ def packet_handler(packet) -> None:
             sport = packet[TCP].sport
             dport = packet[TCP].dport
             flags = packet[TCP].flags
-            
-            # PEP8 limitini (79 simvol) keçməmək üçün sətir bölündü
+
             msg = (f"[TCP] {src_ip}:{sport} -> "
                    f"{dst_ip}:{dport} | Flags: {flags}")
             print(msg)
-            
+
         elif packet.haslayer(UDP):
             print(f"[UDP] {src_ip} -> {dst_ip}")
         elif packet.haslayer(ICMP):
