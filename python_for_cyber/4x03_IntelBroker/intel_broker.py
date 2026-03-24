@@ -1,12 +1,24 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-This module handles querying APIs and parsing Nmap XML.
+Handles querying APIs, parsing Nmap XML, and aggregating data.
 """
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 
 import requests
+
+
+class TargetDossier:
+    """Represents a target dossier with aggregated intelligence."""
+
+    def __init__(self, ip: str):
+        """Initialize the dossier with an IP address."""
+        self.ip = ip
+        self.vt_data = {}
+        self.abuse_data = {}
+        self.nmap_ports = []
 
 
 def query_virustotal(ip: str) -> dict:
@@ -68,7 +80,24 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 if __name__ == "__main__":
-    target_ip = "127.0.0.1"
-    xml_output = run_nmap(target_ip)
-    ports = parse_nmap_xml(xml_output)
-    print(f"Open ports: {ports}")
+    if len(sys.argv) != 2:
+        print("Usage: ./intel_broker.py <IP_ADDRESS>")
+        sys.exit(1)
+
+    target_ip = sys.argv[1]
+    
+    # 1. Dosyeni yaradırıq
+    dossier = TargetDossier(target_ip)
+
+    # 2. Sorğuları ardıcıl işlədirik və nəticələri obyektə yazırıq
+    dossier.vt_data = query_virustotal(target_ip)
+    dossier.abuse_data = query_abuseipdb(target_ip)
+    
+    nmap_xml = run_nmap(target_ip)
+    dossier.nmap_ports = parse_nmap_xml(nmap_xml)
+
+    # 3. Yekun xülasəni çap edirik
+    print(f"--- Dossier for {dossier.ip} ---")
+    print(f"VirusTotal Data: {dossier.vt_data}")
+    print(f"AbuseIPDB Data: {dossier.abuse_data}")
+    print(f"Open Ports: {dossier.nmap_ports}")
