@@ -53,6 +53,7 @@ def _flush_output():
             and not line.startswith("[+] ")
             and not line.startswith("Results saved")
             and not line.startswith("[DEBUG] ")
+            and not line.startswith("Target: ")
         ]
         out = '\n'.join(filtered)
 
@@ -65,6 +66,23 @@ def _flush_output():
 
     _catcher.stream.write(out)
     _catcher.stream.flush()
+
+
+def resolve_hostname(ip: str) -> str:
+    """
+    Resolves the hostname for a given IP address.
+
+    Args:
+        ip (str): Target IP address.
+
+    Returns:
+        str: The hostname if resolved, otherwise an empty string.
+    """
+    try:
+        host, _, _ = socket.gethostbyaddr(ip)
+        return host
+    except Exception:
+        return ""
 
 
 def check_port(ip: str, port: int) -> bool:
@@ -257,6 +275,12 @@ def scan_ports(
     Returns:
         list: A list of dictionaries with open ports and services.
     """
+    hostname = resolve_hostname(ip)
+    if hostname:
+        print(f"Target: {ip} ({hostname})")
+    else:
+        print(f"Target: {ip}")
+
     ports_list = list(range(start_port, end_port + 1))
     if randomize:
         print("Scanning ports randomly...")
