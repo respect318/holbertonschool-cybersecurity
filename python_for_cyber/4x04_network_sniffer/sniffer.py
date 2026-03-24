@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-Captures packets and identifies protocols manually.
+Captures packets and extracts Layer 4 details for TCP.
 """
 
 import os
@@ -11,7 +11,6 @@ from scapy.all import sniff, IP, TCP, UDP, ICMP
 def check_permissions() -> None:
     """
     Check if the script is running with root privileges.
-    Prints an error message if not running as root.
     """
     if os.geteuid() != 0:
         print("[ERROR] PySniffer requires root privileges (sudo).")
@@ -19,21 +18,24 @@ def check_permissions() -> None:
 
 def packet_handler(packet) -> None:
     """
-    Identify and format the protocol and IP addresses of a packet.
+    Identify and format the protocol, IP addresses, ports, and TCP flags.
     """
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
-        proto = "IP"
 
         if packet.haslayer(TCP):
-            proto = "TCP"
+            sport = packet[TCP].sport
+            dport = packet[TCP].dport
+            flags = packet[TCP].flags
+            # Task 3 tələbi: [TCP] SRC:PORT -> DST:PORT | Flags: X
+            print(f"[TCP] {src_ip}:{sport} -> {dst_ip}:{dport} | Flags: {flags}")
         elif packet.haslayer(UDP):
-            proto = "UDP"
+            print(f"[UDP] {src_ip} -> {dst_ip}")
         elif packet.haslayer(ICMP):
-            proto = "ICMP"
-
-        print(f"[{proto}] {src_ip} -> {dst_ip}")
+            print(f"[ICMP] {src_ip} -> {dst_ip}")
+        else:
+            print(f"[IP] {src_ip} -> {dst_ip}")
 
 
 def main() -> None:
@@ -42,7 +44,6 @@ def main() -> None:
     """
     check_permissions()
     try:
-        # sniffer will wait for 5 packets and pass them to our new handler
         sniff(count=5, prn=packet_handler)
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
