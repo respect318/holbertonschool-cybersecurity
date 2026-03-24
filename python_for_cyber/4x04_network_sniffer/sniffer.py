@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-Captures packets continuously and extracts Layer 4 details for TCP.
+Captures packets and filters traffic using BPF and argparse.
 """
 
+import argparse
 import os
 from scapy.all import sniff, IP, TCP, UDP, ICMP
 
@@ -46,9 +47,20 @@ def main() -> None:
     Entry point for the PySniffer application.
     """
     check_permissions()
+
+    # CLI arqumentlərini qəbul etmək üçün argparse qurulumu
+    parser = argparse.ArgumentParser(description="Network Sniffer")
+    parser.add_argument("-i", "--interface", help="Interface to sniff on")
+    parser.add_argument("-f", "--filter", help="BPF filter string")
+    args = parser.parse_args()
+
     try:
-        # Sniff continuously without the count argument
-        sniff(prn=packet_handler)
+        # sniff funksiyasına CLI-dan gələn iface və filter ötürülür
+        sniff(
+            prn=packet_handler,
+            iface=args.interface,
+            filter=args.filter
+        )
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
     except Exception as e:
