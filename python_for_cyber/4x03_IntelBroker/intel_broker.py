@@ -13,8 +13,7 @@ import requests
 class TargetDossier:
     """Represents a target dossier with aggregated intelligence."""
 
-    def __init__(self, ip: str):
-        """Initialize the dossier with an IP address."""
+    def __init__(self, ip=""):
         self.ip = ip
         self.vt_data = {}
         self.abuse_data = {}
@@ -49,10 +48,8 @@ def run_nmap(ip: str) -> str:
     """Executes a local Nmap scan and returns raw XML."""
     cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
     result = subprocess.run(cmd, capture_output=True)
-
     if result.returncode != 0:
         raise RuntimeError("Nmap scan failed")
-
     out = result.stdout
     if isinstance(out, bytes):
         return out.decode("utf-8", errors="ignore")
@@ -63,7 +60,6 @@ def parse_nmap_xml(xml_data: str) -> list:
     """Parses Nmap XML output and returns a list of open ports."""
     if not xml_data:
         return []
-
     open_ports = []
     try:
         root = ET.fromstring(xml_data)
@@ -75,7 +71,6 @@ def parse_nmap_xml(xml_data: str) -> list:
                     open_ports.append(int(portid))
     except ET.ParseError:
         pass
-
     return open_ports
 
 
