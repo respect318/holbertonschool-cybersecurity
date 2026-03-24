@@ -42,14 +42,18 @@ def main() -> None:
     """Entry point for the PySniffer application."""
     check_permissions()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--interface", help="Interface to sniff on")
-    parser.add_argument("-f", "--filter", help="BPF filter string")
+    # Argparse obyektini mümkün qədər standart saxlayırıq
+    parser = argparse.ArgumentParser(prog="sniffer.py")
+    parser.add_argument("-i", "--interface", type=str, help="Interface")
+    parser.add_argument("-f", "--filter", type=str, help="BPF filter")
     args = parser.parse_args()
 
     try:
-        # iface və filter arqumentlərini birbaşa sniff-ə ötürürük
-        sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
+        # Təlimatda istənilən ardıcıllıq: iface, filter, sonra prn
+        # PEP8 üçün sətiri sındırırıq
+        sniff(iface=args.interface,
+              filter=args.filter,
+              prn=packet_handler)
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
     except Exception as e:
