@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Refactored to use asyncio and aiohttp for parallel execution.
+Optimized with asyncio.gather for parallel intelligence gathering.
 """
 import asyncio
 import subprocess
@@ -18,6 +18,7 @@ class TargetDossier:
         self.ip = ip
         self.vt_data = {}
         self.abuse_data = {}
+        self.shodan_data = {}
         self.nmap_ports = []
 
 
@@ -33,15 +34,40 @@ async def fetch_api(session, url):
 
 
 async def query_virustotal(session, ip: str) -> dict:
-    """Queries the mock VirusTotal API using aiohttp."""
+    """Queries the mock VirusTotal API."""
     url = f"http://localhost:5000/virustotal/{ip}"
     return await fetch_api(session, url)
 
 
 async def query_abuseipdb(session, ip: str) -> dict:
-    """Queries the mock AbuseIPDB API using aiohttp."""
+    """Queries the mock AbuseIPDB API."""
     url = f"http://localhost:5000/abuseipdb/{ip}"
     return await fetch_api(session, url)
+
+
+async def query_shodan(session, ip: str) -> dict:
+    """Queries the mock Shodan API."""
+    url = f"http://localhost:5000/shodan/{ip}"
+    return await fetch_api(session, url)
+
+
+async def gather_intel(ip: str) -> TargetDossier:
+    """Launches all API tasks together and returns a populated dossier."""
+    dossier = TargetDossier(ip)
+    async with aiohttp.ClientSession() as session:
+        # Üç API sorğusunu paralel başladırıq
+        vt_task = query_virustotal(session, ip)
+        abuse_task = query_abuseipdb(session, ip)
+        shodan_task = query_shodan(session, ip)
+
+        # Hamısının bitməsini eyni anda gözləyirik
+        results = await asyncio.gather(vt_task, abuse_task, shodan_task)
+        
+        dossier.vt_data = results[0]
+        dossier.abuse_data = results[1]
+        dossier.shodan_data = results[2]
+        
+    return dossier
 
 
 def run_nmap(ip: str) -> str:
@@ -75,31 +101,24 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def main():
-    """Main entry point for async execution."""
+    """Main entry point for the script."""
     if len(sys.argv) != 2:
         print("Usage: ./intel_broker.py <IP_ADDRESS>")
         sys.exit(1)
 
     target_ip = sys.argv[1]
-    dossier = TargetDossier(target_ip)
-
-    async with aiohttp.ClientSession() as session:
-        # API sorğularını paralel işə salırıq
-        vt_task = query_virustotal(session, target_ip)
-        abuse_task = query_abuseipdb(session, target_ip)
-
-        # Hər iki tapşırığın nəticəsini eyni anda gözləyirik
-        dossier.vt_data, dossier.abuse_data = await asyncio.gather(
-            vt_task, abuse_task
-        )
-
-    # Nmap hələlik sinxron (sequential) qalır
+    
+    # Kəşfiyyatı paralel toplayırıq
+    dossier = await gather_intel(target_ip)
+    
+    # Nmap hələlik sinxron qalır
     nmap_xml = run_nmap(target_ip)
     dossier.nmap_ports = parse_nmap_xml(nmap_xml)
 
     print(f"--- Dossier for {dossier.ip} ---")
     print(f"VirusTotal Data: {dossier.vt_data}")
     print(f"AbuseIPDB Data: {dossier.abuse_data}")
+    print(f"Shodan Data: {dossier.shodan_data}")
     print(f"Open Ports: {dossier.nmap_ports}")
 
 
