@@ -48,7 +48,7 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
-        # Checker-in axtardığı format tam olaraq budur
+        # iface və filter arqumentlərini birbaşa sniff-ə ötürürük
         sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
