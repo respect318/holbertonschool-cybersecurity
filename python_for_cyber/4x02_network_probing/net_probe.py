@@ -239,7 +239,7 @@ def guess_service(port: int) -> str:
 
 def get_service_info(ip: str, port: int, interface: str = None) -> str:
     """
-    Gets service info via banner grabbing or guessing.
+    Gets service info via banner grabbing, HTTP Server header, or guessing.
 
     Args:
         ip (str): Target IP address.
@@ -249,6 +249,30 @@ def get_service_info(ip: str, port: int, interface: str = None) -> str:
     Returns:
         str: The identified or guessed service.
     """
+    # Specific deep inspection for HTTP (Port 80)
+    if port == 80:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                if interface:
+                    sock.bind((interface, 0))
+                sock.settimeout(2.0)
+                sock.connect((ip, port))
+                
+                # Send a proper GET request
+                req = f"GET / HTTP/1.1\r\nHost: {ip}\r\n\r\n"
+                sock.sendall(req.encode('utf-8'))
+                
+                # Receive and parse the response headers
+                resp = sock.recv(4096).decode('utf-8', 'ignore')
+                for line in resp.split('\r\n'):
+                    if line.lower().startswith("server:"):
+                        server_val = line.split(":", 1)[1].strip()
+                        return f"HTTP ({server_val})"
+            return "HTTP"
+        except Exception:
+            return "HTTP"
+
+    # For other ports, fall back to standard banner grabbing
     banner = get_banner(ip, port, interface)
     if banner == "Unknown" or not banner:
         return guess_service(port)
