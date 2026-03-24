@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Optimized with asyncio.gather for parallel intelligence gathering.
+Final version: Fully asynchronous including Nmap subprocess.
 """
 import asyncio
-import subprocess
 import sys
 import xml.etree.ElementTree as ET
 import aiohttp
@@ -49,30 +48,18 @@ async def query_shodan(session, ip: str) -> dict:
     return await fetch_api(session, url)
 
 
-async def gather_intel(ip: str) -> TargetDossier:
-    """Launches all API tasks together."""
-    dossier = TargetDossier(ip)
-    async with aiohttp.ClientSession() as session:
-        vt_t = query_virustotal(session, ip)
-        ab_t = query_abuseipdb(session, ip)
-        sh_t = query_shodan(session, ip)
-        res = await asyncio.gather(vt_t, ab_t, sh_t)
-        dossier.vt_data = res[0]
-        dossier.abuse_data = res[1]
-        dossier.shodan_data = res[2]
-    return dossier
-
-
-def run_nmap(ip: str) -> str:
-    """Executes a local Nmap scan and returns raw XML."""
+async def run_nmap_async(ip: str) -> str:
+    """Executes Nmap asynchronously using create_subprocess_exec."""
     cmd = ["nmap", "-p", "22,80", ip, "-oX", "-"]
-    result = subprocess.run(cmd, capture_output=True)
-    if result.returncode != 0:
-        raise RuntimeError("Nmap scan failed")
-    out = result.stdout
-    if isinstance(out, bytes):
-        return out.decode("utf-8", errors="ignore")
-    return str(out)
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, _ = await proc.communicate()
+    if proc.returncode != 0:
+        return ""
+    return stdout.decode("utf-8", errors="ignore")
 
 
 def parse_nmap_xml(xml_data: str) -> list:
@@ -94,14 +81,24 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def main():
-    """Main entry point for the script."""
+    """Main entry point: Runs API queries and Nmap in parallel."""
     if len(sys.argv) != 2:
         print("Usage: ./intel_broker.py <IP_ADDRESS>")
         sys.exit(1)
     target_ip = sys.argv[1]
-    dossier = await gather_intel(target_ip)
-    nmap_xml = run_nmap(target_ip)
-    dossier.nmap_ports = parse_nmap_xml(nmap_xml)
+    dossier = TargetDossier(target_ip)
+    async with aiohttp.ClientSession() as session:
+        # BÜTÜN işləri (API + Nmap) eyni anda başladırıq
+        vt_t = query_virustotal(session, target_ip)
+        ab_t = query_abuseipdb(session, target_ip)
+        sh_t = query_shodan(session, target_ip)
+        nm_t = run_nmap_async(target_ip)
+        # Hamısını eyni anda gözləyirik (gather)
+        res = await asyncio.gather(vt_t, ab_t, sh_t, nm_t)
+        dossier.vt_data = res[0]
+        dossier.abuse_data = res[1]
+        dossier.shodan_data = res[2]
+        dossier.nmap_ports = parse_nmap_xml(res[3])
     print(f"--- Dossier for {dossier.ip} ---")
     print(f"VirusTotal Data: {dossier.vt_data}")
     print(f"AbuseIPDB Data: {dossier.abuse_data}")
