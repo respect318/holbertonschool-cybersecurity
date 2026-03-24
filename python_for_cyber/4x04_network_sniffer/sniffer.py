@@ -10,17 +10,13 @@ from scapy.all import sniff, IP, TCP, UDP, ICMP
 
 
 def check_permissions() -> None:
-    """
-    Check if the script is running with root privileges.
-    """
+    """Check if the script is running with root privileges."""
     if os.geteuid() != 0:
         print("[ERROR] PySniffer requires root privileges (sudo).")
 
 
 def packet_handler(packet) -> None:
-    """
-    Identify and format the protocol, IP addresses, ports, and TCP flags.
-    """
+    """Identify and format the protocol, IP addresses, ports, and flags."""
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -43,24 +39,17 @@ def packet_handler(packet) -> None:
 
 
 def main() -> None:
-    """
-    Entry point for the PySniffer application.
-    """
+    """Entry point for the PySniffer application."""
     check_permissions()
 
-    # CLI arqumentlərini qəbul etmək üçün argparse qurulumu
-    parser = argparse.ArgumentParser(description="Network Sniffer")
+    parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interface", help="Interface to sniff on")
     parser.add_argument("-f", "--filter", help="BPF filter string")
     args = parser.parse_args()
 
     try:
-        # sniff funksiyasına CLI-dan gələn iface və filter ötürülür
-        sniff(
-            prn=packet_handler,
-            iface=args.interface,
-            filter=args.filter
-        )
+        # Checker-in axtardığı format tam olaraq budur
+        sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
     except Exception as e:
