@@ -22,7 +22,7 @@ def check_permissions() -> None:
 def packet_handler(packet: Packet) -> None:
     """
     Callback function to process each captured packet.
-    
+
     Args:
         packet (Packet): The Scapy packet object captured from the wire.
     """
@@ -37,11 +37,11 @@ def main() -> None:
     try:
         check_permissions()
         print("[INFO] PySniffer initialized. Capturing 5 packets...")
-        
+
         # count=5 stops the sniffer after 5 packets are received
         # prn specifies the callback function to run on each packet
         sniff(count=5, prn=packet_handler)
-        
+
     except PermissionError:
         print("[ERROR] Permission denied. Please run with sudo.")
     except Exception as e:
