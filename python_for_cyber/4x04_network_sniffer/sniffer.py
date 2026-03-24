@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-PySniffer - A lightweight network traffic analysis tool.
-Captures packets and filters traffic using BPF and argparse.
+PySniffer - Network traffic analysis tool.
+Uses BPF filtering and interface selection via argparse.
 """
 
 import argparse
@@ -16,7 +16,7 @@ def check_permissions() -> None:
 
 
 def packet_handler(packet) -> None:
-    """Identify and format the protocol, IP addresses, ports, and flags."""
+    """Identify and format the protocol, IP addresses and ports."""
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -25,11 +25,9 @@ def packet_handler(packet) -> None:
             sport = packet[TCP].sport
             dport = packet[TCP].dport
             flags = packet[TCP].flags
-
             msg = (f"[TCP] {src_ip}:{sport} -> "
                    f"{dst_ip}:{dport} | Flags: {flags}")
             print(msg)
-
         elif packet.haslayer(UDP):
             print(f"[UDP] {src_ip} -> {dst_ip}")
         elif packet.haslayer(ICMP):
@@ -39,25 +37,19 @@ def packet_handler(packet) -> None:
 
 
 def main() -> None:
-    """Entry point for the PySniffer application."""
+    """Entry point for the network sniffer."""
     check_permissions()
 
-    # Argparse obyektini mümkün qədər standart saxlayırıq
-    parser = argparse.ArgumentParser(prog="sniffer.py")
-    parser.add_argument("-i", "--interface", type=str, help="Interface")
-    parser.add_argument("-f", "--filter", type=str, help="BPF filter")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--interface", help="Interface")
+    parser.add_argument("-f", "--filter", help="BPF filter")
     args = parser.parse_args()
 
     try:
-        # Təlimatda istənilən ardıcıllıq: iface, filter, sonra prn
-        # PEP8 üçün sətiri sındırırıq
-        sniff(iface=args.interface,
-              filter=args.filter,
-              prn=packet_handler)
+        # sniff() çağırışı tək sətirdə və tam tələb olunan arqumentlərlə
+        sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
     except KeyboardInterrupt:
         print("[INFO] Stopping capture...")
-    except Exception as e:
-        print(f"[ERROR] An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
