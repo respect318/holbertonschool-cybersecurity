@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Intelligence Broker API Client.
-Includes a Semaphore-based rate limiter to respect API concurrency limits.
+Final version: Includes robust HTTP error handling for API resilience.
 """
 import asyncio
 import sys
@@ -55,15 +55,15 @@ def save_cache(cache):
 
 
 async def fetch_api(session, url, sem):
-    """Asynchronous function to fetch data with rate limiting."""
+    """Fetches API data with HTTP error handling."""
     async with sem:
         try:
             async with session.get(url, timeout=5) as response:
                 if response.status == 200:
                     return await response.json()
+                return {"error": "Unavailable"}
         except Exception:
-            pass
-        return {}
+            return {"error": "Unavailable"}
 
 
 async def run_nmap_async(ip: str, sem):
@@ -100,7 +100,7 @@ def parse_nmap_xml(xml_data: str) -> list:
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Gathers intelligence with cache and semaphore limiting."""
+    """Gathers intelligence with cache, semaphore, and error handling."""
     cache = load_cache()
     now = time.time()
     if ip in cache:
