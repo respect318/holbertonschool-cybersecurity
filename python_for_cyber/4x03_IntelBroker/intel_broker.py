@@ -80,25 +80,28 @@ def parse_nmap_xml(xml_data: str) -> list:
     return open_ports
 
 
-async def main():
-    """Main entry point: Runs API queries and Nmap in parallel."""
-    if len(sys.argv) != 2:
-        print("Usage: ./intel_broker.py <IP_ADDRESS>")
-        sys.exit(1)
-    target_ip = sys.argv[1]
-    dossier = TargetDossier(target_ip)
+async def gather_intel(ip: str) -> TargetDossier:
+    """Launches all API tasks and Nmap together."""
+    dossier = TargetDossier(ip)
     async with aiohttp.ClientSession() as session:
-        # BÜTÜN işləri (API + Nmap) eyni anda başladırıq
-        vt_t = query_virustotal(session, target_ip)
-        ab_t = query_abuseipdb(session, target_ip)
-        sh_t = query_shodan(session, target_ip)
-        nm_t = run_nmap_async(target_ip)
-        # Hamısını eyni anda gözləyirik (gather)
-        res = await asyncio.gather(vt_t, ab_t, sh_t, nm_t)
+        v_t = query_virustotal(session, ip)
+        a_t = query_abuseipdb(session, ip)
+        s_t = query_shodan(session, ip)
+        n_t = run_nmap_async(ip)
+        res = await asyncio.gather(v_t, a_t, s_t, n_t)
         dossier.vt_data = res[0]
         dossier.abuse_data = res[1]
         dossier.shodan_data = res[2]
         dossier.nmap_ports = parse_nmap_xml(res[3])
+    return dossier
+
+
+async def main():
+    """Main entry point: Runs the full scan."""
+    if len(sys.argv) != 2:
+        return
+    target_ip = sys.argv[1]
+    dossier = await gather_intel(target_ip)
     print(f"--- Dossier for {dossier.ip} ---")
     print(f"VirusTotal Data: {dossier.vt_data}")
     print(f"AbuseIPDB Data: {dossier.abuse_data}")
