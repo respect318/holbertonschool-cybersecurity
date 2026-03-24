@@ -36,11 +36,8 @@ def main() -> None:
     """
     try:
         check_permissions()
-        # The task requires calling sniff with count=5 and our callback
+        # Ensure count=5 and prn=packet_handler are exactly as requested
         sniff(count=5, prn=packet_handler)
-
-    except PermissionError:
-        print("[ERROR] Permission denied. Please run with sudo.")
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
         sys.exit(1)
