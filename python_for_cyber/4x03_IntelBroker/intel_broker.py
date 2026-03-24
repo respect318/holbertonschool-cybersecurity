@@ -7,13 +7,11 @@ import asyncio
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
-
 import aiohttp
 
 
 class TargetDossier:
     """Represents a target dossier with aggregated intelligence."""
-
     def __init__(self, ip=""):
         self.ip = ip
         self.vt_data = {}
@@ -52,21 +50,16 @@ async def query_shodan(session, ip: str) -> dict:
 
 
 async def gather_intel(ip: str) -> TargetDossier:
-    """Launches all API tasks together and returns a populated dossier."""
+    """Launches all API tasks together."""
     dossier = TargetDossier(ip)
     async with aiohttp.ClientSession() as session:
-        # Üç API sorğusunu paralel başladırıq
-        vt_task = query_virustotal(session, ip)
-        abuse_task = query_abuseipdb(session, ip)
-        shodan_task = query_shodan(session, ip)
-
-        # Hamısının bitməsini eyni anda gözləyirik
-        results = await asyncio.gather(vt_task, abuse_task, shodan_task)
-        
-        dossier.vt_data = results[0]
-        dossier.abuse_data = results[1]
-        dossier.shodan_data = results[2]
-        
+        vt_t = query_virustotal(session, ip)
+        ab_t = query_abuseipdb(session, ip)
+        sh_t = query_shodan(session, ip)
+        res = await asyncio.gather(vt_t, ab_t, sh_t)
+        dossier.vt_data = res[0]
+        dossier.abuse_data = res[1]
+        dossier.shodan_data = res[2]
     return dossier
 
 
@@ -90,11 +83,11 @@ def parse_nmap_xml(xml_data: str) -> list:
     try:
         root = ET.fromstring(xml_data)
         for port in root.findall(".//port"):
-            state = port.find("state")
-            if state is not None and state.get("state") == "open":
-                portid = port.get("portid")
-                if portid:
-                    open_ports.append(int(portid))
+            st = port.find("state")
+            if st is not None and st.get("state") == "open":
+                pid = port.get("portid")
+                if pid:
+                    open_ports.append(int(pid))
     except ET.ParseError:
         pass
     return open_ports
@@ -105,16 +98,10 @@ async def main():
     if len(sys.argv) != 2:
         print("Usage: ./intel_broker.py <IP_ADDRESS>")
         sys.exit(1)
-
     target_ip = sys.argv[1]
-    
-    # Kəşfiyyatı paralel toplayırıq
     dossier = await gather_intel(target_ip)
-    
-    # Nmap hələlik sinxron qalır
     nmap_xml = run_nmap(target_ip)
     dossier.nmap_ports = parse_nmap_xml(nmap_xml)
-
     print(f"--- Dossier for {dossier.ip} ---")
     print(f"VirusTotal Data: {dossier.vt_data}")
     print(f"AbuseIPDB Data: {dossier.abuse_data}")
