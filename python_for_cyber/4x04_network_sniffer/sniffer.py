@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-Captures packets and extracts Layer 4 details for TCP.
+Captures packets continuously and extracts Layer 4 details for TCP.
 """
 
 import os
@@ -47,7 +47,11 @@ def main() -> None:
     """
     check_permissions()
     try:
-        sniff(count=5, prn=packet_handler)
+        # count=5 silindi, artıq sonsuza qədər (və ya dayandırılana qədər) dinləyir
+        sniff(prn=packet_handler)
+    except KeyboardInterrupt:
+        # İstisnaları (Ctrl+C) tutur və zərif şəkildə bağlanır
+        print("[INFO] Stopping capture...")
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
 
