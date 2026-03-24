@@ -4,22 +4,20 @@ PySniffer - A lightweight network traffic analysis tool.
 Captures 5 packets and prints their summary using Scapy.
 """
 
-import sys
 import os
-from scapy.all import sniff, Packet
+from scapy.all import sniff
 
 
 def check_permissions() -> None:
     """
     Check if the script is running with root privileges.
+    Prints an error message if not running as root.
     """
-    if os.getuid() != 0:
-        # Mesajın sonunda boşluq olmadığına əmin ol
+    if os.geteuid() != 0:
         print("[ERROR] PySniffer requires root privileges (sudo).")
-        sys.exit(1)
 
 
-def packet_handler(packet: Packet) -> None:
+def packet_handler(packet) -> None:
     """
     Callback function to process each captured packet.
     """
@@ -30,12 +28,12 @@ def main() -> None:
     """
     Entry point for the PySniffer application.
     """
+    check_permissions()
     try:
-        check_permissions()
-        # count=5 və prn=packet_handler tam tələb olunduğu kimi
+        # Task 1: count=5 və prn=packet_handler tam tələb olunduğu kimi
         sniff(count=5, prn=packet_handler)
-    except Exception:
-        sys.exit(1)
+    except Exception as e:
+        print(f"[ERROR] An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
