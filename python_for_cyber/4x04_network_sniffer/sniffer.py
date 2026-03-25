@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 """
-PySniffer - Network traffic analysis tool.
-Captures packets and saves them to a PCAP file using PcapWriter.
+PySniffer - A lightweight network traffic analysis tool.
+Captures packets continuously and extracts Layer 4 details for TCP.
 """
 
-import argparse
+import os
 from scapy.all import sniff, IP, TCP, UDP, ICMP
-from scapy.utils import PcapWriter
 
-# Qlobal writer obyekti
-WRITER = None
+
+def check_permissions() -> None:
+    """
+    Check if the script is running with root privileges.
+    """
+    if os.geteuid() != 0:
+        print("[ERROR] PySniffer requires root privileges (sudo).")
 
 
 def packet_handler(packet) -> None:
-    """Identify protocol and save every captured packet to PCAP."""
-    # 1. Hər bir paketi (IP, ARP və s.) fayla yazırıq
-    if WRITER:
-        WRITER.write(packet)
-
-    # 2. Ekrana yalnız IP paketlərini çap edirik
+    """
+    Identify and format the protocol, IP addresses, ports, and TCP flags.
+    """
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -27,9 +28,11 @@ def packet_handler(packet) -> None:
             sport = packet[TCP].sport
             dport = packet[TCP].dport
             flags = packet[TCP].flags
+
             msg = (f"[TCP] {src_ip}:{sport} -> "
                    f"{dst_ip}:{dport} | Flags: {flags}")
             print(msg)
+
         elif packet.haslayer(UDP):
             print(f"[UDP] {src_ip} -> {dst_ip}")
         elif packet.haslayer(ICMP):
@@ -39,26 +42,18 @@ def packet_handler(packet) -> None:
 
 
 def main() -> None:
-    """Main entry point."""
-    global WRITER
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--interface", help="Interface")
-    parser.add_argument("-f", "--filter", help="BPF filter")
-    parser.add_argument("-w", "--write", help="Output file")
-    args = parser.parse_args()
-
-    # Fayl yazmaq istənilibsə, Writer-i açırıq
-    if args.write:
-        WRITER = PcapWriter(args.write, append=True)
-
+    """
+    Entry point for the PySniffer application.
+    """
+    check_permissions()
     try:
-        # sniff çağırışı tam olaraq bu ardıcıllıqla
-        sniff(iface=args.interface, filter=args.filter, prn=packet_handler)
+        # count=5 silindi, artıq sonsuza qədər (və ya dayandırılana qədər) dinləyir
+        sniff(prn=packet_handler)
     except KeyboardInterrupt:
-        pass
-    finally:
-        if WRITER:
-            WRITER.close()
+        # İstisnaları (Ctrl+C) tutur və zərif şəkildə bağlanır
+        print("[INFO] Stopping capture...")
+    except Exception as e:
+        print(f"[ERROR] An unexpected error occurred: {e}")
 
 
 if __name__ == "__main__":
