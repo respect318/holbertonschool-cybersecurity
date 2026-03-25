@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 PySniffer - Network traffic analysis tool.
-Captures packets, filters them, writes to PCAP, and supports verbose hexdump.
+Captures packets, filters them, writes to PCAP, and supports hexdump.
 """
 
 import argparse
 import scapy.all as scapy
-from scapy.utils import PcapWriter
 
-# Qlobal dəyişənlər
 WRITER = None
 VERBOSE = False
 
@@ -18,7 +16,6 @@ def packet_handler(packet) -> None:
     if WRITER:
         WRITER.write(packet)
 
-    # Saxta (mock) test paketlərinə qarşı qorunma (haslayer xətası olmasın)
     if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
         src_ip = packet[scapy.IP].src
         dst_ip = packet[scapy.IP].dst
@@ -37,7 +34,6 @@ def packet_handler(packet) -> None:
         else:
             print(f"[IP] {src_ip} -> {dst_ip}")
 
-        # Əgər verbose aktivdirsə, xülasədən sonra hexdump çap et
         if VERBOSE:
             scapy.hexdump(packet)
 
@@ -53,7 +49,9 @@ def main() -> None:
                         help="Enable verbose output")
     args = parser.parse_args()
 
+    # Importu buraya saldıq ki, test skripti işə düşəndə çökməsin
     if args.write:
+        from scapy.utils import PcapWriter
         WRITER = PcapWriter(args.write, append=True, sync=True)
 
     if args.verbose:
