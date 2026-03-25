@@ -6,6 +6,7 @@ Refactored into a professional Sniffer class.
 
 import argparse
 import scapy.all as scapy
+from scapy.utils import PcapWriter
 
 
 class Sniffer:
@@ -20,7 +21,6 @@ class Sniffer:
         self.writer = None
 
         if self.output_file:
-            from scapy.utils import PcapWriter
             self.writer = PcapWriter(
                 self.output_file, append=True, sync=True
             )
@@ -30,8 +30,8 @@ class Sniffer:
         if self.writer:
             self.writer.write(packet)
 
-        # Paket analizi
-        if packet.haslayer(scapy.IP):
+        # Saxta (mock) test paketlərində çökmənin qarşısını almaq üçün yoxlama
+        if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
             src_ip = packet[scapy.IP].src
             dst_ip = packet[scapy.IP].dst
 
@@ -49,7 +49,7 @@ class Sniffer:
             else:
                 print(f"[IP] {src_ip} -> {dst_ip}")
 
-        # Verbose rejimi üçün hexdump
+        # Hexdump yalnız verbose true olduqda işləyir
         if self.verbose:
             scapy.hexdump(packet)
 
