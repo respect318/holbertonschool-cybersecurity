@@ -5,6 +5,7 @@ Captures packets continuously and extracts Layer 4 details for TCP.
 """
 
 import os
+import sys
 from scapy.all import sniff, IP, TCP, UDP, ICMP
 
 
@@ -50,9 +51,12 @@ def main() -> None:
         # Sniff continuously without the count argument
         sniff(prn=packet_handler)
     except KeyboardInterrupt:
+        # Handle Ctrl+C and exit cleanly
         print("[INFO] Stopping capture...")
+        sys.exit(0)
     except Exception as e:
         print(f"[ERROR] An unexpected error occurred: {e}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
