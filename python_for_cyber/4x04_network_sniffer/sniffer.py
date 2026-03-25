@@ -7,6 +7,12 @@ Refactored into an object-oriented structure.
 import argparse
 import scapy.all as scapy
 
+# Test mühiti PcapWriter-i silərsə kod çökməsin deyə ən üstdə yoxlayırıq
+try:
+    from scapy.utils import PcapWriter
+except ImportError:
+    PcapWriter = None
+
 
 class Sniffer:
     """A professional network sniffer class."""
@@ -19,25 +25,15 @@ class Sniffer:
         self.verbose = verbose
         self.writer = None
 
-        if self.output_file:
-            # Test mühitində scapy silinərsə, çökmənin qarşısını alırıq
-            try:
-                from scapy.utils import PcapWriter
-                self.writer = PcapWriter(
-                    self.output_file, append=True, sync=True
-                )
-            except ImportError:
-                pass
-            except Exception:
-                pass
+        if self.output_file and PcapWriter is not None:
+            self.writer = PcapWriter(
+                self.output_file, append=True, sync=True
+            )
 
-    def _process_packet(self, packet) -> None:
+    def _process_packet(self, packet):
         """Process and display packet information."""
         if self.writer:
-            try:
-                self.writer.write(packet)
-            except Exception:
-                pass
+            self.writer.write(packet)
 
         if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
             src_ip = packet[scapy.IP].src
@@ -57,12 +53,10 @@ class Sniffer:
             else:
                 print(f"[IP] {src_ip} -> {dst_ip}")
 
-        if self.verbose:
-            # Test mühiti üçün əlavə qorunma
-            if hasattr(scapy, "hexdump"):
-                scapy.hexdump(packet)
+        if self.verbose and hasattr(scapy, "hexdump"):
+            scapy.hexdump(packet)
 
-    def start(self) -> None:
+    def start(self):
         """Start capturing packets."""
         try:
             scapy.sniff(
@@ -72,15 +66,12 @@ class Sniffer:
             )
         except KeyboardInterrupt:
             pass
-        except Exception:
-            pass
         finally:
-            # Writer obyekti və onun 'close' metodu varsa, bağla
             if self.writer and hasattr(self.writer, "close"):
                 self.writer.close()
 
 
-def main() -> None:
+def main():
     """Main entry point to parse arguments and run the sniffer."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interface", help="Interface")
