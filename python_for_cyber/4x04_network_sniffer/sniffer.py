@@ -34,8 +34,9 @@ def packet_handler(packet) -> None:
         else:
             print(f"[IP] {src_ip} -> {dst_ip}")
 
-        if VERBOSE:
-            scapy.hexdump(packet)
+    # VERBOSE yoxlaması IP blokundan kənara çıxarıldı!
+    if VERBOSE:
+        scapy.hexdump(packet)
 
 
 def main() -> None:
@@ -49,7 +50,6 @@ def main() -> None:
                         help="Enable verbose output")
     args = parser.parse_args()
 
-    # Importu buraya saldıq ki, test skripti işə düşəndə çökməsin
     if args.write:
         from scapy.utils import PcapWriter
         WRITER = PcapWriter(args.write, append=True, sync=True)
