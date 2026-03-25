@@ -14,11 +14,9 @@ WRITER = None
 
 def packet_handler(packet) -> None:
     """Identify protocol and save all captured packets to PCAP."""
-    # Hər bir paketi (IP olub-olmamasından asılı olmayaraq) fayla yazırıq
     if WRITER:
         WRITER.write(packet)
 
-    # Ekrana isə əvvəlki kimi yalnız IP paketlərini və detallarını çıxarırıq
     if packet.haslayer(scapy.IP):
         src_ip = packet[scapy.IP].src
         dst_ip = packet[scapy.IP].dst
@@ -47,9 +45,8 @@ def main() -> None:
     parser.add_argument("-w", "--write", help="Output PCAP file")
     args = parser.parse_args()
 
-    # Əgər -w arqumenti verilibsə, faylı qlobal olaraq açırıq
     if args.write:
-        # sync=True parametri faylın testlər zamanı dərhal diskə yazılmasını təmin edir
+        # Faylı anında diskə yazmaq üçün sync=True
         WRITER = PcapWriter(args.write, append=True, sync=True)
 
     try:
@@ -61,7 +58,6 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        # Proqram bitəndə (və ya test kəsiləndə) faylı təmiz bağlayırıq
         if WRITER:
             WRITER.close()
 
