@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 PySniffer - Network traffic analysis tool.
-Refactored into an object-oriented structure.
+Refactored into a professional Sniffer class.
 """
 
 import argparse
@@ -20,24 +20,18 @@ class Sniffer:
         self.writer = None
 
         if self.output_file:
-            # ModuleNotFoundError atarsa test mühitini sındırmaması üçün
-            try:
-                from scapy.utils import PcapWriter
-                self.writer = PcapWriter(
-                    self.output_file, append=True, sync=True
-                )
-            except Exception:
-                pass
+            from scapy.utils import PcapWriter
+            self.writer = PcapWriter(
+                self.output_file, append=True, sync=True
+            )
 
     def _process_packet(self, packet):
         """Process and display packet information."""
         if self.writer:
-            try:
-                self.writer.write(packet)
-            except Exception:
-                pass
+            self.writer.write(packet)
 
-        if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
+        # Paket analizi
+        if packet.haslayer(scapy.IP):
             src_ip = packet[scapy.IP].src
             dst_ip = packet[scapy.IP].dst
 
@@ -55,17 +49,13 @@ class Sniffer:
             else:
                 print(f"[IP] {src_ip} -> {dst_ip}")
 
+        # Verbose rejimi üçün hexdump
         if self.verbose:
-            try:
-                scapy.hexdump(packet)
-            except Exception:
-                pass
+            scapy.hexdump(packet)
 
     def start(self):
         """Start capturing packets."""
         try:
-            # Diqqət: Burada sadəcə KeyboardInterrupt tutulur.
-            # Testin öz xətaları (dayanmaq üçün) udulmur!
             scapy.sniff(
                 iface=self.interface,
                 filter=self.filter_str,
@@ -74,7 +64,7 @@ class Sniffer:
         except KeyboardInterrupt:
             pass
         finally:
-            if self.writer and hasattr(self.writer, "close"):
+            if self.writer:
                 self.writer.close()
 
 
