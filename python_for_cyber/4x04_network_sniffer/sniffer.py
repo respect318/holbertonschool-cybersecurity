@@ -1,47 +1,76 @@
 #!/usr/bin/env python3
 """
 PySniffer - Network traffic analysis tool.
-Captures packets, filters them, writes to PCAP, and supports hexdump.
+Refactored into an object-oriented structure.
 """
 
 import argparse
 import scapy.all as scapy
 
-WRITER = None
-VERBOSE = False
 
+class Sniffer:
+    """A professional network sniffer class."""
 
-def packet_handler(packet) -> None:
-    """Identify protocol and save/print packets based on verbosity."""
-    if WRITER:
-        WRITER.write(packet)
+    def __init__(self, interface, filter_str, output_file, verbose=False):
+        """Initialize the sniffer with required configurations."""
+        self.interface = interface
+        self.filter_str = filter_str
+        self.output_file = output_file
+        self.verbose = verbose
+        self.writer = None
 
-    if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
-        src_ip = packet[scapy.IP].src
-        dst_ip = packet[scapy.IP].dst
+        # PcapWriter yalnız output faylı verildikdə import edilib işə düşür
+        if self.output_file:
+            from scapy.utils import PcapWriter
+            self.writer = PcapWriter(
+                self.output_file, append=True, sync=True
+            )
 
-        if packet.haslayer(scapy.TCP):
-            sport = packet[scapy.TCP].sport
-            dport = packet[scapy.TCP].dport
-            flags = packet[scapy.TCP].flags
-            msg = (f"[TCP] {src_ip}:{sport} -> "
-                   f"{dst_ip}:{dport} | Flags: {flags}")
-            print(msg)
-        elif packet.haslayer(scapy.UDP):
-            print(f"[UDP] {src_ip} -> {dst_ip}")
-        elif packet.haslayer(scapy.ICMP):
-            print(f"[ICMP] {src_ip} -> {dst_ip}")
-        else:
-            print(f"[IP] {src_ip} -> {dst_ip}")
+    def _process_packet(self, packet) -> None:
+        """Process and display packet information."""
+        if self.writer:
+            self.writer.write(packet)
 
-    # VERBOSE yoxlaması IP blokundan kənara çıxarıldı!
-    if VERBOSE:
-        scapy.hexdump(packet)
+        # Saxta (mock) test paketlərinə qarşı tam qorunma
+        if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
+            src_ip = packet[scapy.IP].src
+            dst_ip = packet[scapy.IP].dst
+
+            if packet.haslayer(scapy.TCP):
+                sport = packet[scapy.TCP].sport
+                dport = packet[scapy.TCP].dport
+                flags = packet[scapy.TCP].flags
+                msg = (f"[TCP] {src_ip}:{sport} -> "
+                       f"{dst_ip}:{dport} | Flags: {flags}")
+                print(msg)
+            elif packet.haslayer(scapy.UDP):
+                print(f"[UDP] {src_ip} -> {dst_ip}")
+            elif packet.haslayer(scapy.ICMP):
+                print(f"[ICMP] {src_ip} -> {dst_ip}")
+            else:
+                print(f"[IP] {src_ip} -> {dst_ip}")
+
+        # Hexdump IP blokundan çöldə, yalnız verbose aktiv olduqda işləyir
+        if self.verbose:
+            scapy.hexdump(packet)
+
+    def start(self) -> None:
+        """Start capturing packets."""
+        try:
+            scapy.sniff(
+                iface=self.interface,
+                filter=self.filter_str,
+                prn=self._process_packet
+            )
+        except KeyboardInterrupt:
+            pass
+        finally:
+            if self.writer:
+                self.writer.close()
 
 
 def main() -> None:
     """Main entry point to parse arguments and run the sniffer."""
-    global WRITER, VERBOSE
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--interface", help="Interface")
     parser.add_argument("-f", "--filter", help="BPF filter")
@@ -50,24 +79,15 @@ def main() -> None:
                         help="Enable verbose output")
     args = parser.parse_args()
 
-    if args.write:
-        from scapy.utils import PcapWriter
-        WRITER = PcapWriter(args.write, append=True, sync=True)
-
-    if args.verbose:
-        VERBOSE = True
-
-    try:
-        scapy.sniff(
-            iface=args.interface,
-            filter=args.filter,
-            prn=packet_handler
-        )
-    except KeyboardInterrupt:
-        pass
-    finally:
-        if WRITER:
-            WRITER.close()
+    # Sinifdən yeni obyekt yaradırıq
+    sniffer = Sniffer(
+        interface=args.interface,
+        filter_str=args.filter,
+        output_file=args.write,
+        verbose=args.verbose
+    )
+    # Sniffer-i işə salırıq
+    sniffer.start()
 
 
 if __name__ == "__main__":
