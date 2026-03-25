@@ -15,16 +15,14 @@ VERBOSE = False
 
 def packet_handler(packet) -> None:
     """Identify protocol and save/print packets based on verbosity."""
-    # Hər bir paketi fayla yaz (əgər -w verilibsə)
     if WRITER:
         WRITER.write(packet)
 
-    # Saxta (mock) test paketlərindən qorunmaq üçün yoxlama
+    # Saxta (mock) test paketlərinə qarşı qorunma (haslayer xətası olmasın)
     if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
         src_ip = packet[scapy.IP].src
         dst_ip = packet[scapy.IP].dst
 
-        # Paketin növünə görə xülasəni (summary) çap edirik
         if packet.haslayer(scapy.TCP):
             sport = packet[scapy.TCP].sport
             dport = packet[scapy.TCP].dport
@@ -39,7 +37,7 @@ def packet_handler(packet) -> None:
         else:
             print(f"[IP] {src_ip} -> {dst_ip}")
 
-        # Əgər verbose aktivdirsə, xülasədən dərhal sonra hexdump çap et
+        # Əgər verbose aktivdirsə, xülasədən sonra hexdump çap et
         if VERBOSE:
             scapy.hexdump(packet)
 
@@ -51,10 +49,8 @@ def main() -> None:
     parser.add_argument("-i", "--interface", help="Interface")
     parser.add_argument("-f", "--filter", help="BPF filter")
     parser.add_argument("-w", "--write", help="Output PCAP file")
-    
-    # Yeni verbose arqumenti (şərt qoyulduqda True olur)
     parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Enable verbose output (hexdump)")
+                        help="Enable verbose output")
     args = parser.parse_args()
 
     if args.write:
