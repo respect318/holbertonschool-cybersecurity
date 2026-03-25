@@ -1,26 +1,14 @@
 #!/usr/bin/env python3
 """
 PySniffer - A lightweight network traffic analysis tool.
-Captures packets continuously and extracts Layer 4 details for TCP.
+Runs continuously until interrupted by the user.
 """
 
-import os
-import sys
 from scapy.all import sniff, IP, TCP, UDP, ICMP
 
 
-def check_permissions() -> None:
-    """
-    Check if the script is running with root privileges.
-    """
-    if os.geteuid() != 0:
-        print("[ERROR] PySniffer requires root privileges (sudo).")
-
-
 def packet_handler(packet) -> None:
-    """
-    Identify and format the protocol, IP addresses, ports, and TCP flags.
-    """
+    """Identify and format the protocol, IP addresses, ports, and flags."""
     if packet.haslayer(IP):
         src_ip = packet[IP].src
         dst_ip = packet[IP].dst
@@ -43,20 +31,13 @@ def packet_handler(packet) -> None:
 
 
 def main() -> None:
-    """
-    Entry point for the PySniffer application.
-    """
-    check_permissions()
+    """Entry point for the PySniffer application."""
     try:
-        # Sniff continuously without the count argument
+        # count=5 silindi, proqram sonsuz işləyəcək
         sniff(prn=packet_handler)
     except KeyboardInterrupt:
-        # Handle Ctrl+C and exit cleanly
+        # Təlimatda istənilən tam dəqiq mesaj çap olunur
         print("[INFO] Stopping capture...")
-        sys.exit(0)
-    except Exception as e:
-        print(f"[ERROR] An unexpected error occurred: {e}")
-        sys.exit(1)
 
 
 if __name__ == "__main__":
