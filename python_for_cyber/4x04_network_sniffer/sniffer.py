@@ -8,16 +8,17 @@ import argparse
 import scapy.all as scapy
 from scapy.utils import PcapWriter
 
-# Qlobal yazıcı (writer) obyekti
 WRITER = None
 
 
 def packet_handler(packet) -> None:
     """Identify protocol and save all captured packets to PCAP."""
+    # 1. Paketin həqiqi və ya saxta olmasından asılı olmayaraq fayla yaz
     if WRITER:
         WRITER.write(packet)
 
-    if packet.haslayer(scapy.IP):
+    # 2. Əgər paketin 'haslayer' metodu varsa (yəni əsl paketdirsə) oxu
+    if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
         src_ip = packet[scapy.IP].src
         dst_ip = packet[scapy.IP].dst
 
@@ -46,7 +47,6 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.write:
-        # Faylı anında diskə yazmaq üçün sync=True
         WRITER = PcapWriter(args.write, append=True, sync=True)
 
     try:
