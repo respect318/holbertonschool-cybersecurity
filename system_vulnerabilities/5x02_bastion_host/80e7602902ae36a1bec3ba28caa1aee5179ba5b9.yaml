@@ -1,0 +1,108 @@
+#cloud-config
+# ============================================================================
+# NovaTech Solutions — Standard Server
+# CyberShield Consulting - Bastion Host Lab
+#
+# Launch:
+# multipass launch 20.04 --name novatech-prod-02 \
+#   --memory 3G --cpus 2 --disk 10G \
+#   --cloud-init cloud-init.yaml
+# ============================================================================
+hostname: novatech-prod-02
+fqdn: novatech-prod.dmz.novatech.local
+timezone: UTC
+locale: en_US.UTF-8
+
+package_update: true
+package_upgrade: true
+
+ssh_pwauth: true
+disable_root: false
+
+users:
+  - name: auditor
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: false
+    passwd: "$6$rounds=4096$novatech$wJYFjzZ1H4vM7Jg8J4T3X2V6eLqRkP9p2u1rE6t5y8F3J1V2K3L4M5N6O7P8Q9"
+    groups: [sudo, adm]
+
+packages:
+  - apache2
+  - php7.4
+  - libapache2-mod-php7.4
+  - mysql-server
+  - openssh-server
+
+  - build-essential
+  - gcc
+  - g++
+  - make
+  - gdb
+
+  - netcat-openbsd
+  - nmap
+  - tcpdump
+  - telnet
+  - curl
+  - wget
+
+  - cups
+  - avahi-daemon
+  - bluetooth
+
+  - vim
+  - net-tools
+  - rsyslog
+
+write_files:
+
+  - path: /etc/sysctl.d/60-novatech-default.conf
+    content: |
+      net.ipv4.ip_forward = 1
+      net.ipv6.conf.all.forwarding = 1
+      net.ipv4.conf.all.accept_redirects = 1
+      net.ipv4.conf.default.accept_redirects = 1
+      net.ipv4.conf.all.send_redirects = 1
+      net.ipv4.conf.default.send_redirects = 1
+      net.ipv4.conf.all.accept_source_route = 1
+      net.ipv4.conf.default.accept_source_route = 1
+      net.ipv4.tcp_syncookies = 0
+      net.ipv4.conf.all.rp_filter = 0
+      net.ipv4.icmp_echo_ignore_broadcasts = 0
+
+  - path: /usr/local/bin/backup
+    permissions: "4755"
+    content: |
+      #!/bin/bash
+      tar -czf /var/backups/site.tar.gz /var/www/html
+
+  - path: /var/www/html/index.php
+    permissions: "0644"
+    content: |
+      <?php
+      echo "<h1>NovaTech DMZ Web Server</h1>";
+      echo "<p>Status: Online</p>";
+      ?>
+
+runcmd:
+
+  - sysctl --system
+
+  - systemctl enable apache2
+  - systemctl enable mysql
+  - systemctl enable ssh
+  - systemctl enable cups
+  - systemctl enable avahi-daemon
+  - systemctl enable bluetooth
+
+  - systemctl start apache2
+  - systemctl start mysql
+  - systemctl start ssh
+  - systemctl start cups || true
+  - systemctl start avahi-daemon || true
+  - systemctl start bluetooth || true
+
+  - passwd -u root || true
+
+  - echo "NovaTech-Prod_02 ready for hardening."
