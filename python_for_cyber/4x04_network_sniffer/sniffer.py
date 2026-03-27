@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 PySniffer - Network traffic analysis tool.
-DPI added to search for specific strings in the payload.
-Statistics Engine added to count packets by protocol.
+Performance Refactor: Decoupled capturing and processing using Threads/Queue.
 """
 import argparse
+import queue
+import threading
 import scapy.all as scapy
 
 
@@ -100,7 +101,10 @@ class Sniffer:
         self.search_string = search_string
         self.writer = None
 
-        # Statistics dictionary initialized with default protocols
+        # Threading and Queue setup
+        self.packet_queue = queue.Queue()
+        self.running = False
+
         self.stats = {'TCP': 0, 'UDP': 0, 'ICMP': 0, 'IP': 0}
 
         if self.output_file and hasattr(scapy, 'PcapWriter'):
@@ -108,7 +112,6 @@ class Sniffer:
                 self.output_file, append=True, sync=True
             )
 
-        # Safely map processors only if the Scapy layer actually exists
         self.processors = {}
         if hasattr(scapy, 'TCP'):
             self.processors[scapy.TCP] = TCPProcessor(self.search_string)
@@ -119,12 +122,15 @@ class Sniffer:
 
         self.default_processor = IPProcessor(self.search_string)
 
+    def _enqueue_packet(self, packet):
+        """Producer: Puts captured packets into the processing queue."""
+        self.packet_queue.put(packet)
+
     def _process_packet(self, packet):
-        """Process and display packet information dynamically."""
+        """Consumer: Processes a single packet from the queue."""
         if self.writer:
             self.writer.write(packet)
 
-        # Only check haslayer if the mock object allows it
         if hasattr(packet, "haslayer"):
             ip_ok = not hasattr(scapy, 'IP') or packet.haslayer(scapy.IP)
             if ip_ok:
@@ -146,6 +152,17 @@ class Sniffer:
             except Exception:
                 pass
 
+    def _worker_loop(self):
+        """Background thread loop for processing queued packets."""
+        while self.running or not self.packet_queue.empty():
+            try:
+                # Timeout allows periodic checking of self.running flag
+                packet = self.packet_queue.get(timeout=0.1)
+                self._process_packet(packet)
+                self.packet_queue.task_done()
+            except queue.Empty:
+                continue
+
     def _print_stats(self):
         """Print the final statistics summary."""
         print("\n--- Capture Statistics ---")
@@ -153,20 +170,27 @@ class Sniffer:
             print(f"{count} {proto}")
 
     def start(self):
-        """Start capturing packets."""
+        """Start capturing and processing packets across threads."""
+        self.running = True
+        processor_thread = threading.Thread(target=self._worker_loop)
+        processor_thread.daemon = True
+        processor_thread.start()
+
         try:
             scapy.sniff(
                 iface=self.interface,
                 filter=self.filter_str,
-                prn=self._process_packet,
+                prn=self._enqueue_packet,  # Now points to the Queue Producer
                 store=False
             )
         except (KeyboardInterrupt, Exception):
             pass
         finally:
+            self.running = False
+            # Wait for the worker thread to finish processing the queue
+            processor_thread.join()
             if self.writer:
                 self.writer.close()
-            # Print the stats when sniffing stops (e.g., Ctrl+C)
             self._print_stats()
 
 
