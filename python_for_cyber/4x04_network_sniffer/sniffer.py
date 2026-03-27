@@ -1,11 +1,60 @@
 #!/usr/bin/env python3
 """
 PySniffer - Network traffic analysis tool.
-Refactored into a professional Sniffer class.
+Refactored to use Polymorphism for packet processing.
 """
 import argparse
 import scapy.all as scapy
 from scapy.utils import PcapWriter
+
+
+class PacketProcessor:
+    """Base class for packet processing."""
+    def process(self, packet):
+        """Process the packet."""
+        pass
+
+
+class TCPProcessor(PacketProcessor):
+    """Processor for TCP packets."""
+    def process(self, packet):
+        ip_layer = packet[scapy.IP]
+        src = getattr(ip_layer, 'src', '')
+        dst = getattr(ip_layer, 'dst', '')
+        tcp = packet[scapy.TCP]
+        sport = getattr(tcp, 'sport', '')
+        dport = getattr(tcp, 'dport', '')
+        flags = getattr(tcp, 'flags', '')
+        msg = (f"[TCP] {src}:{sport} -> "
+               f"{dst}:{dport} | Flags: {flags}")
+        print(msg)
+
+
+class UDPProcessor(PacketProcessor):
+    """Processor for UDP packets."""
+    def process(self, packet):
+        ip_layer = packet[scapy.IP]
+        src = getattr(ip_layer, 'src', '')
+        dst = getattr(ip_layer, 'dst', '')
+        print(f"[UDP] {src} -> {dst}")
+
+
+class ICMPProcessor(PacketProcessor):
+    """Processor for ICMP packets."""
+    def process(self, packet):
+        ip_layer = packet[scapy.IP]
+        src = getattr(ip_layer, 'src', '')
+        dst = getattr(ip_layer, 'dst', '')
+        print(f"[ICMP] {src} -> {dst}")
+
+
+class IPProcessor(PacketProcessor):
+    """Fallback processor for other IP packets."""
+    def process(self, packet):
+        ip_layer = packet[scapy.IP]
+        src = getattr(ip_layer, 'src', '')
+        dst = getattr(ip_layer, 'dst', '')
+        print(f"[IP] {src} -> {dst}")
 
 
 class Sniffer:
@@ -22,35 +71,32 @@ class Sniffer:
             self.writer = PcapWriter(
                 self.output_file, append=True, sync=True
             )
+        # Dictionary mapping Scapy layers to their respective processors
+        self.processors = {
+            scapy.TCP: TCPProcessor(),
+            scapy.UDP: UDPProcessor(),
+            scapy.ICMP: ICMPProcessor()
+        }
+        self.default_processor = IPProcessor()
 
     def _process_packet(self, packet):
-        """Process and display packet information."""
+        """Process and display packet information dynamically."""
         if self.writer:
             self.writer.write(packet)
 
-        # Safely check for layers to avoid mock test crashes
+        # Safely check for IP layer to avoid mock test crashes
         if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
-            ip_layer = packet[scapy.IP]
-            # Use getattr to supply a fallback if the mock lacks the attribute
-            src_ip = getattr(ip_layer, 'src', '')
-            dst_ip = getattr(ip_layer, 'dst', '')
-
-            if packet.haslayer(scapy.TCP):
-                tcp = packet[scapy.TCP]
-                sport = getattr(tcp, 'sport', '')
-                dport = getattr(tcp, 'dport', '')
-                flags = getattr(tcp, 'flags', '')
-
-                msg = (f"[TCP] {src_ip}:{sport} -> "
-                       f"{dst_ip}:{dport} | Flags: {flags}")
-                print(msg)
-
-            elif packet.haslayer(scapy.UDP):
-                print(f"[UDP] {src_ip} -> {dst_ip}")
-            elif packet.haslayer(scapy.ICMP):
-                print(f"[ICMP] {src_ip} -> {dst_ip}")
-            else:
-                print(f"[IP] {src_ip} -> {dst_ip}")
+            processed = False
+            # Iterate through our strategies
+            for proto, processor in self.processors.items():
+                if packet.haslayer(proto):
+                    processor.process(packet)
+                    processed = True
+                    break
+            
+            # Fallback if it's an IP packet but not TCP/UDP/ICMP
+            if not processed:
+                self.default_processor.process(packet)
 
         if self.verbose:
             try:
