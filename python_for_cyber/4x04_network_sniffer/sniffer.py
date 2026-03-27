@@ -2,6 +2,7 @@
 """
 PySniffer - Network traffic analysis tool.
 DPI added to search for specific strings in the payload.
+Statistics Engine added to count packets by protocol.
 """
 import argparse
 import scapy.all as scapy
@@ -9,9 +10,10 @@ import scapy.all as scapy
 
 class PacketProcessor:
     """Base class for packet processing."""
-    def __init__(self, search_term=None):
-        """Initialize with an optional search term."""
+    def __init__(self, search_term=None, name="Unknown"):
+        """Initialize with an optional search term and protocol name."""
         self.search_term = search_term
+        self.name = name
 
     def process(self, packet):
         """Process the packet and check for search term in payload."""
@@ -29,6 +31,9 @@ class PacketProcessor:
 
 class TCPProcessor(PacketProcessor):
     """Processor for TCP packets."""
+    def __init__(self, search_term=None):
+        super().__init__(search_term, "TCP")
+
     def process(self, packet):
         ip_layer = packet[scapy.IP] if hasattr(scapy, 'IP') else packet
         src = getattr(ip_layer, 'src', '')
@@ -45,6 +50,9 @@ class TCPProcessor(PacketProcessor):
 
 class UDPProcessor(PacketProcessor):
     """Processor for UDP packets."""
+    def __init__(self, search_term=None):
+        super().__init__(search_term, "UDP")
+
     def process(self, packet):
         ip_layer = packet[scapy.IP] if hasattr(scapy, 'IP') else packet
         src = getattr(ip_layer, 'src', '')
@@ -55,6 +63,9 @@ class UDPProcessor(PacketProcessor):
 
 class ICMPProcessor(PacketProcessor):
     """Processor for ICMP packets."""
+    def __init__(self, search_term=None):
+        super().__init__(search_term, "ICMP")
+
     def process(self, packet):
         ip_layer = packet[scapy.IP] if hasattr(scapy, 'IP') else packet
         src = getattr(ip_layer, 'src', '')
@@ -65,6 +76,9 @@ class ICMPProcessor(PacketProcessor):
 
 class IPProcessor(PacketProcessor):
     """Fallback processor for other IP packets."""
+    def __init__(self, search_term=None):
+        super().__init__(search_term, "IP")
+
     def process(self, packet):
         ip_layer = packet[scapy.IP] if hasattr(scapy, 'IP') else packet
         src = getattr(ip_layer, 'src', '')
@@ -85,6 +99,9 @@ class Sniffer:
         self.verbose = verbose
         self.search_string = search_string
         self.writer = None
+
+        # Statistics dictionary initialized with default protocols
+        self.stats = {'TCP': 0, 'UDP': 0, 'ICMP': 0, 'IP': 0}
 
         if self.output_file and hasattr(scapy, 'PcapWriter'):
             self.writer = scapy.PcapWriter(
@@ -115,17 +132,25 @@ class Sniffer:
                 for proto, processor in self.processors.items():
                     if packet.haslayer(proto):
                         processor.process(packet)
+                        self.stats[processor.name] += 1
                         processed = True
                         break
 
                 if not processed:
                     self.default_processor.process(packet)
+                    self.stats[self.default_processor.name] += 1
 
         if self.verbose and hasattr(scapy, 'hexdump'):
             try:
                 scapy.hexdump(packet)
             except Exception:
                 pass
+
+    def _print_stats(self):
+        """Print the final statistics summary."""
+        print("\n--- Capture Statistics ---")
+        for proto, count in self.stats.items():
+            print(f"{count} {proto}")
 
     def start(self):
         """Start capturing packets."""
@@ -141,6 +166,8 @@ class Sniffer:
         finally:
             if self.writer:
                 self.writer.close()
+            # Print the stats when sniffing stops (e.g., Ctrl+C)
+            self._print_stats()
 
 
 def main():
