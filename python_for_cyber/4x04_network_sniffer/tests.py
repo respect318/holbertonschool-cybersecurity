@@ -15,7 +15,7 @@ class TestTCPProcessor(unittest.TestCase):
 
     def test_tcp_processing(self):
         """Test that TCPProcessor extracts correct IP and Port."""
-        # 1. Arrange: Create a fake Scapy packet
+        # Arrange: Create a fake Scapy packet
         pkt = scapy.IP(src="1.1.1.1", dst="8.8.8.8")
         pkt /= scapy.TCP(sport=54321, dport=80, flags="S")
 
@@ -27,15 +27,15 @@ class TestTCPProcessor(unittest.TestCase):
         sys.stdout = captured_output
 
         try:
-            # 2. Act: Pass the fake packet to the processor
+            # Act: Pass the fake packet to the processor
             processor.process(pkt)
         finally:
             # Always restore standard output, even if the test fails!
             sys.stdout = sys.__stdout__
 
-        # 3. Assert: Verify the extracted data is in the printed output
+        # Assert: Verify the extracted data is in the printed output
         output = captured_output.getvalue().strip()
-        
+
         # Check for specific IP:Port combinations and flags
         self.assertIn("1.1.1.1:54321", output)
         self.assertIn("8.8.8.8:80", output)
