@@ -93,7 +93,7 @@ class Sniffer:
                     processor.process(packet)
                     processed = True
                     break
-            
+
             # Fallback if it's an IP packet but not TCP/UDP/ICMP
             if not processed:
                 self.default_processor.process(packet)
@@ -122,22 +122,4 @@ class Sniffer:
 
 def main():
     """Main entry point to parse arguments and run the sniffer."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--interface", help="Interface")
-    parser.add_argument("-f", "--filter", help="BPF filter")
-    parser.add_argument("-w", "--write", help="Output PCAP file")
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="Enable verbose output")
-    args = parser.parse_args()
-
-    sniffer = Sniffer(
-        interface=args.interface,
-        filter_str=args.filter,
-        output_file=args.write,
-        verbose=args.verbose
-    )
-    sniffer.start()
-
-
-if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser
