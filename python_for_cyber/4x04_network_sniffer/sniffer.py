@@ -5,7 +5,6 @@ DPI added to search for specific strings in the payload.
 """
 import argparse
 import scapy.all as scapy
-from scapy.utils import PcapWriter
 
 
 class PacketProcessor:
@@ -88,7 +87,7 @@ class Sniffer:
         self.writer = None
 
         if self.output_file:
-            self.writer = PcapWriter(
+            self.writer = scapy.PcapWriter(
                 self.output_file, append=True, sync=True
             )
 
