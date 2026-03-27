@@ -36,8 +36,9 @@ class Sniffer:
 
                 if packet.haslayer(scapy.TCP):
                     tcp_layer = packet[scapy.TCP]
-                    # Defensively check for attributes missing in mock objects
-                    if hasattr(tcp_layer, 'sport') and hasattr(tcp_layer, 'dport'):
+                    # Defensively check for attributes missing in mocks
+                    if (hasattr(tcp_layer, 'sport') and
+                            hasattr(tcp_layer, 'dport')):
                         sport = tcp_layer.sport
                         dport = tcp_layer.dport
                         flags = getattr(tcp_layer, 'flags', '')
