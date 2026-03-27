@@ -40,11 +40,11 @@ class Sniffer:
                 sport = getattr(tcp, 'sport', '')
                 dport = getattr(tcp, 'dport', '')
                 flags = getattr(tcp, 'flags', '')
-                
+
                 msg = (f"[TCP] {src_ip}:{sport} -> "
                        f"{dst_ip}:{dport} | Flags: {flags}")
                 print(msg)
-                
+
             elif packet.haslayer(scapy.UDP):
                 print(f"[UDP] {src_ip} -> {dst_ip}")
             elif packet.haslayer(scapy.ICMP):
