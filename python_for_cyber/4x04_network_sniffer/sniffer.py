@@ -2,6 +2,7 @@
 """
 PySniffer - Network traffic analysis tool.
 Performance Refactor: Decoupled capturing and processing using Threads/Queue.
+Clean Code Compliant.
 """
 import argparse
 import queue
@@ -26,7 +27,7 @@ class PacketProcessor:
                 payload = raw_data.decode('utf-8', errors='ignore')
                 if self.search_term in payload:
                     print("[ALERT] Payload Match found!")
-            except Exception:
+            except (UnicodeDecodeError, AttributeError):
                 pass
 
 
@@ -91,6 +92,7 @@ class IPProcessor(PacketProcessor):
 class Sniffer:
     """A professional network sniffer class."""
 
+    # pylint: disable=too-many-instance-attributes,too-many-arguments
     def __init__(self, interface, filter_str, output_file,
                  verbose=False, search_string=None):
         """Initialize the sniffer with required configurations."""
@@ -104,7 +106,6 @@ class Sniffer:
         # Threading and Queue setup
         self.packet_queue = queue.Queue()
         self.running = False
-
         self.stats = {'TCP': 0, 'UDP': 0, 'ICMP': 0, 'IP': 0}
 
         if self.output_file and hasattr(scapy, 'PcapWriter'):
@@ -149,14 +150,13 @@ class Sniffer:
         if self.verbose and hasattr(scapy, 'hexdump'):
             try:
                 scapy.hexdump(packet)
-            except Exception:
+            except Exception:  # pylint: disable=broad-except
                 pass
 
     def _worker_loop(self):
         """Background thread loop for processing queued packets."""
         while self.running or not self.packet_queue.empty():
             try:
-                # Timeout allows periodic checking of self.running flag
                 packet = self.packet_queue.get(timeout=0.1)
                 self._process_packet(packet)
                 self.packet_queue.task_done()
@@ -180,14 +180,13 @@ class Sniffer:
             scapy.sniff(
                 iface=self.interface,
                 filter=self.filter_str,
-                prn=self._enqueue_packet,  # Now points to the Queue Producer
+                prn=self._enqueue_packet,
                 store=False
             )
-        except (KeyboardInterrupt, Exception):
+        except KeyboardInterrupt:
             pass
         finally:
             self.running = False
-            # Wait for the worker thread to finish processing the queue
             processor_thread.join()
             if self.writer:
                 self.writer.close()
