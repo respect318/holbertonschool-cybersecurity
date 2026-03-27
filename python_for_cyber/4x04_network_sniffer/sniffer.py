@@ -3,7 +3,6 @@
 PySniffer - Network traffic analysis tool.
 Refactored into a professional Sniffer class.
 """
-
 import argparse
 import scapy.all as scapy
 from scapy.utils import PcapWriter
@@ -19,7 +18,6 @@ class Sniffer:
         self.output_file = output_file
         self.verbose = verbose
         self.writer = None
-
         if self.output_file:
             self.writer = PcapWriter(
                 self.output_file, append=True, sync=True
@@ -30,8 +28,8 @@ class Sniffer:
         if self.writer:
             self.writer.write(packet)
 
-        # Saxta (mock) test paketlərində çökmənin qarşısını almaq üçün yoxlama
-        if hasattr(packet, "haslayer") and packet.haslayer(scapy.IP):
+        # Check if IP layer exists to avoid crashes
+        if packet.haslayer(scapy.IP):
             src_ip = packet[scapy.IP].src
             dst_ip = packet[scapy.IP].dst
 
@@ -43,13 +41,14 @@ class Sniffer:
                        f"{dst_ip}:{dport} | Flags: {flags}")
                 print(msg)
             elif packet.haslayer(scapy.UDP):
-                print(f"[UDP] {src_ip} -> {dst_ip}")
+                sport = packet[scapy.UDP].sport
+                dport = packet[scapy.UDP].dport
+                print(f"[UDP] {src_ip}:{sport} -> {dst_ip}:{dport}")
             elif packet.haslayer(scapy.ICMP):
                 print(f"[ICMP] {src_ip} -> {dst_ip}")
             else:
                 print(f"[IP] {src_ip} -> {dst_ip}")
 
-        # Hexdump yalnız verbose true olduqda işləyir
         if self.verbose:
             scapy.hexdump(packet)
 
@@ -59,7 +58,8 @@ class Sniffer:
             scapy.sniff(
                 iface=self.interface,
                 filter=self.filter_str,
-                prn=self._process_packet
+                prn=self._process_packet,
+                store=False
             )
         except KeyboardInterrupt:
             pass
