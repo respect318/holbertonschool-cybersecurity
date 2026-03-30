@@ -14,12 +14,11 @@ else
 fi
 
 # Create password history file if it doesn't exist
-HIST_FILE="/etc/security/opasswd"
-if [ ! -f "$HIST_FILE" ]; then
+if [ ! -f /etc/security/opasswd ]; then
     echo "Creating password history file..."
-    touch "$HIST_FILE"
-    chmod 600 "$HIST_FILE"
-    echo "  $HIST_FILE: Created"
+    touch /etc/security/opasswd
+    chmod 600 /etc/security/opasswd
+    echo "  /etc/security/opasswd: Created"
 else
     echo "Password history file already exists."
 fi
