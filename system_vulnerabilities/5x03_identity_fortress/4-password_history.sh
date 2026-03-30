@@ -5,9 +5,17 @@ echo
 echo "Configuring pam_pwhistory..."
 echo
 
+# 0️⃣ Backup common-password
+BACKUP_FILE="/etc/pam.d/common-password.bak"
+if [ ! -f "$BACKUP_FILE" ]; then
+    cp /etc/pam.d/common-password "$BACKUP_FILE"
+    echo "Backup of common-password created at $BACKUP_FILE"
+else
+    echo "Backup already exists at $BACKUP_FILE"
+fi
+
 # 1️⃣ Create password history file if it doesn't exist
 HIST_FILE="/etc/security/opasswd"
-
 if [ ! -f "$HIST_FILE" ]; then
     echo "Creating password history file..."
     touch "$HIST_FILE"
@@ -20,10 +28,8 @@ fi
 # 2️⃣ Update PAM configuration
 COMMON_PASSWORD="/etc/pam.d/common-password"
 PAM_LINE="password requisite pam_pwhistory.so remember=5"
-
 if ! grep -q "pam_pwhistory.so" "$COMMON_PASSWORD"; then
     echo "Updating $COMMON_PASSWORD..."
-    # Insert pam_pwhistory before pam_unix.so line
     sed -i "/pam_unix.so/i $PAM_LINE" "$COMMON_PASSWORD"
     echo "  pam_pwhistory.so remember=5: Added"
 else
