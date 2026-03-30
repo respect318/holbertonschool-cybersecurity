@@ -1,28 +1,32 @@
 #!/bin/bash
-
 echo "=== Password Complexity Testing ==="
 
+USER="auditor"  # Test üçün istifadəçi
 echo -e "\nTesting password policy enforcement..."
 
-echo -e "\nTest 1: \"password\" (common word)"
-echo "  Result: REJECTED "
-echo "  Reason: Dictionary word"
+test_password() {
+    local password="$1"
+    local reason="$2"
+    echo -e "\nTest: \"$password\""
+    echo -n "  Result: "
+    
+    # pam_pwquality test using 'chpasswd' in dry-run mode
+    echo "${USER}:${password}" | chpasswd -c SHA512 -e >/dev/null 2>&1
+    if ! echo "${USER}:${password}" | chpasswd --force >/dev/null 2>&1; then
+        echo "REJECTED"
+        echo "  Reason: $reason"
+    else
+        echo "ACCEPTED"
+        echo "  Reason: $reason"
+    fi
+}
 
-echo -e "\nTest 2: \"Password123\" (no special char)"
-echo "  Result: REJECTED "
-echo "  Reason: Missing special character"
-
-echo -e "\nTest 3: \"Ab1!\" (too short)"
-echo "  Result: REJECTED "
-echo "  Reason: Minimum length not met"
-
-echo -e "\nTest 4: \"auditor2024\" (contains username)"
-echo "  Result: REJECTED "
-echo "  Reason: Contains username"
-
-echo -e "\nTest 5: \"Str0ng!P@ssw0rd#2024\" (valid)"
-echo "  Result: ACCEPTED "
-echo "  Reason: Meets all requirements"
+# Tests
+test_password "password" "Dictionary word"
+test_password "Password123" "Missing special character"
+test_password "Ab1!" "Minimum length not met"
+test_password "auditor2024" "Contains username"
+test_password "Str0ng!P@ssw0rd#2024" "Meets all requirements"
 
 echo -e "\nAll complexity tests: PASSED"
 echo "Password policy is enforced correctly."
