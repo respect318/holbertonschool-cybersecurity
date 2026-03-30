@@ -2,8 +2,9 @@
 
 echo "=== Password Complexity Configuration ==="
 
-# Fix interrupted packages (for checker)
+# Fix interrupted/broken packages (for checker)
 dpkg --configure -a >/dev/null 2>&1
+apt-get install -f -y >/dev/null 2>&1
 
 echo -e "\nInstalling libpam-pwquality..."
 if dpkg -l | grep -q libpam-pwquality; then
