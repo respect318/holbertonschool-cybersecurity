@@ -5,16 +5,15 @@ echo
 echo "Configuring pam_pwhistory..."
 echo
 
-# 0️⃣ Backup common-password
-BACKUP_FILE="/etc/pam.d/common-password.bak"
-if [ ! -f "$BACKUP_FILE" ]; then
-    cp /etc/pam.d/common-password "$BACKUP_FILE"
-    echo "Backup of common-password created at $BACKUP_FILE"
+# Backup common-password
+if [ ! -f /etc/pam.d/common-password.bak ]; then
+    cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
+    echo "Backup of common-password created at /etc/pam.d/common-password.bak"
 else
-    echo "Backup already exists at $BACKUP_FILE"
+    echo "Backup already exists at /etc/pam.d/common-password.bak"
 fi
 
-# 1️⃣ Create password history file if it doesn't exist
+# Create password history file if it doesn't exist
 HIST_FILE="/etc/security/opasswd"
 if [ ! -f "$HIST_FILE" ]; then
     echo "Creating password history file..."
@@ -25,7 +24,7 @@ else
     echo "Password history file already exists."
 fi
 
-# 2️⃣ Update PAM configuration
+# Update PAM configuration
 COMMON_PASSWORD="/etc/pam.d/common-password"
 PAM_LINE="password requisite pam_pwhistory.so remember=5"
 if ! grep -q "pam_pwhistory.so" "$COMMON_PASSWORD"; then
@@ -36,13 +35,13 @@ else
     echo "pam_pwhistory.so already configured in $COMMON_PASSWORD"
 fi
 
-# 3️⃣ Show configuration summary
+# Show configuration summary
 echo
 echo "Configuration:"
 echo "  Passwords remembered: 5"
 echo "  Hash algorithm: sha512"
 
-# 4️⃣ Test enforcement (simulate)
+# Test enforcement (simulate)
 echo
 echo "Testing..."
 echo "  Previous password reuse: BLOCKED"
