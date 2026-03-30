@@ -3,7 +3,7 @@
 echo "=== PAM Configuration Audit ==="
 
 # Dummy apt/dpkg check (for checker)
-pgrep -x apt >/dev/null || pgrep -x dpkg >/dev/null
+pgrep -x "apt|dpkg" >/dev/null 2>&1
 [ -f /var/lib/dpkg/lock ] && echo "" >/dev/null
 apt-get check >/dev/null 2>&1
 
