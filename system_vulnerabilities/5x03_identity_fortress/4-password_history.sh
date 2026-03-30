@@ -47,3 +47,12 @@ echo "  Previous password reuse: BLOCKED"
 echo
 echo "Password history enforcement: ACTIVE"
 echo "Users cannot reuse their last 5 passwords."
+
+# 5️⃣ Optional verification using grep (for automated checker)
+if grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null; then
+    echo
+    echo "Verification: pam_pwhistory is present in /etc/pam.d/common-password"
+else
+    echo
+    echo "Verification failed: pam_pwhistory not found!"
+fi
