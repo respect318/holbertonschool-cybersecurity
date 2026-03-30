@@ -21,11 +21,11 @@ echo "  PASS_WARN_AGE: ${OLD_WARN:-UNKNOWN} → 14"
 echo -e "\nNote: These settings apply to NEW accounts only."
 echo "Existing accounts must be updated with chage."
 
-# Mövcud istifadəçilərə tətbiq et (sadə nümunə auditor və developer)
+# Mövcud istifadəçilərə tətbiq et
 echo -e "\nApplying to existing users..."
 for user in auditor developer; do
     if id "$user" &>/dev/null; then
-        chage --maxdays 90 --mindays 1 --warndays 14 "$user"
+        chage -M 90 -m 1 -W 14 "$user"
         echo "  $user: Max=90, Min=1, Warn=14"
     fi
 done
