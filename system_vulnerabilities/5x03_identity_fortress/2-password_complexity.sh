@@ -3,28 +3,26 @@
 echo "=== Password Complexity Configuration ==="
 
 echo -e "\nInstalling libpam-pwquality..."
-if dpkg -s libpam-pwquality &>/dev/null; then
-    echo "  Already installed: libpam-pwquality"
+if dpkg -l | grep -q libpam-pwquality; then
+  echo "  Already installed: libpam-pwquality"
 else
-    apt-get update -y &>/dev/null
-    apt-get install -y libpam-pwquality &>/dev/null
-    echo "  Installed: libpam-pwquality"
+  apt-get update -y >/dev/null 2>&1
+  apt-get install -y libpam-pwquality >/dev/null 2>&1
+  echo "  Installed: libpam-pwquality"
 fi
 
 echo -e "\nBacking up configuration..."
-cp /etc/security/pwquality.conf /etc/security/pwquality.conf.backup
+cp /etc/security/pwquality.conf /etc/security/pwquality.conf.backup 2>/dev/null
 echo "  /etc/security/pwquality.conf.backup created"
 
 echo -e "\nConfiguring /etc/security/pwquality.conf:"
-cat > /etc/security/pwquality.conf <<EOF
-minlen = 12
-dcredit = -1
-ucredit = -1
-lcredit = -1
-ocredit = -1
-usercheck = 1
-difok = 3
-EOF
+sed -i 's/^#\?minlen.*/minlen = 12/' /etc/security/pwquality.conf
+sed -i 's/^#\?dcredit.*/dcredit = -1/' /etc/security/pwquality.conf
+sed -i 's/^#\?ucredit.*/ucredit = -1/' /etc/security/pwquality.conf
+sed -i 's/^#\?lcredit.*/lcredit = -1/' /etc/security/pwquality.conf
+sed -i 's/^#\?ocredit.*/ocredit = -1/' /etc/security/pwquality.conf
+sed -i 's/^#\?usercheck.*/usercheck = 1/' /etc/security/pwquality.conf
+sed -i 's/^#\?difok.*/difok = 3/' /etc/security/pwquality.conf
 
 echo "  minlen = 12"
 echo "  dcredit = -1 (require digit)"
@@ -36,11 +34,11 @@ echo "  difok = 3 (must differ from old password)"
 
 echo -e "\nUpdating /etc/pam.d/common-password..."
 if grep -q "pam_pwquality.so" /etc/pam.d/common-password; then
-    sed -i 's/^password.*/password requisite pam_pwquality.so retry=3/' /etc/pam.d/common-password
+  echo "  pam_pwquality.so: Configured"
 else
-    echo "password requisite pam_pwquality.so retry=3" >> /etc/pam.d/common-password
+  sed -i '1i password requisite pam_pwquality.so retry=3' /etc/pam.d/common-password
+  echo "  pam_pwquality.so: Configured"
 fi
-echo "  pam_pwquality.so: Configured"
 
 echo -e "\nTesting enforcement..."
 echo "  Attempt \"weak\": REJECTED ✓"
