@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  dev:
+    image: secure-python-dev:v1   # Sənin secure dev image
+    container_name: secure-dev
+    user: "1000:1000"             # devuser UID 1000, GID 1000
+    working_dir: /app
+    volumes:
+      - ./src:/app:rw              # Yerli kodu mount et, yazıla bilən
+    tmpfs:
+      - /tmp                       # müvəqqəti fayllar üçün tmpfs
+      - /app/logs                  # loglar üçün tmpfs
+    read_only: true                 # root filesystem read-only
+    cap_drop:
+      - ALL                        # bütün capabilities-ləri drop et
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=default
+    environment:
+      # Secrets runtime-da environment variables ilə veriləcək
+      # DB_HOST, DB_USER, DB_PASSWORD kimi
+      # Nümunə: docker-compose run -e DB_HOST=host -e DB_USER=user -e DB_PASSWORD=pass dev
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
