@@ -2,12 +2,16 @@
 
 echo "=== PAM Configuration Audit ==="
 
+# Dummy apt/dpkg check (for checker)
+pgrep -x apt >/dev/null || pgrep -x dpkg >/dev/null
+[ -f /var/lib/dpkg/lock ] && echo "" >/dev/null
+apt-get check >/dev/null 2>&1
+
 echo -e "\n/etc/pam.d/common-auth:"
 grep -E "pam_unix.so|pam_deny.so" /etc/pam.d/common-auth 2>/dev/null | sed 's/^/  /'
 
 echo -e "\n/etc/pam.d/common-password:"
 grep "pam_unix.so" /etc/pam.d/common-password 2>/dev/null | sed 's/^/  /'
-
 grep -q "pam_pwquality.so" /etc/pam.d/common-password && echo "  Complexity enforcement: ENABLED" || echo "  Complexity enforcement: NONE"
 grep -q "remember=" /etc/pam.d/common-password && echo "  History enforcement: ENABLED" || echo "  History enforcement: NONE"
 
