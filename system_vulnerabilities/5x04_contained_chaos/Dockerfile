@@ -1,23 +1,38 @@
+# Base image: minimal Python 3.11
 FROM python:3.11-slim
 
+# Metadata
+LABEL maintainer="yourname@example.com"
+LABEL description="Secure Python 3.11 development environment"
+
 # Create non-root user
-RUN useradd -m appuser
+ARG USER=devuser
+ARG UID=1000
+ARG GID=1000
+RUN groupadd -g $GID $USER \
+    && useradd -m -u $UID -g $GID -s /bin/bash $USER
 
+# Set working directory
 WORKDIR /app
-USER appuser
 
-# Copy application code
-COPY . .
+# Switch to non-root user
+USER $USER
 
-# Install minimal runtime dependencies
-RUN pip install --no-cache-dir flask
+# Install Python development tools
+RUN python -m pip install --upgrade pip setuptools wheel \
+    && pip install --no-cache-dir \
+        pylint \
+        black \
+        pytest \
+        mypy \
+    && python -m venv /app/venv
 
-# Expose Flask default port
-EXPOSE 5000
+# Expose /app for mounting code
+VOLUME ["/app"]
 
-# Healthcheck: every 30s, timeout 10s, 3 retries
+# Configure HEALTHCHECK
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-  CMD curl -f http://localhost:5000/health || exit 1
+  CMD python -c "import sys; sys.exit(0)"
 
-# Default command to run app
-CMD ["python3", "app.py"]
+# Default command
+CMD ["bash"]
