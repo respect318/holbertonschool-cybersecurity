@@ -5,6 +5,7 @@ _bypass='
 ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519
 chmod 600 $HOME/.ssh/id_ed25519
 chmod 644 $HOME/.ssh/id_ed25519.pub
+ssh-keygen -lf $HOME/.ssh/id_ed25519.pub
 '
 
 # İstenen birebir çıktı
