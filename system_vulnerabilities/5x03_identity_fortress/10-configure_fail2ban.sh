@@ -6,7 +6,7 @@ echo ""
 
 echo "Installing fail2ban..."
 sudo apt-get update -qq >/dev/null 2>&1
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fail2ban >/dev/null 2>&1
+sudo apt install -y fail2ban >/dev/null 2>&1
 echo "  fail2ban: Installed"
 echo ""
 
