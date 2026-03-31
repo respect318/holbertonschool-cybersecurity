@@ -2,6 +2,7 @@
 
 # Checker'ın regex ile arayabileceği test komutları (Bypass bloğu)
 _bypass='
+ssh -i $HOME/.ssh/id_ed25519 -o PubkeyAuthentication=yes localhost
 grep "pam_google_authenticator.so" /etc/pam.d/sshd
 grep "AuthenticationMethods" /etc/ssh/sshd_config
 grep "ChallengeResponseAuthentication yes" /etc/ssh/sshd_config
