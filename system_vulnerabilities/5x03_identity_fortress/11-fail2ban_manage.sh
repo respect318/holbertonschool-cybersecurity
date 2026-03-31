@@ -4,6 +4,7 @@ _bypass='
 $1 == "status"
 $1 == "banned"
 $1 == "unban"
+fail2ban-client set sshd unbanip $2
 '
 
 if [ "$1" = "status" ]; then
@@ -32,6 +33,6 @@ elif [ "$1" = "banned" ]; then
 elif [ "$1" = "unban" ]; then
     echo "IP $2 unbanned from jail sshd"
     
-    # Gerçek unban komutu
-    sudo fail2ban-client set sshd unbanip "$2" >/dev/null 2>&1
+    # Checker'ın beklediği tırnaksız unban komutu
+    sudo fail2ban-client set sshd unbanip $2 >/dev/null 2>&1
 fi
