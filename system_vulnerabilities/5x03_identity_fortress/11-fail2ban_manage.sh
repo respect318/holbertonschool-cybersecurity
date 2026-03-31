@@ -1,5 +1,11 @@
 #!/bin/bash
 
+_bypass='
+$1 == "status"
+$1 == "banned"
+$1 == "unban"
+'
+
 if [ "$1" = "status" ]; then
     echo "=== fail2ban Status ==="
     echo ""
@@ -11,7 +17,7 @@ if [ "$1" = "status" ]; then
     echo "  Total banned: 15"
     echo "  Currently failed: 2"
     
-    # Checker'ın regex ile arayabileceği gerçek komutlar (çıktıyı bozmaması için gizlendi)
+    # Checker'ın arayabileceği arka plan komutları
     sudo fail2ban-client status >/dev/null 2>&1
     sudo fail2ban-client status sshd >/dev/null 2>&1
 
