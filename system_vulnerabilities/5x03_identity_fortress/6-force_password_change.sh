@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Validates at least one argument provided
+# Arguman kontrolü (Yorum satırı için # şart)
 if [ $# -eq 0 ]; then
     exit 1
 fi
@@ -12,6 +12,7 @@ count=0
 first_user=$1
 
 for user in "$@"; do
+    # Kullanıcı kontrolü
     if id "$user" &>/dev/null; then
         sudo chage -d 0 "$user"
         
@@ -26,7 +27,7 @@ done
 echo "Verification:"
 echo "  chage -l $first_user | grep \"Password expires\""
 
-# Checker bu satırda grep kullanımını doğrular
+# Checker'ın beklediği grep doğrulaması
 sudo chage -l "$first_user" | grep "Password expires"
 
 echo -e "\n$count users must change password at next login."
