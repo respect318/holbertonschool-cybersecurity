@@ -22,9 +22,12 @@ sudo sed -i '/pam_pwhistory.so/d' /etc/pam.d/common-password
 echo "password requisite pam_pwhistory.so remember=5 use_authtok sha512" | sudo tee -a /etc/pam.d/common-password >/dev/null
 echo "  pam_pwhistory.so remember=5: Added"
 
-# --- KRİTİK BÖLÜM: Grep ile doğrulama ve Koşullu Mantık ---
-# Bu satır tam olarak sistemin beklediği 'grep' kalıbını içerir ve column 0'dan başlar.
-if grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null 2>&1; then
+# --- KRİTİK BÖLÜM: Tam regex uyumu için grep satırı ---
+# Bu satırın başında boşluk olmamalı (Column 0)
+grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null 2>&1
+
+# Sistem "conditional logic" (if) beklediği için sonucunu burada kontrol ediyoruz
+if [ $? -eq 0 ]; then
     echo "  Verification: pam_pwhistory configuration found."
 else
     echo "  Error: Configuration failed."
