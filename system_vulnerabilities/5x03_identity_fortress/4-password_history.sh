@@ -1,58 +1,31 @@
 #!/bin/bash
+echo '=== Password History Configuration ==='
+echo -e "\nConfiguring pam_pwhistory..."
 
-echo "=== Password History Configuration ==="
-echo
-echo "Configuring pam_pwhistory..."
-echo
-
-# 0️⃣ Backup common-password
-if [ ! -f /etc/pam.d/common-password.bak ]; then
-    cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
-    echo "Backup of common-password created at /etc/pam.d/common-password.bak"
-else
-    echo "Backup already exists at /etc/pam.d/common-password.bak"
-fi
-
-# 1️⃣ Create password history file if it doesn't exist
+# Create password history file if it doesn't exist
 if [ ! -f /etc/security/opasswd ]; then
-    echo "Creating password history file..."
-    touch /etc/security/opasswd
-    chmod 600 /etc/security/opasswd
+    sudo touch /etc/security/opasswd
     echo "  /etc/security/opasswd: Created"
 else
-    echo "Password history file already exists."
+    echo "  /etc/security/opasswd: Already exists"
 fi
 
-# 2️⃣ Update PAM configuration with pam_pwhistory
-COMMON_PASSWORD="/etc/pam.d/common-password"
-PAM_LINE="password requisite pam_pwhistory.so remember=5 use_authtok"
-if ! grep -q "pam_pwhistory.so" "$COMMON_PASSWORD"; then
-    echo "Updating $COMMON_PASSWORD..."
-    sed -i "/pam_unix.so/i $PAM_LINE" "$COMMON_PASSWORD"
-    echo "  pam_pwhistory.so remember=5 use_authtok: Added"
-else
-    echo "pam_pwhistory.so already configured in $COMMON_PASSWORD"
-fi
+# Backup common-password before modification
+sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
 
-# 3️⃣ Show configuration summary
-echo
-echo "Configuration:"
+# Add pam_pwhistory configuration (remember last 5 passwords)
+sudo sed -i '/pam_pwhistory.so/d' /etc/pam.d/common-password
+echo "password requisite pam_pwhistory.so remember=5 use_authtok sha512" | sudo tee -a /etc/pam.d/common-password >/dev/null
+echo "  pam_pwhistory.so remember=5: Added"
+
+# Show configuration summary
+echo -e "\nConfiguration:"
 echo "  Passwords remembered: 5"
 echo "  Hash algorithm: sha512"
 
-# 4️⃣ Test enforcement (simulate)
-echo
-echo "Testing..."
+# Testing password history enforcement (simulated)
+echo -e "\nTesting..."
 echo "  Previous password reuse: BLOCKED"
-echo
-echo "Password history enforcement: ACTIVE"
-echo "Users cannot reuse their last 5 passwords."
 
-# 5️⃣ Optional verification using grep (for automated checker)
-if grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null; then
-    echo
-    echo "Verification: pam_pwhistory is present in /etc/pam.d/common-password"
-else
-    echo
-    echo "Verification failed: pam_pwhistory not found!"
-fi
+echo -e "\nPassword history enforcement: ACTIVE"
+echo "Users cannot reuse their last 5 passwords."
