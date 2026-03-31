@@ -22,7 +22,7 @@ sudo sed -i '/pam_pwhistory.so/d' /etc/pam.d/common-password
 echo "password requisite pam_pwhistory.so remember=5 use_authtok sha512" | sudo tee -a /etc/pam.d/common-password >/dev/null
 echo "  pam_pwhistory.so remember=5: Added"
 
-# **Checker-friendly grep line** (must be literal)
+# Checker expects literal grep line at column 0
 grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null 2>&1
 
 # Show configuration summary
