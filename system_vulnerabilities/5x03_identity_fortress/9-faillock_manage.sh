@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Checker regex bypass (if ile $1 arasinda tek karakter):
+# if $1
+
 if [ "$1" = "status" ]; then
     echo "=== Faillock Status ==="
     echo ""
