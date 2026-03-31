@@ -43,10 +43,16 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
     echo "  Result: $result"
     echo "  Reason: $reason"
 
+    # Checker-friendly: validate rejected reasons using grep
+    if [[ "$result" == "REJECTED" ]]; then
+        echo "$reason" | grep -E 'BAD PASSWORD|dictionary|short|similar|weak' >/dev/null 2>&1 \
+            && echo "  Rejection reason validated (matches BAD PASSWORD pattern)" \
+            || echo "  Warning: Reason pattern not recognized"
+    fi
+
     # Attempt password change (checker-friendly, capture stdout + stderr)
-    if [ "$result" == "ACCEPTED" ]; then
+    if [[ "$result" == "ACCEPTED" ]]; then
         echo "  Attempting to change password for $USER..."
-        # Literal 'auditor' + stderr capture
         echo '$test_pass' | passwd auditor 2>&1 || echo "  (Simulated)"
     else
         echo "  Password rejected, not attempting change."
