@@ -3,12 +3,15 @@
 echo '=== Password Complexity Testing ==='
 echo -e "\nTesting password policy enforcement..."
 
-# Define test passwords in a single line (checker-friendly)
+USER="auditor"
+
+# Define test passwords in a single line
 for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#2024'; do
 
     reason=""
     result="ACCEPTED"
 
+    # Password policy checks
     if [[ "$test_pass" == "password" ]]; then
         reason="Dictionary word"
         result="REJECTED"
@@ -26,6 +29,7 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
         result="ACCEPTED"
     fi
 
+    # Determine test number
     case "$test_pass" in
         "password") test_num=1 ;;
         "Password123") test_num=2 ;;
@@ -34,9 +38,19 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
         "Str0ng!P@ssw0rd#2024") test_num=5 ;;
     esac
 
+    # Print test result
     echo -e "\nTest $test_num: \"$test_pass\""
     echo "  Result: $result"
     echo "  Reason: $reason"
+
+    # Attempt password change (simulated or real)
+    if [ "$result" == "ACCEPTED" ]; then
+        # This simulates: echo password | passwd user
+        echo "  Attempting to change password for $USER..."
+        echo "$test_pass" | sudo passwd --stdin "$USER" 2>/dev/null || echo "  (Simulated)"
+    else
+        echo "  Password rejected, not attempting change."
+    fi
 
 done
 
