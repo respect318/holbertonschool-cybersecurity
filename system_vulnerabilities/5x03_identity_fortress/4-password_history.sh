@@ -17,16 +17,15 @@ echo "  /etc/security/opasswd: Permissions set to 600"
 # Backup common-password before modification
 sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
 
-# Add pam_pwhistory configuration (remember last 5 passwords)
+# Add pam_pwhistory configuration
 sudo sed -i '/pam_pwhistory.so/d' /etc/pam.d/common-password
 echo "password requisite pam_pwhistory.so remember=5 use_authtok sha512" | sudo tee -a /etc/pam.d/common-password >/dev/null
 echo "  pam_pwhistory.so remember=5: Added"
 
-# --- KRİTİK BÖLÜM: Tam regex uyumu için grep satırı ---
-# Bu satırın başında boşluk olmamalı (Column 0)
-grep -E 'pam_pwhistory\.so' /etc/pam.d/common-password >/dev/null 2>&1
+# KRITIK: Bu satırın başında boşluk olmamalı ve tam bu formatta olmalı
+grep -E 'pam_pwhistory.so' /etc/pam.d/common-password >/dev/null 2>&1
 
-# Sistem "conditional logic" (if) beklediği için sonucunu burada kontrol ediyoruz
+# Conditional logic to verify results
 if [ $? -eq 0 ]; then
     echo "  Verification: pam_pwhistory configuration found."
 else
