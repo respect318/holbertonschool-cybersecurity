@@ -10,6 +10,10 @@ else
     echo "  /etc/security/opasswd: Already exists"
 fi
 
+# Set secure permissions on opasswd
+sudo chmod 600 /etc/security/opasswd
+echo "  /etc/security/opasswd: Permissions set to 600"
+
 # Backup common-password before modification
 sudo cp /etc/pam.d/common-password /etc/pam.d/common-password.bak
 
