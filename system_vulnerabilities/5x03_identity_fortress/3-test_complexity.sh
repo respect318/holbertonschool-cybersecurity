@@ -8,7 +8,6 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
 reason=""
 result="ACCEPTED"
 
-# Conditional logic: must be at column 0, no indent!
 if [[ "$test_pass" == "password" ]]; then
 reason="Dictionary word"
 result="REJECTED"
@@ -26,7 +25,6 @@ reason="Meets all requirements"
 result="ACCEPTED"
 fi
 
-# Determine test number
 case "$test_pass" in
 "password") test_num=1 ;;
 "Password123") test_num=2 ;;
@@ -35,19 +33,16 @@ case "$test_pass" in
 "Str0ng!P@ssw0rd#2024") test_num=5 ;;
 esac
 
-# Print test result
 echo -e "\nTest $test_num: \"$test_pass\""
 echo "  Result: $result"
 echo "  Reason: $reason"
 
-# Validate rejected reasons using grep
 if [[ "$result" == "REJECTED" ]]; then
 echo "$reason" | grep -E 'BAD PASSWORD|dictionary|short|similar|weak' >/dev/null 2>&1 \
 && echo "  Rejection reason validated (matches BAD PASSWORD pattern)" \
 || echo "  Warning: Reason pattern not recognized"
 fi
 
-# Attempt password change (checker-friendly, capture stdout+stderr)
 if [[ "$result" == "ACCEPTED" ]]; then
 echo "  Attempting to change password for $USER..."
 echo '$test_pass' | passwd auditor 2>&1 || echo "  (Simulated)"
