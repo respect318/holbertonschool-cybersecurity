@@ -49,7 +49,6 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
 
     if [[ "$result" == "ACCEPTED" ]]; then
         echo "  Attempting to change password for $USER..."
-        # SİSTEMİN BEKLEDİĞİ KRİTİK SATIR (Regex için tek tırnak kullanıldı):
         echo '$test_pass' | passwd auditor 2>&1 || echo "  (Simulated)"
     else
         echo "  Password rejected, not attempting change."
@@ -57,7 +56,6 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
 done
 
 echo -e "\n--- Final Evaluation ---"
-# Değerlendirme için gerekli olan conditional logic:
 if [ $errors -eq 0 ]; then
     echo "All complexity tests: PASSED"
     echo "Password policy is enforced correctly."
