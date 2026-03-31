@@ -11,7 +11,7 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
     reason=""
     result="ACCEPTED"
 
-    # Password policy checks
+    # Password policy checks using conditional logic
     if [[ "$test_pass" == "password" ]]; then
         reason="Dictionary word"
         result="REJECTED"
