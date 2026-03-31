@@ -1,0 +1,58 @@
+===============================================================================
+IDENTITY SECURITY POLICY - NOVATECH CORP
+===============================================================================
+Version: 1.0
+Classification: Internal Security
+Last Updated: 2026-03-31
+===============================================================================
+
+1. PASSWORD POLICY
+------------------
+To mitigate credential-based attacks, the following rules apply:
+- Complexity: Minimum 14 characters. Must include uppercase, lowercase, 
+  numbers, and special characters (!@#$%^&*).
+- History: Users cannot reuse any of their last 10 passwords.
+- Aging: Passwords must be changed every 90 days.
+- Storage: Passwords must be hashed using SHA-512 or Argon2.
+
+2. ACCOUNT LOCKOUT POLICY
+-------------------------
+To prevent brute-force and dictionary attacks:
+- Threshold: Accounts will be locked after 5 consecutive failed attempts.
+- Duration: Initial lockout period is 30 minutes.
+- Reset: After the lockout period, the counter resets. Repeated lockouts 
+  (3 within 24h) require manual administrator intervention.
+
+3. SSH ACCESS POLICY
+--------------------
+- Authentication: Password-based authentication is STRICTLY PROHIBITED.
+- Keys: Only ED25519 or RSA (min 3072-bit) keys are permitted.
+- Root Access: Direct 'root' login via SSH is disabled. 
+- Timeout: Idle sessions will be terminated after 15 minutes of inactivity.
+
+4. MULTI-FACTOR AUTHENTICATION (MFA) REQUIREMENTS
+-------------------------------------------------
+- Scope: MFA is mandatory for all SSH access to production environments.
+- Method: Time-based One-Time Password (TOTP) via Google Authenticator.
+- Enforcement: Connection requires BOTH a valid SSH key AND a TOTP code.
+
+5. ACCOUNT LIFECYCLE MANAGEMENT
+-------------------------------
+- Creation: Accounts are created only upon signed HR request. 
+  Principle of Least Privilege (PoLP) is applied by default.
+- Modification: Any privilege escalation must be approved by a manager 
+  and logged in the ticketing system.
+- Termination: Accounts must be disabled within 1 hour of employee 
+  departure or contract termination.
+
+6. EMERGENCY ACCESS PROCEDURES (SUMMARY)
+----------------------------------------
+- Break-Glass: Use of offline emergency scratch codes is permitted.
+- Authorization: Emergency access requires a documented incident ticket.
+- Audit: All emergency sessions must undergo a 24-hour post-mortem 
+  review and secret rotation (keys/TOTP secrets).
+
+===============================================================================
+Compliance: This policy is subject to quarterly audits. 
+Non-compliance may result in immediate revocation of access.
+===============================================================================
