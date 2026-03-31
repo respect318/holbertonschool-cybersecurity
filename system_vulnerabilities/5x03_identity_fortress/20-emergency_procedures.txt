@@ -1,0 +1,55 @@
+===============================================================================
+IDENTITY FORTRESS: EMERGENCY ACCESS PROCEDURES
+===============================================================================
+
+1. LOST PHONE / LOST TOTP DEVICE PROCEDURE
+------------------------------------------
+In the event a user (including executive staff) loses access to their TOTP 
+device, the following steps must be followed:
+- Immediately report the loss to the Security Operations Center (SOC).
+- Use one of the pre-generated emergency scratch codes for a single login.
+- Once logged in, the user must run 'google-authenticator' to generate a 
+  new secret key and invalidate the old one.
+- Update the authenticator app on the new device with the new QR code.
+
+2. EMERGENCY SCRATCH CODES USAGE
+--------------------------------
+- Each user is provided with 5 emergency scratch codes during TOTP setup.
+- Location: These should be stored physically (Safe/Vault) or in a secure, 
+  offline password manager. Never on the server itself.
+- Usage: Enter a scratch code at the "Verification code:" prompt.
+- Note: Each code is valid for ONE use only. Once used, it is consumed.
+
+3. TEMPORARY MFA BYPASS FOR EMERGENCIES
+---------------------------------------
+If a lockout occurs and no scratch codes are available, an administrator 
+with 'sudo' privileges can temporarily bypass MFA:
+- Access the server via a secondary secure method (Console/Serial).
+- Edit /etc/ssh/sshd_config:
+    Change: AuthenticationMethods publickey,keyboard-interactive
+    To:     AuthenticationMethods publickey
+- Reload SSH: systemctl reload sshd
+- Once the user has reset their TOTP, MFA MUST be re-enabled immediately.
+
+4. ROOT ACCESS RECOVERY PROCEDURE
+---------------------------------
+If all administrative access is lost:
+- Reboot the server into Single User Mode or use a Rescue ISO.
+- Mount the root filesystem in read-write mode.
+- Reset the administrative user password or inject a new SSH public key 
+  into /root/.ssh/authorized_keys.
+- Ensure 'PermitRootLogin' is only temporarily enabled if necessary.
+
+5. AUDIT TRAIL REQUIREMENTS
+---------------------------
+Every emergency access event must be documented and audited:
+- Logs: Review /var/log/auth.log to confirm the timestamp of emergency access.
+- Incident Report: Document the reason for emergency access, the personnel 
+  involved, and the actions taken.
+- Post-Mortem: Verify that all secrets (TOTP keys/Scratch codes) were 
+  regenerated following the incident.
+- Evidence: Retain logs for a minimum of 90 days for compliance audits.
+
+===============================================================================
+END OF DOCUMENT
+===============================================================================
