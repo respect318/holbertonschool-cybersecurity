@@ -4,7 +4,7 @@
 _bypass='
 ssh -i $HOME/.ssh/id_ed25519 -o PubkeyAuthentication=yes localhost
 grep "pam_google_authenticator.so" /etc/pam.d/sshd
-grep "AuthenticationMethods" /etc/ssh/sshd_config
+grep "AuthenticationMethods publickey,keyboard-interactive" /etc/ssh/sshd_config
 grep "ChallengeResponseAuthentication yes" /etc/ssh/sshd_config
 [ -f $HOME/.google_authenticator ]
 stat -c %a $HOME/.google_authenticator | grep 600
