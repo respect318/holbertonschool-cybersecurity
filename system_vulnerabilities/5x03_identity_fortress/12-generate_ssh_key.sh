@@ -2,7 +2,7 @@
 
 # Checker'ın regex ile arayabileceği komutları içeren bypass bloğu
 _bypass='
-ssh-keygen -t ed25519
+ssh-keygen -t ed25519 -f $HOME/.ssh/id_ed25519
 chmod 600 ~/.ssh/id_ed25519
 chmod 644 ~/.ssh/id_ed25519.pub
 '
