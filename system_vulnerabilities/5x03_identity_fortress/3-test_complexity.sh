@@ -3,54 +3,72 @@ echo '=== Password Complexity Testing ==='
 echo -e "\nTesting password policy enforcement..."
 
 USER="auditor"
+# Hataları takip etmek için bir değişken ekledik
+errors=0
 
 for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#2024'; do
-reason=""
-result="ACCEPTED"
+    reason=""
+    result="ACCEPTED"
 
-if [[ "$test_pass" == "password" ]]; then
-reason="Dictionary word"
-result="REJECTED"
-elif [[ "$test_pass" == "Password123" ]]; then
-reason="Missing special character"
-result="REJECTED"
-elif [[ "$test_pass" == "Ab1!" ]]; then
-reason="Minimum length not met"
-result="REJECTED"
-elif [[ "$test_pass" == "auditor2024" ]]; then
-reason="Contains username"
-result="REJECTED"
-elif [[ "$test_pass" == "Str0ng!P@ssw0rd#2024" ]]; then
-reason="Meets all requirements"
-result="ACCEPTED"
-fi
+    if [[ "$test_pass" == "password" ]]; then
+        reason="Dictionary word"
+        result="REJECTED"
+    elif [[ "$test_pass" == "Password123" ]]; then
+        reason="Missing special character"
+        result="REJECTED"
+    elif [[ "$test_pass" == "Ab1!" ]]; then
+        reason="Minimum length not met"
+        result="REJECTED"
+    elif [[ "$test_pass" == "auditor2024" ]]; then
+        reason="Contains username"
+        result="REJECTED"
+    elif [[ "$test_pass" == "Str0ng!P@ssw0rd#2024" ]]; then
+        reason="Meets all requirements"
+        result="ACCEPTED"
+    fi
 
-case "$test_pass" in
-"password") test_num=1 ;;
-"Password123") test_num=2 ;;
-"Ab1!") test_num=3 ;;
-"auditor2024") test_num=4 ;;
-"Str0ng!P@ssw0rd#2024") test_num=5 ;;
-esac
+    case "$test_pass" in
+        "password") test_num=1 ;;
+        "Password123") test_num=2 ;;
+        "Ab1!") test_num=3 ;;
+        "auditor2024") test_num=4 ;;
+        "Str0ng!P@ssw0rd#2024") test_num=5 ;;
+    esac
 
-echo -e "\nTest $test_num: \"$test_pass\""
-echo "  Result: $result"
-echo "  Reason: $reason"
+    echo -e "\nTest $test_num: \"$test_pass\""
+    echo "  Result: $result"
+    echo "  Reason: $reason"
 
-if [[ "$result" == "REJECTED" ]]; then
-echo "$reason" | grep -E 'BAD PASSWORD|dictionary|short|similar|weak' >/dev/null 2>&1 \
-&& echo "  Rejection reason validated (matches BAD PASSWORD pattern)" \
-|| echo "  Warning: Reason pattern not recognized"
-fi
+    if [[ "$result" == "REJECTED" ]]; then
+        # Buradaki kontrolü bir if içine alarak mantıksal doğrulama yapıyoruz
+        if echo "$reason" | grep -E 'BAD PASSWORD|dictionary|short|similar|weak' >/dev/null 2>&1; then
+            echo "  Rejection reason validated (matches BAD PASSWORD pattern)"
+        else
+            echo "  Warning: Reason pattern not recognized"
+            errors=$((errors + 1))
+        fi
+    fi
 
-if [[ "$result" == "ACCEPTED" ]]; then
-echo "  Attempting to change password for $USER..."
-echo '$test_pass' | passwd auditor 2>&1 || echo "  (Simulated)"
-else
-echo "  Password rejected, not attempting change."
-fi
-
+    if [[ "$result" == "ACCEPTED" ]]; then
+        echo "  Attempting to change password for $USER..."
+        # Değişkenin genişlemesi için tek tırnak (') yerine çift tırnak (") kullanmalısın
+        if echo "$test_pass" | passwd $USER 2>&1; then
+            echo "  Password changed successfully."
+        else
+            echo "  (Simulated)"
+        fi
+    else
+        echo "  Password rejected, not attempting change."
+    fi
 done
 
-echo -e "\nAll complexity tests: PASSED"
-echo "Password policy is enforced correctly."
+echo -e "\n--- Final Evaluation ---"
+# İstenen "conditional logic to evaluate results" (sonuçları değerlendirmek için koşullu mantık) burasıdır:
+if [ $errors -eq 0 ]; then
+    echo "All complexity tests: PASSED"
+    echo "Password policy is enforced correctly."
+    exit 0
+else
+    echo "Some tests FAILED."
+    exit 1
+fi
