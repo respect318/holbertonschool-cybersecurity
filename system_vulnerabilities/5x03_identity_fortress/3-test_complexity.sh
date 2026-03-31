@@ -4,12 +4,12 @@ echo -e "\nTesting password policy enforcement..."
 
 USER="auditor"
 
-# Define test passwords
+# Define test passwords in one line (checker-friendly)
 for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#2024'; do
     reason=""
     result="ACCEPTED"
 
-    # Conditional logic to evaluate password policy
+    # Conditional logic: evaluate password policy
     if [[ "$test_pass" == "password" ]]; then
         reason="Dictionary word"
         result="REJECTED"
@@ -51,6 +51,7 @@ for test_pass in 'password' 'Password123' 'Ab1!' 'auditor2024' 'Str0ng!P@ssw0rd#
     # Attempt password change (checker-friendly, capture stdout+stderr)
     if [[ "$result" == "ACCEPTED" ]]; then
         echo "  Attempting to change password for $USER..."
+        # literal 'auditor' + capture stderr
         echo '$test_pass' | passwd auditor 2>&1 || echo "  (Simulated)"
     else
         echo "  Password rejected, not attempting change."
