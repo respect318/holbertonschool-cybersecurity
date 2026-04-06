@@ -41,39 +41,40 @@
 ## IT Infrastructure Identified
 
 **Servers - Central Hospital:**  
-- ehr-srv-01 (EHR app)  
-- ehr-db-01 (PostgreSQL)  
-- pacs-srv-01  
-- billing-srv-01  
-- ad-dc-01/02  
-- file-srv-01  
+- ehr-srv-01 (EHR application server)  
+- ehr-db-01 (PostgreSQL database)  
+- pacs-srv-01 (PACS imaging server)  
+- billing-srv-01 (Billing/Claims processing)  
+- ad-dc-01/02 (Domain Controllers)  
+- file-srv-01 (Department file shares)  
 - print-srv-01 [UNVERIFIED]  
-- backup-srv-01  
-- web-srv-01  
+- backup-srv-01 (Veeam backup server)  
+- web-srv-01 (Public website + patient portal)  
 
 **Servers - Westside Clinic:**  
-- ws-srv-01, possible additional unverified server  
+- ws-srv-01 (local file server + scheduling)  
+- Possible additional unverified server  
 
-**Servers - HQ:** cloud-based, connects via VPN to Central  
+**Servers - Corporate HQ:** Cloud-based, connects via VPN to Central  
 
 **Network Equipment:**  
-- Central: Cisco core switch, 2x Cisco access per floor, Fortinet FortiGate 100F  
+- Central: Cisco core switch, 2x Cisco access switches per floor, Fortinet FortiGate 100F firewall  
 - Westside: unmanaged switch + consumer router  
 - HQ: building-managed network, VLANs unknown  
 - WiFi: Ubiquiti UniFi APs (Central:12, Westside unknown)  
 
 **Endpoints:**  
 - Central: ~320 Windows 10 workstations + 60 thin clients  
-- Westside: ~45 workstations  
-- HQ: ~120 workstations + 30 laptops  
-- ~25 iPads  
+- Westside: ~45 Windows 10 workstations  
+- HQ: ~120 Windows 10/11 workstations + 30 laptops  
+- Tablets: ~25 iPads (used by physicians)  
 
 **Medical Devices:**  
 - Patient monitors (~80 Philips IntelliVue)  
 - Infusion pumps (~120 BD Alaris)  
 - MRI (Windows XP)  
-- CT (unknown OS)  
-- Nurse call system  
+- CT scanner (unknown OS)  
+- Nurse call system (IP-based)  
 - Badge/access system (HID, AD-connected)
 
 ## Data and Services
@@ -89,7 +90,7 @@
 
 ## Known Unknowns
 
-- Complete IT asset inventory (endpoints, IoT)  
+- Complete IT asset inventory (endpoints, IoT devices)  
 - Full network diagram & VLAN segmentation  
 - OS of CT scanner  
 - Guest WiFi isolation & HQ VPN ACLs  
