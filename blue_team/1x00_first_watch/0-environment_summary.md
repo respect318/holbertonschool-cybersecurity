@@ -1,81 +1,78 @@
 # 0-environment_summary.md
 
 ## 1. Organization Overview
-MedDefense Health Systems is a healthcare provider operating across three distinct locations with approximately **2,000 total employees**.
 
-### Sites and Locations
-| Site Name | Location Type | Function | Headcount |
+MedDefense Health Systems operates across three distinct locations with a total staff of approximately 2,000.
+
+### Sites and Functions
+| Site Name | Location Type | Function & Departments | Headcount |
 | :--- | :--- | :--- | :--- |
-| **Central Hospital** | Urban / Downtown | 350-bed acute care facility; main clinical hub. | ~1,400 |
-| **Westside Clinic** | Suburban | Outpatient services, diagnostics, and minor procedures. | ~180 |
-| **Corporate HQ** | Business Park | Administrative, Finance, HR, Legal, and IT operations. | ~220 |
+| **Central Hospital** | Downtown (6 floors + basement) | **350-bed acute care facility.** Departments: Emergency, Surgery, Cardiology, Radiology, Oncology, Pediatrics, Maternity, Pharmacy, Laboratory, Administration. | ~1,400 |
+| **Westside Clinic** | Suburban (2-story) | **Outpatient facility.** Services: Primary care, diagnostic imaging (X-ray/Ultrasound), blood work, minor procedures, physical therapy. | ~180 |
+| **Corporate HQ** | Commercial (3rd floor) | **Administrative hub.** Departments: Finance, HR, Legal, Marketing, Executive Leadership, and IT. | ~220 |
 
-### Departments and Reporting Structure
-* **Leadership:** Led by CEO Dr. Patricia Morales.
-* **Security & IT:** * **James Chen:** Deputy CISO (Acting CISO), reports to the CEO. Responsible for security policy.
-    * **Sarah Park:** IT Director, peer to James Chen. Manages 11 staff (SysAdmins, Network Techs, DBA, Helpdesk).
-    * **Structural Friction:** James Chen has authority over security policy but lacks authority over IT operations, leading to implementation delays.
-* **Clinical:** Managed by Clinical Directors per department (Surgery, Cardiology, etc.).
+### Reporting Structure (Security & IT)
+* **Executive Leadership:** Dr. Patricia Morales (CEO) oversees all operations.
+* **Security Leadership:** James Chen (Deputy CISO/Acting CISO) handles security policy. He reports directly to the CEO.
+* **IT Operations:** Sarah Park (IT Director) manages a team of 11 (3 SysAdmins, 2 Network Techs, 1 DBA, 2 Helpdesk, 2 Desktop Support).
+* **Operational Friction:** James Chen (Security) and Sarah Park (IT) are peers. While James sets security policy, he lacks authority over the IT operations team, leading to implementation gaps (e.g., delayed network segmentation).
 
 ---
 
 ## 2. IT Infrastructure Identified
-The infrastructure is centralized at the Hospital, with other sites connecting via VPN.
 
-### Servers (MedDefense Central)
-| Name/Type | Function | Technical Details |
-| :--- | :--- | :--- |
-| `ehr-srv-01` | EHR Application | Ubuntu 20.04 LTS |
-| `ehr-db-01` | EHR Database | PostgreSQL (Ubuntu 20.04); accessible to entire subnet |
-| `pacs-srv-01` | Imaging Server | Windows Server 2016 |
-| `billing-srv-01`| Billing/Claims | Ubuntu 18.04 LTS; history of performance/malware issues |
-| `ad-dc-01/02` | Domain Controllers | Windows Server 2019 |
-| `file-srv-01` | File Shares | Windows Server 2016 |
-| `print-srv-01` | Print Server | Windows Server 2012 R2 (**End of Life**) |
-| `backup-srv-01`| Backup Server | Ubuntu 22.04 LTS (Veeam); backs up to local NAS |
-| `web-srv-01` | Public Portal | Ubuntu 20.04 LTS; located in DMZ |
+### Server Inventory
+* **Central Hospital:**
+    * `ehr-srv-01` (Ubuntu 20.04): EHR Application.
+    * `ehr-db-01` (Ubuntu 20.04): PostgreSQL Database.
+    * `pacs-srv-01` (Windows Server 2016): Imaging server.
+    * `billing-srv-01` (Ubuntu 18.04): Billing/Claims (History of performance/malware issues).
+    * `ad-dc-01/02` (Windows Server 2019): Domain Controllers.
+    * `file-srv-01` (Windows Server 2016): Department file shares.
+    * `print-srv-01` (Windows Server 2012R2): **Unverified** and End-of-Life.
+    * `backup-srv-01` (Ubuntu 22.04): Veeam backups to a local, non-isolated NAS.
+    * `web-srv-01` (Ubuntu 20.04): Public Website/Portal in DMZ.
+* **Westside Clinic:**
+    * `ws-srv-01` (Windows Server 2016): Local file/scheduling.
+    * Possible second unconfirmed server in the equipment closet.
 
-### Infrastructure at Other Sites
-* **Westside Clinic:** `ws-srv-01` (Windows Server 2016) for files/scheduling. Uses a **consumer-grade Netgear Nighthawk router** for VPN/Internet.
-* **Corporate HQ:** No on-premise servers; relies on cloud services (O365) and VPN to Central.
+### Network Devices
+* **Central:** Fortinet FortiGate 100F Firewall, Cisco core switch, Cisco access switches (2 per floor), Ubiquiti UniFi APs (12 units).
+* **Westside:** Netgear Nighthawk consumer-grade router (handles site-to-site VPN), unmanaged switch.
+* **HQ:** Managed by landlord; MedDefense resides on a specific VLAN.
 
-### Network and Endpoints
-* **Network Hardware:** Fortinet FortiGate 100F (Central), Cisco core/access switches, Ubiquiti UniFi APs.
-* **Endpoints:** * **Workstations:** ~485 Windows machines (10/11) and ~60 thin clients.
-    * **Mobile:** ~30 laptops (HQ) and ~25 iPads (managed status unknown).
-* **Medical IoT:** Siemens MRI (Windows XP), GE CT Scanner, 80 Philips patient monitors, 120 BD Alaris infusion pumps, and an IP-based Nurse Call system.
+### Endpoints & IoT
+* **Workstations:** ~485 total (Windows 10/11), ~60 thin clients (Central).
+* **Mobile/Tablets:** ~30 HQ laptops, ~25 iPads (Physician rounds).
+* **Medical IoT:** Siemens MRI (Critical: Runs **Windows XP**), GE CT Scanner, ~80 Philips patient monitors, ~120 BD Alaris infusion pumps (network-connected), IP-based Nurse Call system.
 
 ---
 
 ## 3. Data and Services
+
 ### Data Types
-* **PHI/ePHI:** Electronic Health Records and medical imaging (PACS) subject to HIPAA.
-* **PII:** Employee records (HR) and patient identity information.
-* **Financial Data:** Billing records, insurance claims, and corporate financial data.
+* **Electronic Protected Health Information (ePHI):** Patient records (EHR), medical imaging (PACS), and lab results.
+* **Personally Identifiable Information (PII):** Employee HR records and patient demographic data.
+* **Financial Data:** Insurance claims, billing processing, and corporate financial records.
 
 ### Critical Services
-* **Clinical Operations:** EHR and PACS availability is essential for patient care.
-* **Life-Safety:** Network-connected patient monitors and infusion pumps (dosage updates).
-* **Patient Access:** Public-facing Patient Portal and scheduling services.
-* **Communication:** Office 365 (Email) and IP-based nurse call systems.
+* **Clinical Continuity:** Availability of EHR and PACS for patient treatment and emergency surgery.
+* **Life-Safety Systems:** Network-dependent infusion pumps and patient monitors.
+* **Business Operations:** Office 365 (Email/Teams), billing services, and site-to-site VPN connectivity.
 
 ---
 
 ## 4. Known Unknowns
-### Documentation Gaps & Contradictions
-* **Westside Inventory:** Marcus's notes suggest a second unconfirmed server exists in the Westside closet.
-* **Endpoint Accuracy:** The Active Directory report is 8 months old; current workstation/laptop counts and OS versions are unverified.
-* **WiFi Security:** The isolation of the Guest WiFi at Central is suspected but unverified.
-* **IoT Specifications:** The OS for the GE CT Scanner is unknown.
-* **Software/Cloud:** Use of Shadow IT (unauthorized cloud services) is suspected by Marcus but not audited.
 
-### Missing Critical Information
-* **Network Topology:** A comprehensive, updated network map does not exist (only a "messy" draft).
-* **Vulnerability Status:** No formal vulnerability assessment or endpoint security audit (Sophos status) has been performed.
-* **Asset Ownership:** Management status of physician iPads is unclear.
-* **Physical Security:** The specific model of the Cisco core switch and the brand of the Westside switch are unknown.
+### Missing Information & Gaps
+* **Unverified Assets:** The existence of a second server at Westside Clinic is unconfirmed. The status of `print-srv-01` has not been physically verified in over a year.
+* **Stale Data:** All endpoint counts (workstations/laptops) are based on an AD report from 8 months ago and are likely inaccurate.
+* **Security Coverage:** It is unknown if Sophos Endpoint Protection is current or even installed on all machines.
+* **Network Visibility:** There is no formal inventory of cloud services (Shadow IT) or a complete, verified network map.
+* **IoT Details:** The Operating System and patch status of the GE CT scanner are unknown.
 
-### Risks/Ambiguities
-* **Compliance:** No evidence exists for HIPAA compliance despite legal claims.
-* **Disaster Recovery:** No formal IR, BCP, or DR plans exist.
-* **Infrastructure Debt:** The "planned" network segmentation has no confirmed start date.
+### Contradictions & Ambiguities
+* **Compliance Paradox:** The Legal department claims HIPAA compliance, yet there is no evidence of a formal assessment, and several clear violations (Windows XP, flat network, shared passwords) exist.
+* **WiFi Isolation:** There is a Guest WiFi SSID, but Marcus noted it may not be logically isolated from the clinical network.
+* **Physical Security:** While Central has guard services, it is unclear if the server room itself is monitored, as there are no cameras in that corridor.
+* **Management status:** It is unclear if the 25 iPads used by physicians are managed via MDM or are personal devices.
