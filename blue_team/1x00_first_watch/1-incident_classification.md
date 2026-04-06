@@ -1,12 +1,12 @@
 # Incident Classification Table
 
-This table classifies each incident using the CIA Triad framework, with clear reasoning linking each event to the impacted security principle.
+This table classifies each incident using the CIA Triad framework, identifying the primary impact, justification, and any secondary impact.
 
 | Incident | Primary CIA Pillar | Justification | Secondary CIA Pillar | Secondary Explanation |
 |----------|-------------------|--------------|----------------------|----------------------|
-| Incident A | Availability | Availability is impacted because the ransomware encrypted the billing server, making the system and its data inaccessible to authorized users for 4 days. | Integrity | Integrity is also affected because ransomware modifies and encrypts data, meaning the original data can no longer be trusted or verified. |
-| Incident B | Confidentiality | Confidentiality is violated because unauthorized patients were able to access sensitive medical data (lab results) that they were not permitted to see. | Integrity | Integrity is impacted because the system failed to enforce correct access controls, meaning data access rules were improperly implemented and could be manipulated. |
-| Incident C | Integrity | Integrity is impacted because the medication dosage data was altered incorrectly by a faulty script, leading to inaccurate and untrustworthy information. | Availability | Availability is secondarily affected because even though the system was running, it could not provide reliable data for safe use. |
-| Incident D | Integrity | Integrity is impacted because the website content was modified without authorization, meaning the information presented was no longer trustworthy. | Availability | Availability is affected because the legitimate website content was effectively unavailable to users until it was restored. |
-| Incident E | Availability | Availability is impacted because the EHR system was inaccessible for 9 hours, preventing healthcare staff from accessing critical patient records. | Integrity | Integrity is at risk because the failed and untested rollback process could have caused data inconsistencies or corruption during the migration. |
-| Incident F | Confidentiality | Confidentiality is impacted because an unauthorized personal device had access to the internal network, exposing sensitive organizational data to potential unauthorized access. | Integrity | Integrity is also at risk because the unmanaged device could introduce malicious activity or alter internal data without proper controls. |
+| Incident A | Availability | The ransomware attack made the billing server inaccessible, preventing the finance team from processing claims for 4 days. | Integrity | The encryption and outdated backup created a risk of data loss or corruption. |
+| Incident B | Confidentiality | Patients were able to access other patients' lab results due to broken access control in the portal. | Integrity | The ability to manipulate URL parameters shows improper control over how data is accessed. |
+| Incident C | Integrity | Medication dosages were incorrectly modified due to a faulty database update script. | Availability | The system could not provide reliable and correct data during the incident period. |
+| Incident D | Integrity | The website was defaced, meaning its content was modified without authorization. | Availability | The legitimate website content was temporarily unavailable to users. |
+| Incident E | Availability | The EHR system was unavailable for 9 hours during a failed database migration. | Integrity | The untested rollback procedure introduced a risk of inconsistent or corrupted data. |
+| Incident F | Confidentiality | An unauthorized personal laptop had access to the internal network, exposing sensitive resources. | Integrity | The device could potentially modify or compromise internal data due to lack of control. |
