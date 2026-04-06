@@ -42,27 +42,54 @@
 
 ## IT Infrastructure Identified
 
-**Servers - Central Hospital:** ehr-srv-01 (EHR app), ehr-db-01 (PostgreSQL), pacs-srv-01, billing-srv-01, ad-dc-01/02, file-srv-01, print-srv-01 [UNVERIFIED], backup-srv-01, web-srv-01.  
+**Servers - Central Hospital:**  
+- ehr-srv-01 (EHR app)  
+- ehr-db-01 (PostgreSQL)  
+- pacs-srv-01  
+- billing-srv-01  
+- ad-dc-01/02  
+- file-srv-01  
+- print-srv-01 [UNVERIFIED]  
+- backup-srv-01  
+- web-srv-01  
 
-**Servers - Westside Clinic:** ws-srv-01, possible additional unverified server.  
+**Servers - Westside Clinic:**  
+- ws-srv-01, possible additional unverified server  
 
-**Servers - HQ:** cloud-based, connects via VPN to Central.  
+**Servers - HQ:** cloud-based, connects via VPN to Central  
 
-**Network Equipment:** Central: Cisco core switch, 2x Cisco access per floor, Fortinet FortiGate 100F; Westside: unmanaged switch + consumer router; HQ: building-managed network, VLANs unknown. WiFi: Ubiquiti UniFi APs (Central:12, Westside unknown).  
+**Network Equipment:**  
+- Central: Cisco core switch, 2x Cisco access per floor, Fortinet FortiGate 100F  
+- Westside: unmanaged switch + consumer router  
+- HQ: building-managed network, VLANs unknown  
+- WiFi: Ubiquiti UniFi APs (Central:12, Westside unknown)  
 
-**Endpoints:** Central: ~320 Windows 10 workstations + 60 thin clients; Westside: ~45 workstations; HQ: ~120 workstations + 30 laptops; ~25 iPads.  
+**Endpoints:**  
+- Central: ~320 Windows 10 workstations + 60 thin clients  
+- Westside: ~45 workstations  
+- HQ: ~120 workstations + 30 laptops  
+- ~25 iPads  
 
-**Medical Devices:** Patient monitors (~80 Philips IntelliVue), infusion pumps (~120 BD Alaris), MRI (Windows XP), CT (unknown OS), nurse call system, badge/access system (HID, AD-connected).
+**Medical Devices:**  
+- Patient monitors (~80 Philips IntelliVue)  
+- Infusion pumps (~120 BD Alaris)  
+- MRI (Windows XP)  
+- CT (unknown OS)  
+- Nurse call system  
+- Badge/access system (HID, AD-connected)
 
 ---
 
 ## Data and Services
 
-**Data handled:** EHR, PACS imaging, billing/claims, personal info (patients/staff), operational/financial data.  
+**Data handled:**  
+- EHR, PACS imaging, billing/claims, personal info (patients/staff), operational/financial data  
 
-**Critical Services:** EHR system, PACS server, billing/claims processing, file shares, print services, backups, public website/patient portal, VPN connectivity, IoT medical devices.  
+**Critical Services:**  
+- EHR system, PACS server, billing/claims processing, file shares, print services, backups, public website/patient portal, VPN connectivity, IoT medical devices  
 
-**Users:** Clinical staff, administrative staff, IT/security staff, patients (portal).
+**Users:**  
+- Clinical staff, administrative staff, IT/security staff, patients (portal)
 
 ---
 
