@@ -1,238 +1,132 @@
-# Structured Environment Summary
+# MedDefense Health Systems - Structured Environment Summary
 
-## 1. Organization Overview
+## Organization Overview
 
-### Sites
+**Sites:**
 
-**MedDefense Central Hospital**
-- Location Type: Main hospital (downtown)
-- Function: Core healthcare operations (Emergency, Surgery, Cardiology, Radiology, Oncology, Pediatrics, Maternity, Pharmacy, Laboratory, Administration)
-- Approximate Headcount: ~1,400
-- Notes: 6 floors + basement (server room located in basement)
+- **MEDDEFENSE CENTRAL HOSPITAL**  
+  350-bed acute care facility, downtown location  
+  Departments: Emergency, Surgery, Cardiology, Radiology, Oncology, Pediatrics, Maternity, Pharmacy, Laboratory, Administration  
+  Staff: ~1,400  
+  Building: 6 floors + basement (mechanical/server room)  
+  Parking: underground (staff) + surface lot (visitors)
 
-**Westside Clinic**
-- Location Type: Outpatient clinic (suburban)
-- Function: Primary care, diagnostics (X-ray, ultrasound), blood work, minor procedures, physical therapy
-- Approximate Headcount: ~180
-- Notes: Shares some IT services with Central but also has a local server closet
+- **WESTSIDE CLINIC**  
+  Outpatient facility, suburban location (12 min from Central)  
+  Services: Primary care, diagnostic imaging (X-ray, ultrasound), blood work, minor procedures, physical therapy  
+  Staff: ~180  
+  Building: 2-story medical office complex, shared parking with retail plaza  
+  IT: Shares some services with Central, has local server closet
 
-**Corporate HQ**
-- Location Type: Administrative office (business park)
-- Function: Finance, HR, Legal, Marketing, Executive Leadership, IT
-- Approximate Headcount: ~220
-- Notes: IT department located here (12 staff), no on-prem servers
+- **CORPORATE HQ**  
+  Administrative offices in Greenfield Business Park (15 min from Central)  
+  Departments: Finance, HR, Legal, Marketing, Executive Leadership, IT  
+  Staff: ~220  
+  Building: 3rd floor of 5-story leased office  
+  IT Department: 12 staff
 
----
+**Organization Structure (security relevant):**
 
-### Departments & Reporting Structure
-
-- Executive Leadership:
-  - CEO: Dr. Patricia Morales
-  - CFO, COO, General Counsel
-
-- Security:
-  - Acting lead: James Chen (Deputy CISO)
-  - Role: Security policy, risk management
-  - CISO position currently vacant
-
-- IT Department (under IT Director Sarah Park):
-  - System Administrators (3)
-  - Network Technicians (2)
-  - Database Administrator (1)
-  - Helpdesk Analysts (2)
-  - Desktop Support (2)
-  - IT Intern (vacant)
-
-- Reporting Notes:
-  - Deputy CISO reports effectively to CEO
-  - IT Director and Deputy CISO are peers
-  - Security has policy authority but no operational control → potential conflict
+- CEO: Dr. Patricia Morales  
+  - CFO: Robert Kim  
+  - COO: Angela Torres  
+    - Clinical Directors (per department)  
+  - General Counsel: David Park  
+  - CISO (vacant, James Chen acting Deputy CISO)  
+    - James Chen, Deputy CISO  
+      - Security Analyst: [YOU]  
+    - Sarah Park, IT Director  
+      - 3x System Administrators, 2x Network Technicians, 1x DBA, 2x Helpdesk Analysts, 2x Desktop Technicians, 1x IT Intern (vacant)
 
 ---
 
-## 2. IT Infrastructure Identified
+## IT Infrastructure Identified
 
-### Servers – Central Hospital
+**Servers - MedDefense Central:**
 
-- ehr-srv-01
-  - Type: Application Server
-  - Function: EHR application
-  - Location: Central
-  - OS: Ubuntu 20.04
+- ehr-srv-01: Ubuntu 20.04 LTS, EHR Application Server  
+- ehr-db-01: Ubuntu 20.04 LTS, EHR Database (PostgreSQL)  
+- pacs-srv-01: Windows Server 2016, PACS Imaging Server  
+- billing-srv-01: Ubuntu 18.04 LTS, Billing/Claims  
+- ad-dc-01/02: Windows Server 2019, Primary/Secondary Domain Controllers  
+- file-srv-01: Windows Server 2016, Department File Shares  
+- print-srv-01: Windows Server 2012 R2, Print Server [UNVERIFIED]  
+- backup-srv-01: Ubuntu 22.04 LTS, Backup Server (Veeam agent)  
+- web-srv-01: Ubuntu 20.04 LTS, Public Website + Patient Portal
 
-- ehr-db-01
-  - Type: Database Server
-  - Function: PostgreSQL database for EHR
-  - Location: Central
-  - OS: Ubuntu 20.04
+**Servers - Westside Clinic:**
 
-- pacs-srv-01
-  - Type: Imaging Server
-  - Function: PACS system
-  - Location: Central
-  - OS: Windows Server 2016
+- ws-srv-01: Windows Server 2016, Local file server + scheduling  
+- Possible additional unverified server
 
-- billing-srv-01
-  - Type: Application Server
-  - Function: Billing/claims processing
-  - Location: Central
-  - OS: Ubuntu 18.04
+**Servers - Corporate HQ:**
 
-- ad-dc-01 / ad-dc-02
-  - Type: Domain Controllers
-  - Function: Active Directory authentication
-  - Location: Central
-  - OS: Windows Server 2019
+- No on-premise servers; staff use cloud services via VPN to Central
 
-- file-srv-01
-  - Type: File Server
-  - Function: Department file shares
-  - Location: Central
-  - OS: Windows Server 2016
+**Network Equipment:**
 
-- print-srv-01
-  - Type: Print Server
-  - Function: Print services
-  - Location: Central
-  - OS: Windows Server 2012R2
-  - Note: UNVERIFIED
+- Central: Cisco core switch, 2x Cisco access switches per floor, Fortinet FortiGate 100F firewall  
+- Westside: 1x unmanaged switch, 1x consumer-grade router, VPN to Central  
+- HQ: Building-managed network, MedDefense VLAN  
+- WiFi: Ubiquiti UniFi APs (Central: 12 units, Westside: unknown)
 
-- backup-srv-01
-  - Type: Backup Server
-  - Function: Backup via Veeam
-  - Location: Central
-  - OS: Ubuntu 22.04
+**Endpoints:**
 
-- web-srv-01
-  - Type: Web Server
-  - Function: Public website + patient portal
-  - Location: Central (DMZ)
-  - OS: Ubuntu 20.04
+- Central: ~320 Windows 10 workstations, ~60 thin clients  
+- Westside: ~45 Windows 10 workstations  
+- HQ: ~120 Windows 10/11 workstations, ~30 laptops (remote-capable)  
+- Tablets: ~25 iPads for physicians
+
+**Medical Devices (IoT):**
+
+- Patient monitors: ~80 Philips IntelliVue  
+- Infusion pumps: ~120 BD Alaris  
+- MRI: Siemens MAGNETOM (Windows XP)  
+- CT: GE Revolution (unknown OS)  
+- Nurse call system: IP-based  
+- Badge/access system: HID Global, AD-connected
 
 ---
 
-### Servers – Westside Clinic
+## Data and Services
 
-- ws-srv-01
-  - Type: Local server
-  - Function: File server + scheduling
-  - Location: Westside
-  - OS: Windows Server 2016
+**Data types handled:**
 
-- Unknown server (unconfirmed)
-  - Mentioned but not verified
+- Electronic Health Records (EHR)  
+- Medical imaging (PACS)  
+- Billing and claims data  
+- Staff and patient personal information  
+- Operational and financial data
 
----
+**Critical Services:**
 
-### Servers – Corporate HQ
+- EHR system (ehr-srv-01, ehr-db-01)  
+- PACS imaging server  
+- Billing/claims processing  
+- File shares and print services  
+- Backup (backup-srv-01)  
+- Public website and patient portal  
+- VPN connectivity for remote staff  
+- IoT medical devices (monitors, pumps, MRI/CT integration)
 
-- No on-prem servers
-- Uses cloud services and VPN to Central
+**Users:**
 
----
-
-### Network Infrastructure
-
-- Central:
-  - Fortinet FortiGate 100F firewall
-  - Cisco core switch (model unknown)
-  - Cisco access switches (per floor)
-  - Flat network: 10.10.0.0/16 (no VLANs)
-
-- Westside:
-  - Consumer router (Netgear Nighthawk)
-  - Unmanaged switch
-  - Site-to-site VPN to Central
-
-- HQ:
-  - Network managed by landlord
-  - Separate VLAN for MedDefense
-  - VPN to Central
-
-- WiFi:
-  - Central: Ubiquiti UniFi APs (~12)
-  - Westside: unknown
-
----
-
-### Endpoints
-
-- Central:
-  - ~320 Windows 10 workstations
-  - ~60 thin clients
-
-- Westside:
-  - ~45 Windows 10 workstations
-
-- HQ:
-  - ~120 Windows 10/11 workstations
-  - ~30 laptops
-
-- Tablets:
-  - ~25 iPads (management status unclear)
-
----
-
-### Medical / IoT Devices
-
-- Patient monitors (~80, Philips IntelliVue)
-- Infusion pumps (~120, BD Alaris)
-- MRI scanner (Siemens, runs Windows XP)
-- CT scanner (OS unknown)
-- Nurse call system (IP-based)
-- Badge/access system (HID Global, partially integrated with AD)
-
----
-
-## 3. Data and Services
-
-### Data Types
-
-- Patient data (EHR, imaging, medical records)
-- Financial data (billing, claims)
-- Employee data (HR records)
-- Operational data (scheduling, internal documents)
-
----
-
-### Critical Services
-
-- Electronic Health Record (EHR) system
-- Medical imaging (PACS)
-- Billing and claims processing
-- Active Directory authentication
-- File sharing services
-- Patient portal (public-facing web service)
-- Backup system (Veeam)
-- Network connectivity (VPN between sites)
-
----
-
-### Users
-
-- Clinical staff (doctors, nurses, technicians)
-- Administrative staff (HR, finance, management)
-- IT staff
+- Clinical staff (doctors, nurses, technicians)  
+- Administrative staff (finance, HR, legal, marketing)  
+- IT staff and security personnel  
 - Patients (via portal)
-- External vendors (e.g., EHR provider)
 
 ---
 
-## 4. Known Unknowns
+## Known Unknowns
 
-- Incomplete asset inventory (explicitly stated in IT list)
-- Unverified systems (e.g., print-srv-01, possible extra Westside server)
-- No full endpoint inventory (last report outdated)
-- Unknown OS for some devices (e.g., CT scanner)
-- Unknown WiFi setup at Westside
-- Cloud services not fully inventoried
-- Network diagram incomplete and simplified
-- No VLAN segmentation (but unclear if partial segmentation exists anywhere)
-- Unclear security controls on IoT devices
-- Tablet (iPad) management status unknown
-- Backup strategy lacks offsite copy (risk not fully assessed)
-- No formal vulnerability assessment completed
-- No incident response plan
-- No disaster recovery or business continuity plan
-- Compliance status (HIPAA) not formally assessed
-- Potential contradictions between documentation and reality (not fully verified systems)
+- Complete IT asset inventory, including endpoints and IoT devices  
+- Full network diagram and VLAN segmentation  
+- Exact OS versions of some medical devices (CT scanner)  
+- Guest WiFi isolation and HQ VPN ACLs  
+- Formal vulnerability assessment and endpoint security status  
+- Cloud service inventory beyond O365  
+- Formal compliance with HIPAA Security Rule  
+- Incident response, business continuity, and disaster recovery plans  
+- Status of MRI and other legacy medical devices (Windows XP)  
+- Physical security of server rooms at Westside and Central
