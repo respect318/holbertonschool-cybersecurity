@@ -38,8 +38,6 @@
     - Sarah Park, IT Director  
       - 3x System Administrators, 2x Network Technicians, 1x DBA, 2x Helpdesk Analysts, 2x Desktop Technicians, 1x IT Intern (vacant)
 
----
-
 ## IT Infrastructure Identified
 
 **Servers - Central Hospital:**  
@@ -78,8 +76,6 @@
 - Nurse call system  
 - Badge/access system (HID, AD-connected)
 
----
-
 ## Data and Services
 
 **Data handled:**  
@@ -90,8 +86,6 @@
 
 **Users:**  
 - Clinical staff, administrative staff, IT/security staff, patients (portal)
-
----
 
 ## Known Unknowns
 
