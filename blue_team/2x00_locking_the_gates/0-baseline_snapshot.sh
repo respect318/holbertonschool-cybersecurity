@@ -16,7 +16,7 @@ echo "SUID binaries: $(find / -perm -4000 -type f 2>/dev/null | wc -l)"
 
 echo "SGID binaries: $(find / -perm -2000 -type f 2>/dev/null | wc -l)"
 
-echo "World-writable files: $(find / \( -path /proc -o -path /sys -o -path /dev \) -prune -o -type f -perm -0002 -print 2>/dev/null | wc -l)"
+echo "World-writable files: $(find / \( -path /proc -o -path /sys -o -path /dev \) -prune -false -o -type f -perm -0002 2>/dev/null | wc -l)"
 
 echo "Sysctl security parameters:"
 sysctl -a 2>/dev/null | grep -E 'kernel|net.ipv4|fs.protected' | head -n 10
