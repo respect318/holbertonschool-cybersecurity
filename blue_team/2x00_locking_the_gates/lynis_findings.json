@@ -1,5 +1,8 @@
 {
   "hardening_index": 65,
+  "warnings": [],
+  "suggestions": [],
+  "manual_checks": [],
   "findings": [
     {
       "severity": "suggestion",
