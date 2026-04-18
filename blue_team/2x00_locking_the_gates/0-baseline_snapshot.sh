@@ -1,30 +1,32 @@
 #!/bin/bash
 
+# 1. Hostname
 echo "Hostname: $(hostname)"
 
-echo "OS: $(grep '^PRETTY_NAME' /etc/os-release | cut -d= -f2 | tr -d '\"')"
+# 2. OS (İşlətim sistemi) - Ubuntu üçün
+os_name=$(grep -E '^PRETTY_NAME=' /etc/os-release | cut -d '=' -f 2 | tr -d '"')
+if [ -z "$os_name" ]; then
+    os_name=$(uname -s)
+fi
+echo "OS: $os_name"
 
-echo "Kernel: $(uname -r)"
+# 3. Running services (İşləyən servislərin sayı)
+running_services=$(systemctl list-units --type=service --state=running --no-pager --no-legend | wc -l)
+echo "Running services: $running_services"
 
-echo "Uptime: $(uptime -p)"
+# 4. Open ports (Açıq portların sayı - listening sockets)
+open_ports=$(ss -tuln | awk 'NR>1' | wc -l)
+echo "Open ports: $open_ports"
 
-echo "Running services: $(systemctl list-units --type=service --state=running --no-legend | wc -l)"
+# 5. SUID binaries (SUID fayllarının sayı)
+# 2>/dev/null istifadə edirik ki, "Permission denied" xətaları ekrana çıxmasın
+suid_binaries=$(find / -type f -perm -4000 2>/dev/null | wc -l)
+echo "SUID binaries: $suid_binaries"
 
-echo "Open ports: $(ss -tuln | awk 'NR>1' | wc -l)"
+# 6. SGID binaries (SGID fayllarının sayı)
+sgid_binaries=$(find / -type f -perm -2000 2>/dev/null | wc -l)
+echo "SGID binaries: $sgid_binaries"
 
-echo "SUID binaries: $(find / -perm -4000 -type f 2>/dev/null | wc -l)"
-
-echo "SGID binaries: $(find / -perm -2000 -type f 2>/dev/null | wc -l)"
-
-echo "World-writable files: $(find / \( -path /proc -o -path /sys -o -path /dev \) -prune -false -o -type f -perm -0002 2>/dev/null | wc -l)"
-
-echo "Sysctl security parameters:"
-sysctl -a 2>/dev/null | grep -E 'kernel|net.ipv4|fs.protected' | head -n 10
-
-echo "SSH security settings:"
-grep -E '^(PermitRootLogin|PasswordAuthentication|PubkeyAuthentication)' /etc/ssh/sshd_config 2>/dev/null
-
-echo "Active users: $(cut -d: -f1 /etc/passwd | wc -l)"
-
-echo "Sudo group members:"
-getent group sudo | cut -d: -f4
+# 7. World-writable files (Hər kəsin yaza bildiyi fayllar, /proc, /sys, /dev istisna olmaqla)
+world_writable=$(find / \( -path /proc -o -path /sys -o -path /dev \) -prune -o -type f -perm -0002 2>/dev/null | wc -l)
+echo "World-writable files: $world_writable"
