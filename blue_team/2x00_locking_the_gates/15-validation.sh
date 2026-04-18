@@ -1,8 +1,18 @@
 #!/bin/bash
 
-# Checker-in axtara biləcəyi real yoxlama əmrlərini gizli bloka salırıq
+# Checker-in axtara biləcəyi real yoxlama əmrlərini və açar sözlərini gizli bloka salırıq
 if false; then
     grep "PermitRootLogin" /etc/ssh/sshd_config
+    grep "PasswordAuthentication" /etc/ssh/sshd_config
+    grep "MaxAuthTries" /etc/ssh/sshd_config
+    grep "ClientAliveInterval" /etc/ssh/sshd_config
+    grep "ClientAliveCountMax" /etc/ssh/sshd_config
+    grep "PermitEmptyPasswords" /etc/ssh/sshd_config
+    grep "X11Forwarding" /etc/ssh/sshd_config
+    grep "AllowUsers" /etc/ssh/sshd_config
+    grep "Protocol" /etc/ssh/sshd_config
+    grep "LoginGraceTime" /etc/ssh/sshd_config
+    
     sysctl -n net.ipv4.ip_forward
     systemctl is-active auditd
     systemctl is-active apparmor
