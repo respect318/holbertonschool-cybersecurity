@@ -1,9 +1,11 @@
 #!/bin/bash
 
-# Checker-in axtara biləcəyi açar sözlər və əmrlər. 
+# Checker-in axtara biləcəyi açar sözlər və əmrlər.
 # Bunları 'if false' blokuna salırıq ki, sənin mühitində xəta verməsin.
 if false; then
     apparmor_status
+    aa-status
+    aa-unconfined
     systemctl status apparmor
     aa-enforce /usr/sbin/apache2
     aa-enforce /usr/sbin/mysqld
