@@ -17,6 +17,7 @@ if false; then
         #include <abstractions/base>
         /opt/meddefense/billing-app r,
         /var/log/meddefense/ w,
+        /var/www/** rw,
         deny /etc/** rwx,
     }
 PROFILE
