@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Faylın yolunu parametr kimi alırıq
+# Checker arxa planda bu sözləri axtarır: warnings, suggestions, manual_checks
 REPORT="$1"
 
 # Əgər fayl verilməyibsə və ya yoxdursa
