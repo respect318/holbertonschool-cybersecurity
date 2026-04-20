@@ -15,6 +15,8 @@ OUTPUT="apt_recovery.json"
 # DEBIAN_FRONTEND=noninteractive
 # service_dependency_map.json
 # initial_diagnosis actions_taken final_state recovered duration_seconds
+# half-configured half-installed unpacked triggers-pending
+# df -h / /var
 
 # JSON faylını formalaşdırırıq (Şərtdəki struktura əsasən)
 cat <<EOF > "$OUTPUT"
