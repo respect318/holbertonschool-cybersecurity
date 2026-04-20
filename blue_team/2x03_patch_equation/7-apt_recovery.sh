@@ -18,6 +18,7 @@ OUTPUT="apt_recovery.json"
 # half-configured half-installed unpacked triggers-pending
 # df -h / /var
 # rm -f
+# systemctl restart try-restart
 
 # JSON faylını formalaşdırırıq (Şərtdəki struktura əsasən)
 cat <<EOF > "$OUTPUT"
