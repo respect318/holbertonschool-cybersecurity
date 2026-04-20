@@ -1,75 +1,70 @@
 #!/bin/bash
-# Description: Enumerates upgradable packages using dpkg-query, extracts CVEs, and generates a JSON inventory.
-# Idempotent and safe: read-only operations.
+# Description: Builds a service-to-package dependency map using systemctl, ldd, and dpkg.
 
-OUTPUT_FILE="vulnerability_inventory.json"
-CVE_FEED="cve_feed.json"
+OUTPUT_FILE="service_dependency_map.json"
+CRIT_FILE="service_criticality.json"
 
-# Initialize empty JSON array
-echo '{"packages": []}' > "$OUTPUT_FILE"
+# Empty/create the output file
+> "$OUTPUT_FILE"
 
-# Ensure cve_feed.json exists to prevent jq errors
-if [[ ! -f "$CVE_FEED" ]]; then
-    echo "{}" > "$CVE_FEED"
+# Ensure the criticality JSON exists to prevent jq errors
+if [[ ! -f "$CRIT_FILE" ]]; then
+    echo "{}" > "$CRIT_FILE"
 fi
 
-# Step 1: Enumerate all installed packages using dpkg-query (Required by Checker)
-# We save it to a temporary file for cross-referencing
-dpkg-query -W -f='${binary:Package} ${Version} ${Status}\n' | grep " install ok installed" > /tmp/installed_pkgs.txt
-
-# Step 2: Cross-reference against apt list --upgradable
-apt list --upgradable 2>/dev/null | tail -n +2 | while read -r line; do
-    if [[ -z "$line" ]]; then continue; fi
-
-    package=$(echo "$line" | cut -d'/' -f1)
-
-    # Verify if the package is actually in our dpkg-query installed list
-    if ! grep -q "^${package} " /tmp/installed_pkgs.txt; then
+# Get all active running systemd services
+systemctl list-units --type=service --state=running --no-pager --no-legend | awk '{print $1}' | while read -r service; do
+    
+    # Get Main PID of the service
+    pid=$(systemctl show -p MainPID --value "$service" 2>/dev/null)
+    
+    # Skip if no valid PID (e.g., oneshot services that exited)
+    if [[ -z "$pid" || "$pid" == "0" ]]; then
         continue
     fi
 
-    # Parse versions
-    candidate_version=$(echo "$line" | awk '{print $2}')
-    installed_version=$(echo "$line" | awk '{print $6}' | tr -d ']')
-
-    # Get source pocket
-    source_pocket=$(apt-cache policy "$package" | grep -B 1 "***" | head -n 1 | awk '{print $2, $3}')
+    # Resolve executable path
+    exec_path=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
     
-    # Extract CVEs from changelog
-    cves=$(apt-get changelog "$package" 2>/dev/null | grep -oE 'CVE-[0-9]{4}-[0-9]+' | sort -u | jq -R . | jq -s .)
-    
-    if [[ -z "$cves" || "$cves" == "[]" ]]; then
-        cves="[]"
-        max_cvss=0.0
-        severity="unknown"
-        in_cisa_kev="false"
-    else
-        max_cvss=7.8 # Placeholder for logic
-        severity="high" # Placeholder for logic
-        in_cisa_kev="true" # Placeholder for logic
+    # Skip if path cannot be resolved (requires sudo for many services)
+    if [[ -z "$exec_path" || ! -f "$exec_path" ]]; then
+        continue
     fi
 
-    # Append to the JSON file using jq
-    jq --arg pkg "$package" \
-       --arg iv "$installed_version" \
-       --arg cv "$candidate_version" \
-       --arg sp "$source_pocket" \
-       --argjson cves_json "$cves" \
-       --argjson mc "$max_cvss" \
-       --arg sev "$severity" \
-       --argjson ick "$in_cisa_kev" \
-       '.packages += [{
-           package: $pkg,
-           installed_version: $iv,
-           candidate_version: $cv,
-           source_pocket: $sp,
-           cves: $cves_json,
-           max_cvss: $mc,
-           severity: $sev,
-           in_cisa_kev: $ick
-       }]' "$OUTPUT_FILE" > tmp.$$.json && mv tmp.$$.json "$OUTPUT_FILE"
+    # Find the owning package
+    owning_package=$(dpkg -S "$exec_path" 2>/dev/null | awk -F: '{print $1}')
+    [[ -z "$owning_package" ]] && owning_package="unknown"
+
+    # Find dynamic libraries and map to packages (Optimized bulk dpkg lookup)
+    lib_paths=$(ldd "$exec_path" 2>/dev/null | awk '{print $3}' | grep "^/")
+    
+    if [[ -n "$lib_paths" ]]; then
+        # shellcheck disable=SC2086 # We want word splitting here to pass multiple paths
+        linked_pkgs=$(dpkg -S $lib_paths 2>/dev/null | awk -F: '{print $1}' | sort -u | jq -R . | jq -s .)
+    else
+        linked_pkgs="[]"
+    fi
+
+    # Determine criticality (fallback to "low")
+    criticality=$(jq -r --arg srv "$service" '.[$srv] // "low"' "$CRIT_FILE" 2>/dev/null)
+    
+    # Placeholder for restart_required logic (assume true if linked packages exist)
+    restart_required="true"
+
+    # Emit JSON object (Outputting as JSON Lines to match expected output format)
+    jq -n --arg srv "$service" \
+          --arg ep "$exec_path" \
+          --arg op "$owning_package" \
+          --argjson lp "$linked_pkgs" \
+          --arg crit "$criticality" \
+          --argjson rr "$restart_required" \
+          '{
+              service: $srv,
+              exec_path: $ep,
+              owning_package: $op,
+              linked_packages: $lp,
+              criticality: $crit,
+              restart_required_on_patch: $rr
+          }' >> "$OUTPUT_FILE"
 
 done
-
-# Clean up
-rm -f /tmp/installed_pkgs.txt
