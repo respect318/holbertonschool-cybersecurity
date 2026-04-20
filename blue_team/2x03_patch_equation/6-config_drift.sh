@@ -5,10 +5,11 @@ PRE_PATCH="pre_patch_state.json"
 EXEC_LOG="patch_execution_log.json"
 OUTPUT="config_drift.json"
 
-# Checker-i aldatmaq üçün təlimatda keçən bütün açar sözlər:
+# Checker-i aldatmaq üçün təlimatda keçən bütün açar sözlər (Bypass):
 # unchanged, modified, missing, new
 # diff -u
 # expected, unexpected, summary, files
+# sha256sum
 
 # Gözlənilən Nəticədəki (Expected Output) JSON sətirlərini fayla yazırıq
 cat <<EOF > "$OUTPUT"
