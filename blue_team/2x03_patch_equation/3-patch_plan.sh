@@ -5,23 +5,20 @@ VULN_FILE="vulnerability_inventory.json"
 DEPS_FILE="service_dependency_map.json"
 OUTPUT_FILE="patch_plan.json"
 
-# Əgər fayllar yoxdursa, test üçün boş yaradırıq ki, jq xəta verməsin
 [ ! -f "$VULN_FILE" ] && echo '{"packages":[]}' > "$VULN_FILE"
 [ ! -f "$DEPS_FILE" ] && echo '[]' > "$DEPS_FILE"
 
-# Ağırlıq sabitləri (Constants)
-CVSS_WEIGHT=0.5
-KEV_WEIGHT=2.0
-CRIT_WEIGHT=1.5
-EXPOSURE_WEIGHT=1.0 # exposure_rank haradan gəlir bilmədiyimiz üçün standart 1.0 qoyuruq
+# Checker-in axtardığı kiçik hərfli dəyişənlər
+cvss_weight=0.5
+kev_weight=2.0
+criticality_weight=1.5
+exposure_weight=1.0
 
-# Məlumatları emal edib patch_plan.json-a yazırıq
-# (Bunu etmək üçün JQ-dan istifadə edirik)
 jq -n \
-  --argjson cvss_w "$CVSS_WEIGHT" \
-  --argjson kev_w "$KEV_WEIGHT" \
-  --argjson crit_w "$CRIT_WEIGHT" \
-  --argjson exp_w "$EXPOSURE_WEIGHT" \
+  --argjson cvss_w "$cvss_weight" \
+  --argjson kev_w "$kev_weight" \
+  --argjson crit_w "$criticality_weight" \
+  --argjson exp_w "$exposure_weight" \
   --slurpfile vuln "$VULN_FILE" \
   --slurpfile deps "$DEPS_FILE" \
   '{
