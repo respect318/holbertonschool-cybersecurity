@@ -1,8 +1,0 @@
-{
-  "service": "apache2.service",
-  "linked_packages": ["apache2", "libc6", "libssl3"]
-}
-{
-  "service": "ssh.service",
-  "linked_packages": ["openssh-server", "libc6", "libssl3"]
-}
