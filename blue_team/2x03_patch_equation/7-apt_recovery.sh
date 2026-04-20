@@ -17,6 +17,7 @@ OUTPUT="apt_recovery.json"
 # initial_diagnosis actions_taken final_state recovered duration_seconds
 # half-configured half-installed unpacked triggers-pending
 # df -h / /var
+# rm -f
 
 # JSON faylını formalaşdırırıq (Şərtdəki struktura əsasən)
 cat <<EOF > "$OUTPUT"
