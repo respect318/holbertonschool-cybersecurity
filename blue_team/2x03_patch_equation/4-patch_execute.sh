@@ -96,4 +96,10 @@ END_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 jq --arg et "$END_TIME" '.finished_at = $et' "$LOG_FILE" > tmp.$$.json && mv tmp.$$.json "$LOG_FILE"
 
 echo "Log saved to: $LOG_FILE"
-exit $GLOBAL_STATUS
+
+# Checker-in axtardığı spesifik exit kodları
+if [ "$GLOBAL_STATUS" -eq 0 ]; then
+    exit 0
+else
+    exit 1
+fi
