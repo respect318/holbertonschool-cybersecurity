@@ -1,0 +1,2 @@
+{"path":"/etc/ssh/sshd_config","owning_package":"openssh-server","expected":true}
+{"path":"/etc/ssl/openssl.cnf","owning_package":"openssl","expected":true}
