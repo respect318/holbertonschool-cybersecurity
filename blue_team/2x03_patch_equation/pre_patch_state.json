@@ -1,0 +1,6 @@
+{
+  "hostname": "billing-srv-01",
+  "kernel": "5.15.0-91-generic",
+  "packages": 1247,
+  "services": 24
+}
