@@ -11,7 +11,7 @@ OUTPUT="unattended_config.json"
 # linux-image* linux-headers* mysql-server* apache2* libapache2-mod-php*
 # Unattended-Upgrade::Automatic-Reboot "false"
 # Unattended-Upgrade::Remove-Unused-Kernel-Packages "false"
-# Mail
+# Mail ""
 # /etc/apt/apt.conf.d/20auto-upgrades
 # systemctl enable start apt-daily.timer apt-daily-upgrade.timer
 # unattended-upgrades --dry-run --debug
