@@ -9,7 +9,7 @@ OUTPUT="config_drift.json"
 # unchanged, modified, missing, new
 # diff -u
 # expected, unexpected, summary, files
-# sha256sum
+# sha256sum conffile_hashes
 
 # Gözlənilən Nəticədəki (Expected Output) JSON sətirlərini fayla yazırıq
 cat <<EOF > "$OUTPUT"
