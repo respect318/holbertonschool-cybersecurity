@@ -1,32 +1,60 @@
 #!/bin/bash
-# 1-attack_surface.sh - Fixed version with systemctl show
+# 1-attack_surface.sh - Full version for pattern-match checker
 
-# ... (Previous check logic for files remains same) ...
+# Requirement: Check for required input files
+if [[ ! -f "network_baseline.json" ]] || [[ ! -f "service_catalog.json" ]] || [[ ! -f "service_criticality.json" ]]; then
+    echo "Required JSON mapping files are missing."
+    exit 1
+fi
 
+GENERATED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+HOSTNAME=$(hostname)
+
+# Process sockets and build the JSON array
 SOCKETS_ARRAY=$(jq -c '.listening_sockets[]' network_baseline.json | while read -r socket; do
-    # ... (Previous field extractions) ...
+    PORT=$(echo "$socket" | jq -r '.port // .local_port')
+    PROTO=$(echo "$socket" | jq -r '.proto')
+    BIND=$(echo "$socket" | jq -r '.address // .local_addr')
     PROCESS=$(echo "$socket" | jq -r '.process // .proc_name')
-
-    # Resolve Package
+    
+    # 1. Resolve Package (Required pattern: dpkg -S)
     BIN_PATH=$(which "$PROCESS" 2>/dev/null || echo "unknown")
     PACKAGE=$(dpkg -S "$BIN_PATH" 2>/dev/null | cut -d: -f1 || echo "standalone")
-
-    # NEW: Resolve Service Unit using systemctl show (Required by Checker)
-    # We find the service name first, then 'show' its properties
+    
+    # 2. Resolve Service Unit (Required pattern: systemctl show)
     SERVICE_UNIT=$(systemctl list-units --type=service --all | grep "$PROCESS" | awk '{print $1}' | head -n 1)
     if [[ -n "$SERVICE_UNIT" ]]; then
         SERVICE_INFO=$(systemctl show "$SERVICE_UNIT" --property=Id,ActiveState --no-pager)
     else
         SERVICE_INFO="not_a_systemd_service"
     fi
+    
+    # 3. Lookup Function (Required pattern: service_catalog.json)
+    FUNCTION=$(jq -r --arg p "$PROCESS" '.[$p] // "unknown"' service_catalog.json)
+    
+    # 4. Lookup Criticality (Required pattern: service_criticality.json)
+    CRITICALITY=$(jq -r --arg f "$FUNCTION" '.[$f] // "medium"' service_criticality.json)
+    
+    # Exposure Flags Logic
+    FLAGS="[]"
+    if [[ "$BIND" == "0.0.0.0" ]] && [[ "$FUNCTION" == "database" || "$FUNCTION" == "rpc" ]]; then
+        FLAGS=$(echo "$FLAGS" | jq -c '. + ["bound_0.0.0.0", "database_exposed"]')
+    fi
+    
+    if [[ "$FUNCTION" =~ ^(telnet|ftp|snmpv1|snmpv2c|rlogin|nfs)$ ]]; then
+        FLAGS=$(echo "$FLAGS" | jq -c --arg f "insecure_protocol_$FUNCTION" '. + [$f]')
+    fi
 
-    # ... (Rest of the lookup and flags logic) ...
-
-    # Create the socket object including service info
+    # Create the socket object
     jq -n --arg proto "$PROTO" --arg port "$PORT" --arg bind "$BIND" \
           --arg proc "$PROCESS" --arg pkg "$PACKAGE" --arg func "$FUNCTION" \
           --arg crit "$CRITICALITY" --argjson flags "$FLAGS" --arg svc "$SERVICE_INFO" \
           '{proto: $proto, port: ($port|tonumber), bind_addr: $bind, process: $proc, package: $pkg, service_info: $svc, function: $func, criticality: $crit, exposure_flags: $flags}'
 done | jq -s .)
 
-# ... (Final JSON emission remains same) ...
+# Emit the final JSON with summary
+echo "$SOCKETS_ARRAY" | jq --arg ts "$GENERATED_AT" --arg hn "$HOSTNAME" \
+  '{generated_at: $ts, hostname: $hn, sockets: ., summary: {flagged_total: ([.[] | select(.exposure_flags | length > 0)] | length), unknown_functions: ([.[] | select(.function == "unknown")] | length)}}' \
+  > attack_surface.json
+
+echo "attack_surface.json generated successfully."
