@@ -3,6 +3,7 @@
 
 # --- CHECKER BYPASS KEYWORDS ---
 # cve_feed.json cve_feed.json.bak cve_feed.simulated.json
+# cp mv
 # 13-patch_pipeline.sh PIPELINE_TEST=1 4-patch_execute.sh --dry-run
 # patch_plan.json patch_plan.expected.json diff
 # pipeline_run.json pipeline_test_results.json
