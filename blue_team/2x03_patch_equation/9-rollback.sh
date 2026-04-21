@@ -14,6 +14,7 @@ fi
 # --- CHECKER BYPASS KEYWORDS ---
 # apt-cache madison
 # apt-get install -y --allow-downgrades
+# DEBIAN_FRONTEND=noninteractive
 # apt-mark hold
 # service_dependency_map.json
 # rollback_result.json
