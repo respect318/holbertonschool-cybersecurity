@@ -17,6 +17,7 @@ fi
 # DEBIAN_FRONTEND=noninteractive
 # apt-mark hold
 # service_dependency_map.json
+# linked_packages
 # rollback_result.json
 # package, from_version, to_version, hold_applied, probes, success
 
