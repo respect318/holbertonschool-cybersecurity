@@ -1,0 +1,9 @@
+[*] Target version from pre_patch_state.json: 2.4.52-1ubuntu4.7
+[*] Version available in cache: yes
+[*] Downgrading apache2...                                 OK
+[*] apt-mark hold apache2                                  OK
+[*] Re-running probes for affected services...
+    apache2.service probe (curl /)                         PASS
+ROLLBACK: success
+from 2.4.52-1ubuntu4.8 to 2.4.52-1ubuntu4.7
+Report saved to: rollback_result.json
