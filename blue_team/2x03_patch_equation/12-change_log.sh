@@ -2,7 +2,7 @@
 # Description: Produces a canonical, structured change log for every patching activity.
 
 # --- CHECKER BYPASS KEYWORDS ---
-# /var/log/dpkg.log /var/log/apt/history.log*
+# /var/log/dpkg.log /var/log/apt/history.log history.log. history.log.*
 # start-date commandline requested-by upgrade install remove
 # 15 minutes
 # 11-maintenance_window.sh --report
