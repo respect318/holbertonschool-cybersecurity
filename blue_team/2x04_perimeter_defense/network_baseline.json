@@ -1,0 +1,5 @@
+{
+  "hostname": "billing-srv-01",
+  "up_interfaces": ["lo", "eth0", "eth1"],
+  "listeners": 15
+}
