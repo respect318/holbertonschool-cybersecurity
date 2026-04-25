@@ -1,10 +1,10 @@
 # Incident Classification Log
 
 | Incident | Primary Pillar | Justification | Secondary Pillar | Connection |
-|---|---|---|---|---|
-| Incident A | Availability | Ransomware encrypted the billing server, stopping finance from processing claims. | Integrity | The ransomware modified the files via unauthorized encryption. |
-| Incident B | Confidentiality | A broken access control allowed patients to view other people's lab results. | None | N/A |
-| Incident C | Integrity | A database bug overwrote medication dosages, altering the original data. | None | N/A |
-| Incident D | Integrity | The website was defaced, meaning its content was altered by an attacker. | Availability | The site was taken offline and could not be accessed for 2 hours. |
-| Incident E | Availability | A database migration failed, causing a 9-hour system outage for physicians. | None | N/A |
-| Incident F | Confidentiality | An unauthorized torrent client risked exposing internal files to outsiders. | Integrity / Availability | Torrents risk unauthorized file changes and consume bandwidth, slowing the network. |
+| :--- | :--- | :--- | :--- | :--- |
+| Incident A | Availability | The ransomware encrypted the server, making critical data and systems completely inaccessible to the finance team. | None | N/A |
+| Incident B | Confidentiality | Broken access control allowed patients to view sensitive test results belonging to others without authorization. | None | N/A |
+| Incident C | Integrity | A database bug overwrote medication dosages, meaning the system data was modified without authorization. | None | N/A |
+| Incident D | Integrity | The public website was defaced, meaning information was modified and replaced without authorization. | None | N/A |
+| Incident E | Availability | A failed database migration caused a 9-hour outage, making the EHR system inaccessible when needed. | None | N/A |
+| Incident F | Confidentiality | An unauthorized torrent client was on the network, creating a severe risk of unauthorized access to the HR file share. | Availability | The torrent activity slows down network performance. |
