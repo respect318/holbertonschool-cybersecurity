@@ -2,9 +2,9 @@
 
 | Incident | Primary Pillar | Justification | Secondary Pillar | Connection |
 | :--- | :--- | :--- | :--- | :--- |
-| Incident A | Availability | The ransomware encrypted the server, making data completely inaccessible. | Integrity | The ransomware modified the data without authorization. |
-| Incident B | Confidentiality | Broken access control allowed patients to view others' sensitive test results. | None | N/A |
-| Incident C | Integrity | A database bug overwrote medication dosages, modifying data without authorization. | None | N/A |
-| Incident D | Integrity | The website was defaced, meaning information was modified without authorization. | Availability | The site was inaccessible to the public for 2 hours. |
-| Incident E | Availability | A failed database migration caused an outage, making the system inaccessible. | None | N/A |
-| Incident F | Confidentiality | An unauthorized torrent client created a risk of unauthorized access to HR files. | Integrity | The torrent client also creates a risk of unauthorized modification of internal files. |
+| Incident A | Availability | The ransomware encrypted the server, making critical data and systems completely inaccessible to the finance team. | None | N/A |
+| Incident B | Confidentiality | Broken access control allowed patients to view sensitive test results belonging to others without authorization. | None | N/A |
+| Incident C | Integrity | A database bug overwrote medication dosages, meaning the system data was modified without authorization. | None | N/A |
+| Incident D | Integrity | The public website was defaced, meaning information was modified and replaced without authorization. | None | N/A |
+| Incident E | Availability | A failed database migration caused a 9-hour outage, making the EHR system inaccessible when needed. | None | N/A |
+| Incident F | Confidentiality | An unauthorized torrent client was on the network, creating a severe risk of unauthorized access to the HR file share. | Integrity and Availability | Potential impacts on Integrity (due to possible unauthorized modification) or Availability (if activity slows down network performance). |
