@@ -1,55 +1,55 @@
 Scenario 1:
   Vector Type: Phishing
-  Target: IT Director (Sarah Park) - She is vulnerable because she manages the network infrastructure, is highly aware of recent incidents, and feels a direct responsibility to quickly resolve "critical vulnerabilities" to prevent downtime.
+  Target: IT Director (Sarah Park) - She is vulnerable because she manages critical infrastructure and feels a direct responsibility to prevent service termination mentioned in the alert.
   Psychological Lever: Fear
-  Red Flags: 1) The sender domain is "fortinet-support.net" instead of the official "fortinet.com". 2) A vendor sending an unsolicited direct email with an executable "emergency patch" link rather than advising logging into an official portal. 3) The aggressive threat of "service termination" within 24 hours to force immediate action.
-  Technical Control: Implement an Email Security Gateway with strong anti-phishing filters, URL rewriting, and DMARC/SPF/DKIM validation to block spoofed or lookalike domains.
-  Administrative Control: Conduct specific security awareness training on proper vendor patch management procedures, emphasizing that patches must only be downloaded from official vendor portals.
+  Red Flags: 1) The sender domain "fortinet-support.net" is a lookalike of the official domain. 2) The email contains an unsolicited link to a firmware patch rather than using official portal notifications. 3) Use of high-pressure language threatening "service termination" within a short 24-hour window.
+  Technical Control: Implement an Email Security Gateway with URL sandboxing and DMARC/SPF/DKIM enforcement.
+  Administrative Control: Establish a policy that all critical infrastructure updates must only be sourced from verified, pre-approved vendor support portals.
 
 Scenario 2:
   Vector Type: Business Email Compromise (BEC)
-  Target: CFO (Robert Kim) - He is vulnerable because his role involves moving large sums of money, and he is structurally expected to follow urgent, confidential directives from the CEO.
+  Target: CFO (Robert Kim) - Vulnerable because he has the authority to process large financial transactions and is targeted using the CEO's perceived authority.
   Psychological Lever: Authority
-  Red Flags: 1) A subtle typo or deviation in the CEO's sender email address. 2) A highly urgent request to transfer $85,000 to an unknown account for a "confidential" acquisition. 3) Explicit instructions to bypass normal verification ("email only", "do not discuss with anyone").
-  Technical Control: Configure external sender warning tags in the email client (e.g., "[EXTERNAL]") to immediately alert users when an email originates from outside the organization.
-  Administrative Control: Implement a strict financial policy requiring mandatory two-person out-of-band verification (such as a voice call to a known number) for any wire transfer requests exceeding a specific threshold.
+  Red Flags: 1) The sender's email address has a subtle, non-standard variation from the CEO's real address. 2) The request for a high-value wire transfer is labeled as "confidential" to prevent routine verification. 3) The directive to use "email only" deliberately cuts off out-of-band communication channels.
+  Technical Control: Enable external sender warning banners and implement automated detection for executive name spoofing.
+  Administrative Control: Enforce a strict dual-authorization policy for all wire transfers, requiring a secondary out-of-band verbal confirmation.
 
 Scenario 3:
   Vector Type: Vishing
-  Target: Clinical Nurse at MedDefense Central - Vulnerable because clinical staff are constantly busy, trained to be inherently helpful, and often lack the technical confidence to question someone claiming to be from "IT".
+  Target: Clinical Nurse - Vulnerable because clinical environments prioritize helpfulness and the nurse may not feel comfortable challenging a person claiming to be from "IT" during an "emergency."
   Psychological Lever: Helpfulness
-  Red Flags: 1) The caller asks directly for an Active Directory/EHR password, which legitimate IT staff never need or ask for. 2) The caller creates a sudden "emergency" out of nowhere to rush the nurse. 3) The caller uses a vague internal reference ("billing server incident") to fabricate trust and authority.
-  Technical Control: Enforce Multi-Factor Authentication (MFA) for the EHR system, ensuring that even if a password is stolen over the phone, the attacker cannot log in without the physical token.
-  Administrative Control: Establish and communicate a definitive organizational policy stating that IT will never ask for passwords, and train staff to hang up and independently dial the official IT helpdesk number to verify callers.
+  Red Flags: 1) An unsolicited caller asking for a plaintext EHR password, which violates standard IT protocols. 2) The use of a recent real-world incident (billing server) to create a false sense of urgency. 3) The caller's request to "verify login works" as a pretext to harvest credentials.
+  Technical Control: Implement Multi-Factor Authentication (MFA) across all EHR and clinical systems to render stolen passwords useless.
+  Administrative Control: Conduct training stating that IT personnel will never ask for passwords over the phone and provide an internal extension for staff to verify the caller's identity.
 
 Scenario 4:
-  Vector Type: Smishing
-  Target: All MedDefense employees - Vulnerable because parking is a universal, mundane administrative concern, and people generally trust SMS messages more than emails, reacting quickly to avoid personal inconvenience.
+  Vector Type: Phishing
+  Target: All MedDefense employees - Vulnerable because parking permits are a universal concern and the urgency of "towing" triggers a fast, uncritical response via mobile device.
   Psychological Lever: Urgency
-  Red Flags: 1) Receiving an administrative request via SMS rather than through official internal company email channels. 2) The threat of an immediate, punitive consequence (towing tomorrow). 3) The link provided points to an external or suspicious URL rather than the known internal HR intranet portal.
-  Technical Control: Deploy Mobile Device Management (MDM) solutions on corporate phones with SMS phishing protection and web filtering to block access to known malicious domains.
-  Administrative Control: Standardize internal communications by publishing a policy that MedDefense HR or facilities will never request AD credentials or send critical alerts via SMS links.
+  Red Flags: 1) An official administrative notice sent via SMS instead of corporate email or the HR portal. 2) The extreme urgency of "expiry tomorrow" combined with a punitive threat. 3) The link points to a non-hospital domain that mimics the internal HR login page.
+  Technical Control: Deploy Mobile Device Management (MDM) with web content filtering to block known malicious URLs on employee devices.
+  Administrative Control: Communicate a clear policy that the organization will never use SMS to request credentials or send urgent administrative notices.
 
 Scenario 5:
   Vector Type: Watering hole attack
-  Target: MedDefense physicians - Vulnerable because they frequently visit this specific industry website for professional reasons (CME credits) and implicitly trust it to be safe.
+  Target: MedDefense physicians - Vulnerable because they regularly visit the Regional Healthcare Association site for CME credits, making it a trusted, high-traffic destination.
   Psychological Lever: Familiarity
-  Red Flags: 1) Unexpected browser redirects when navigating specific pages on the usually stable site. 2) Sudden browser security warnings or SSL certificate errors appearing on a trusted domain. 3) Unexplained system slowdowns or anomalous behavior immediately after visiting the association's website.
-  Technical Control: Implement DNS sinkholing and enterprise web content filtering (e.g., Cisco Umbrella) to block malicious redirect IPs, coupled with Endpoint Detection and Response (EDR) to catch browser-based exploit executions.
-  Administrative Control: Enforce an aggressive patch management policy to ensure that all clinical endpoints and web browsers are strictly updated to patch the vulnerabilities these drive-by downloads exploit.
+  Red Flags: 1) Unexpected browser redirects to unfamiliar domains while on a trusted professional site. 2) Sudden, anomalous browser performance issues or certificate errors. 3) Automated security alerts from endpoint protection software after visiting the site.
+  Technical Control: Use DNS filtering and sinkholing to prevent connections to known malicious domains used in drive-by download redirects.
+  Administrative Control: Maintain an aggressive patching schedule for browsers and web-based plugins to close the vulnerabilities exploited by these attacks.
 
 Scenario 6:
-  Vector Type: Typosquatting
-  Target: MedDefense Patients and remote staff - Vulnerable because they rely on search engines rather than bookmarks to find the login portal and are unlikely to notice a regional spelling difference ("defence" vs "defense") in the URL.
+  Vector Type: Brand impersonation
+  Target: Patients and staff - Vulnerable because the fake portal is visually identical to the real one and appears as a top result in search engines, exploiting the users' trust in the MedDefense brand.
   Psychological Lever: Familiarity
-  Red Flags: 1) The incorrect British spelling ("defence") in the URL domain. 2) Discovering the portal via a "Sponsored" Google Ad at the top of search results rather than an organic, direct link. 3) Missing custom security warnings, incorrect SSL certificates, or lack of expected personalization on the landing page.
-  Technical Control: Proactively register common typo domains (defensive registration) and utilize continuous brand monitoring services to issue rapid takedown requests to registrars and search engines.
-  Administrative Control: Distribute educational materials to patients and staff strongly recommending they bookmark the exact, official portal URL and avoid using Google Search to navigate to login pages.
+  Red Flags: 1) The URL uses an incorrect spelling ("defence" instead of "defense"). 2) The site appears as a "Sponsored" advertisement rather than an organic search result. 3) Small discrepancies in SSL certificate details or site metadata compared to the legitimate portal.
+  Technical Control: Proactively register common typosquatted domains and utilize automated brand protection services to report and take down fraudulent websites.
+  Administrative Control: Educate users to access the patient portal exclusively through the official meddefense.com homepage or through verified bookmarks.
 
 Scenario 7:
-  Vector Type: Impersonation
-  Target: MedDefense staff member - Vulnerable due to human politeness (holding the door for others) and the visual camouflage of the attacker (scrubs, stethoscope, hospital-branded cup) which creates a false sense of belonging.
+  Vector Type: Tailgating
+  Target: IT department staff - Vulnerable due to the "politeness trap" where employees are conditioned to hold doors for people who look like colleagues (scrubs and hospital branding).
   Psychological Lever: Helpfulness
-  Red Flags: 1) The person does not have a visible, currently valid MedDefense ID badge. 2) The person provides an unverified, generic excuse ("badge is in my locker") to bypass security controls. 3) A person in clinical attire (scrubs) is attempting to access a highly restricted, non-clinical IT corridor.
-  Technical Control: Install anti-tailgating physical security controls, such as mantraps or full-height turnstiles, that physically prevent more than one person from entering per badge swipe.
-  Administrative Control: Implement and heavily enforce a "Challenge Policy" requiring all staff to actively confront and report anyone without a visible, valid badge in a restricted area, explicitly overriding social politeness.
+  Red Flags: 1) The individual does not have a visible, currently valid employee ID badge. 2) The person attempts to gain access to a high-security IT area while dressed in clinical scrubs. 3) The individual provides a vague verbal excuse to bypass physical security controls.
+  Technical Control: Install physical access controls such as optical turnstiles or mantraps that allow only one person to pass per valid badge swipe.
+  Administrative Control: Implement a strict "no-tailgating" policy and train all employees on their responsibility to ensure every individual swipes their own badge for entry.
