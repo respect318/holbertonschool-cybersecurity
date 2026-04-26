@@ -1,42 +1,38 @@
-# MedDefense Health Systems - Asset Registry
+Asset ID | Name | Type | Location | Owner (Dept) | OS/Platform | Critical Services | Network Segment | Status | Notes
+---|---|---|---|---|---|---|---|---|---
+A-001 | billing-srv-01 | Server | Central | Finance | Ubuntu 18.04 | Billing | 10.10.2.0/24 | Deprecated | Source: Diagnostics (Task 2 cryptominer) & Incidents (Task 1 ransomware)
+A-002 | Intern's Laptop | Endpoint | Central | Unknown | Unknown | None | 10.10.1.0/24 | Shadow IT | Source: Incidents (Task 1 - torrent client)
+A-003 | WS-RAD-01 (MRI) | Endpoint | Central | Radiology | Windows XP SP3 | MRI Control | 10.10.1.0/24 | Deprecated | Source: Legacy Dilemma (Task 6) & Network Scan
+A-004 | 2F Network Switch | Network Device | Central | IT | Cisco IOS | Floor Routing | 10.10.1.0/24 | Active | Source: Physical Observations (Task 3 - unlocked closet)
+A-005 | 3F Nurse Wkstn | Endpoint | Central | Clinical | Windows 10 | EHR Access | 10.10.1.0/24 | Active | Source: Physical Observations (Task 3 - unattended session)
+A-006 | MON-VITALS-3F-01 | IoT Medical | Central | Clinical | Unknown | Patient Vitals | 10.10.3.47 | Active | Source: Physical Observations (Task 3) & Network Scan
+A-007 | FortiGate 100F | Network Device | Central | IT | FortiOS | Firewall | Edge / VPN | Active | Source: Control Artifacts (Task 4) & Onboarding
+A-008 | NAS-01 | Data Store | Central | IT | Synology DSM 7 | Backups | 10.10.2.0/24 | Active | Source: Control Artifacts (Task 4)
+A-009 | Analog DVR System | Physical Infrastructure | Central | Security | Unknown | Video Storage | N/A | Active | Source: Control Artifacts (Task 4 camera system)
+A-010 | UNKNOWN-01 | Server | Central | Unknown | Linux 4.x | Web Services | 10.10.2.99 | Shadow IT | Source: Network Scan (Task 7 undocumented)
+A-011 | Westside Mystery | Server | Westside | Unknown | Linux 5.x | Port 3000 App | 10.10.10.200 | Shadow IT | Source: Network Scan (Task 7 undocumented)
+A-012 | GE Revolution CT | IoT Medical | Central | Radiology | Unknown | CT Scanner | Unknown | Unknown | Source: Onboarding Packet (Task 0) - Missing from scan
+A-013 | Physician iPads | Endpoint | Central | Clinical | iOS | Mobile Rounds | WiFi | Active | Source: Onboarding Packet (Task 0)
+A-014 | web-srv-01 | Server | Central | IT | Ubuntu 20.04 | Website | 10.10.2.0/24 | Active | Source: Incidents (Task 1 defacement) & Network Scan
+A-015 | WS-PHARM-01 | Endpoint | Central | Pharmacy | Windows 10 | Pharmacy Sys | 10.10.1.0/24 | Active | Source: Incidents (Task 1 dosage bug) & Network Scan
+A-016 | Cisco Core Switch | Network Device | Central | IT | Cisco IOS | Core Routing | 10.10.0.0/16 | Active | Source: Onboarding Packet (Task 0 diagram)
+A-017 | Netgear Router | Network Device | Westside | IT | Netgear FW | IPSec VPN | 10.10.10.1 | Active | Source: Onboarding Packet & Network Scan
+A-018 | ehr-srv-01 | Server | Central | Clinical | Ubuntu 20.04 | EHR App | 10.10.2.0/24 | Active | Source: Incidents (Task 1 outage)
+A-019 | pacs-srv-01 | Server | Central | Radiology | Win Server 2016 | PACS Imaging | 10.10.2.0/24 | Active | Source: Onboarding Packet (Shared accounts)
+A-020 | BADGE-READER-MAIN | Physical Infrastructure | Central | Security | HID Global | Door Access | 10.10.3.60 | Active | Source: Network Scan & Onboarding
 
-| Asset ID | Name | Type | Location | Owner (Dept) | OS/Platform | Critical Services | Network Segment | Status | Notes |
-|---|---|---|---|---|---|---|---|---|---|
-| A-001 | ehr-srv-01 | Server | Central | IT / Clinical | Ubuntu 20.04 | EHR Application | 10.10.2.0/24 | Active | |
-| A-002 | ehr-db-01 | Data Store | Central | IT / Clinical | Ubuntu 20.04 | PostgreSQL | 10.10.2.0/24 | Active | Exposed to entire flat network |
-| A-003 | pacs-srv-01 | Server | Central | Radiology | Win Server 2016 | PACS Imaging | 10.10.2.0/24 | Active | Uses shared accounts |
-| A-004 | billing-srv-01 | Server | Central | Finance | Ubuntu 18.04 | Billing/Claims | 10.10.2.0/24 | Deprecated | EOL; infected with cryptominer |
-| A-005 | ad-dc-01 | Server | Central | IT | Win Server 2019 | Primary DC | 10.10.2.0/24 | Active | |
-| A-006 | ad-dc-02 | Server | Central | IT | Win Server 2019 | Secondary DC | 10.10.2.0/24 | Active | Not included in Veeam backups |
-| A-007 | file-srv-01 | Server | Central | All | Win Server 2016 | File Shares | 10.10.2.0/24 | Active | |
-| A-008 | print-srv-01 | Server | Central | IT | Win Server 2012 | Print Server | 10.10.2.0/24 | Deprecated | EOL; confirmed active in scan |
-| A-009 | backup-srv-01 | Server | Central | IT | Ubuntu 22.04 | Veeam Backup | 10.10.2.0/24 | Active | Local backups only |
-| A-010 | web-srv-01 | Server | Central | IT / Marketing | Ubuntu 20.04 | Public Portal | 10.10.2.0/24 | Active | Not in a real DMZ |
-| A-011 | NAS-01 | Data Store | Central | IT | Synology DSM 7 | Backup Storage | 10.10.2.0/24 | Active | Mgmt UI exposed to network |
-| A-012 | ws-srv-01 | Server | Westside | IT / Clinical | Win Server 2016 | Local File/Sched | 10.10.10.0/24 | Active | |
-| A-013 | WS-RAD-01 | Endpoint | Central | Radiology | Windows XP SP3 | MRI Control | 10.10.1.0/24 | Deprecated | EOL; Critical security risk |
-| A-014 | FortiGate 100F | Network Device | Central | IT | FortiOS | Firewall | Edge / VPN | Active | Permissive rules; no egress filtering |
-| A-015 | Netgear Router | Network Device | Westside | IT | Netgear firmware | IPSec VPN | 10.10.10.0/24 | Active | Consumer-grade; insecure |
-| A-016 | UNKNOWN-01 | Server | Central | Unknown | Linux 4.x | Web Services | 10.10.2.0/24 | Shadow IT | Undocumented; ports 8888, 9090 |
-| A-017 | Westside Mystery | Server | Westside | Unknown | Linux 5.x | Unknown (Port 3000) | 10.10.10.0/24 | Shadow IT | Undocumented device |
-| A-018 | MON-ICU-01 | IoT Medical | Central | Clinical | Philips IntelliVue | Patient Vitals | 10.10.3.0/24 | Active | Mgmt interface fully exposed |
-| A-019 | PUMP-ICU-01 | IoT Medical | Central | Clinical | BD Alaris fw 12.1.2| Infusion Pump | 10.10.3.0/24 | Active | Unpatched; known CVEs |
-| A-020 | WS-WC-XRAY | IoT Medical | Westside | Radiology | Unknown | X-Ray Control | 10.10.10.0/24 | Active | |
-| A-021 | BADGE-READER-MAIN| Physical Infra | Central | Security | HID Global | Door Access | 10.10.3.0/24 | Active | |
-| A-022 | AP-1F-01 | Network Device | Central | IT | Ubiquiti UniFi | WiFi AP | 10.10.1.0/24 | Active | |
+Reconciliation Notes
 
-# Reconciliation Notes
+1. Shadow IT (Found in scan, missing in documentation)
+- 10.10.2.99 (UNKNOWN-01): Linux device running web services in the critical server subnet.
+- 10.10.10.200 (Unknown device): Linux device with port 3000 open at Westside.
 
-### 1. Shadow IT (Found in scan, missing in documentation)
-* **10.10.2.99 (UNKNOWN-01):** A Linux 4.x device running web services (ports 8888, 9090) in the highly critical Central server subnet. It is completely undocumented.
-* **10.10.10.200 (Unknown device):** A Linux 5.x device with port 3000 open at the Westside Clinic. Not in any IT asset list.
+2. Missing Assets (Found in documentation, missing in scan)
+- GE Revolution CT Scanner (From Onboarding Packet): Does not appear in scan.
+- Intern's Personal Laptop (From Incidents): Not detected in scan, likely offline.
+- Unconfirmed Westside Server (From Onboarding notes): Scan only shows ws-srv-01 and a mystery device.
 
-### 2. Missing Assets (Found in documentation, missing in scan)
-* **Unconfirmed Westside Server:** Marcus's notes mentioned a possible second server at Westside (Mike Torres's tip). The scan only shows `ws-srv-01` and the mystery Linux device, leaving the Windows server unconfirmed or offline.
-* **GE Revolution CT Scanner:** Mentioned in the original IT asset list, but does not explicitly appear in the scan summary (it may be offline, omitted, or entirely segmented).
-* **Intern's Personal Laptop:** The device running the torrent client (from Incident F) did not appear in the scan, indicating it has either been removed from the network or was powered off during the scan window.
-
-### 3. Discrepancies and Contradictions
-* **Flat Network vs. DMZ:** Marcus's draft network diagram (Task 0) showed `web-srv-01` placed in a DMZ. However, the scan definitively proves the entire environment is a flat 10.10.0.0/16 network with zero segmentation; `web-srv-01` and vulnerable IoT devices can be reached directly from any workstation.
-* **Print Server Verification:** `print-srv-01` was marked as `[UNVERIFIED]` in the original IT ticketing system report. The scan positively confirms it is active at 10.10.2.31 and running a deprecated OS (Windows Server 2012).
-* **Medical IoT Exposure:** Documentation assumed basic segmentation, but the scan reveals that life-critical medical devices (Philips monitors, BD Alaris pumps) and critical databases (ehr-db-01 on port 5432) have their management ports fully exposed to the entire hospital staff and guest network.
+3. Discrepancies and Contradictions
+- Flat Network confirmed: The onboarding diagram showed a DMZ, but the network scan proves the entire 10.10.0.0/16 architecture is completely flat with no segmentation.
+- Print Server verified: Marked as unverified in the onboarding packet, but confirmed active in the network scan running EOL Windows Server 2012.
+- Medical IoT exposure: Documentation assumed isolation, but the scan shows life-critical monitors are fully exposed to the network.
