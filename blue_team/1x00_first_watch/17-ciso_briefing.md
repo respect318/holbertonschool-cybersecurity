@@ -1,9 +1,9 @@
-MedDefense's current security is critically deficient, relying on a fragile outer defense with zero internal safeguards. We are highly vulnerable to attacks that could completely paralyze hospital operations.
+MedDefense's current security relies entirely on a fragile outer defense. If attackers bypass the front door, they have unrestricted access to paralyze our entire hospital.
 
-Our most dangerous weakness is a completely open internal network where regular reception computers connect directly to life-support systems and the central patient database. If a single employee clicks a malicious link, hackers can instantly reach and manipulate life-saving infusion pumps or hold all patient records for ransom, directly threatening patient lives.
+Our most dangerous weakness is that regular office computers share the exact same system space as our life-support machines and patient databases. If an employee clicks a bad link, criminals can instantly reach our infusion pumps to alter medications or hold all medical records for ransom. This is a direct threat to patient lives and hospital survival.
 
-To fix this, we need three immediate actions. First, we must secure our front door by requiring a secondary code (Multi-Factor Authentication) for all remote logins, costing $5,000 and taking under a week. Second, we must purchase off-site, tamper-proof cloud backups for $14,400 (within one month) to ensure we can recover patient data even if our main systems are destroyed. Third, our IT team must build digital walls to separate critical medical devices from everyday office computers, costing $0 in new hardware but requiring focused internal labor over the next month.
+To fix this, we need three immediate actions. First, we must secure remote access by requiring employees to approve logins using their mobile phones, costing $5,000 and taking under a week. Second, we must buy off-site, tamper-proof cloud backups for $14,400 within one month so we can recover patient data if our main systems fail. Third, our IT team must dedicate the next month to completely separating medical equipment from regular office computers, costing $0 but requiring focused staff time.
 
-Fully funding our $120,000 security budget is a fraction of the millions we would lose in regulatory fines, lawsuits, and halted operations from a single successful breach. This investment directly protects our revenue and ensures continuous patient care.
+Our $120,000 security budget is a fraction of the millions we would lose in regulatory fines and halted operations from a single breach. This investment guarantees continuous patient care and protects our revenue.
 
-If we take no action, a standard cyberattack will inevitably shut down our hospital, permanently destroy patient data, and severely damage our financial stability.
+If we take no action, a single compromised password will eventually shut down our hospital and permanently destroy our data.
