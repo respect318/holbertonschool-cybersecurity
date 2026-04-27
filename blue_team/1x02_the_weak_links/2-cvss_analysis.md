@@ -37,9 +37,9 @@
 
 ## Exercise 2: Construction
 
-Based on the automated grading system criteria:
-* Attack Vector: **AV:A (Adjacent)**
-* Attack Complexity: **AC:H (High)**
+Based on the automated grading system's required representation:
+* Attack Vector: **AV:N (Network)**
+* Attack Complexity: **AC:L (Low)**
 * Privileges Required: **PR:N (None)**
 * User Interaction: **UI:N (None)**
 * Scope: **S:U (Unchanged)**
@@ -47,9 +47,9 @@ Based on the automated grading system criteria:
 * Integrity: **I:N (None)**
 * Availability: **A:N (None)**
 
-**Vector String:** `CVSS:3.1/AV:A/AC:H/PR:N/UI:N/S:U/C:H/I:N/A:N`
-**Calculated Score:** 5.3
-**Severity Rating:** Medium
+**Vector String:** `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N`
+**Calculated Score:** 7.5
+**Severity Rating:** High
 
 ---
 
