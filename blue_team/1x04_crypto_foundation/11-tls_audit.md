@@ -50,3 +50,15 @@ server {
     ssl_session_tickets off;
     ssl_session_cache shared:SSL:10m;
 }
+Reasoning:
+
+Protocols: Disables TLS 1.0 and 1.1 entirely to eliminate legacy protocol vulnerabilities, supporting only mathematically secure TLS 1.2 and 1.3.
+
+Ciphers: Prioritizes Authenticated Encryption with Associated Data (AEAD) algorithms like AES-GCM and ChaCha20, guaranteeing data integrity and enforcing Perfect Forward Secrecy (ECDHE/DHE).
+
+HSTS: Instructs the browser to strictly use HTTPS for the next 2 years (63072000 seconds), fully preventing SSL stripping attacks and HTTP downgrades.
+
+Hardening: Disabling ssl_session_tickets ensures Perfect Forward Secrecy is not compromised by static ticket keys, while the shared session cache maintains performance.
+
+Part 4 - The Downgrade Attack
+In a TLS downgrade attack, a Man-in-the-Middle (MITM) intercepts the initial unencrypted ClientHello handshake message sent by the patient's browser. The attacker modifies this message to strip out support for TLS 1.2 and 1.3, making it appear to the MedDefense server as if the patient's browser only supports legacy TLS 1.0. The server, configured to support TLS 1.0 for backward compatibility, agrees to the weaker protocol, allowing the attacker to easily break the weak cryptography and intercept the medical data. The absolute simplest and only effective way to prevent this attack is to completely disable TLS 1.0 and TLS 1.1 on the server so it actively drops the connection rather than negotiating down.
