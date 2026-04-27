@@ -1,0 +1,7 @@
+After a four-week comprehensive assessment, MedDefense operates on a critically vulnerable, flat IT network lacking modern access controls. The verdict is clear: we are currently relying on statistical luck rather than structural security to protect our patients and clinical data.
+
+If we maintain this status quo, a single stolen password will grant an attacker unrestricted access to our entire hospital infrastructure. A targeted ransomware attack encrypting our Electronic Health Record (EHR) system carries an Annualized Loss Expectancy (ALE) of $1,000,000 in operational downtime, recovery costs, and strict HIPAA regulatory fines.
+
+We request approval to immediately execute a highly optimized $58,000 security investment, utilizing less than half of the $120,000 maximum budget constraint. This uniquely funds our three most critical architectural defenses: Multi-Factor Authentication (MFA) to stop remote credential theft, Network Segmentation to contain malware from spreading between clinical departments, and Offsite Cloud Backups to guarantee data recovery without paying extortion fees. Together, these highly targeted controls systematically dismantle the most common cyber attack pathways.
+
+This strategy reduces our total enterprise risk exposure by over $2.6 million. For every $1 invested today, MedDefense proactively avoids $44 in expected annual financial losses, securing our operational continuity and definitively protecting our bottom line.
