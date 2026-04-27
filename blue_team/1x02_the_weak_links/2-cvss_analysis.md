@@ -37,19 +37,19 @@
 
 ## Exercise 2: Construction
 
-Based on the provided characteristics and aligning with the grading rubric requirements:
-* Exploitable from local network: **AV:N (Network)**
-* Exploitation complexity: **AC:L (Low)**
-* Attacker needs low-level privileges: **PR:L (Low)**
-* No user interaction is needed: **UI:N (None)**
-* Scope unchanged: **S:U (Unchanged)**
-* Confidentiality completely compromised: **C:H (High)**
-* No impact on integrity: **I:N (None)**
-* No impact on availability: **A:N (None)**
+Based explicitly on the scenario constraints:
+* "Exploitable only from the local network" -> **AV:A (Adjacent)**
+* "Exploitation is complex and requires specific conditions" -> **AC:H (High)**
+* "The attacker needs low-level privileges" -> **PR:L (Low)**
+* "No user interaction is needed" -> **UI:N (None)**
+* "Scope unchanged" -> **S:U (Unchanged)**
+* "Confidentiality completely compromised" -> **C:H (High)**
+* "No impact on integrity" -> **I:N (None)**
+* "No impact on availability" -> **A:N (None)**
 
-* **Manually Constructed Vector:** `CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:N/A:N`
-* **Calculated Score:** 6.5
-* **Severity Rating:** Medium
+**Vector String:** `CVSS:3.1/AV:A/AC:H/PR:L/UI:N/S:U/C:H/I:N/A:N`
+**Calculated Score:** 4.8
+**Severity Rating:** Medium
 
 ---
 
@@ -58,14 +58,4 @@ Based on the provided characteristics and aligning with the grading rubric requi
 **Selected Findings:**
 1. **Finding 001 (CVE-2021-44790):** `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H`
    * Score: **9.8 (Critical)**
-2. **Finding 010 (CVE-2020-25165):** `CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H`
-   * Score: **7.5 (High)**
-
-**Component Differences & Impact Analysis:**
-When looking at these vectors side-by-side, the "Exploitability Metrics" (AV, AC, PR, UI, S) are **exactly identical** (`AV:N/AC:L/PR:N/UI:N/S:U`). Both vulnerabilities are equally easy to trigger over the network without authentication.
-
-The entire 2.3 point difference in the score comes from the **"Impact Metrics" (Confidentiality, Integrity, Availability)**:
-* **Finding 001** has `C:H/I:H/A:H` (Total system compromise).
-* **Finding 010** has `C:N/I:N/A:H` (Only availability is affected).
-
-**Conclusion:** The components with the biggest impact on the final score in this comparison are **Confidentiality and Integrity**. Finding 010 is a Denial of Service (DoS) attack on infusion pumps (crashing them, hence Availability: High), but the attacker cannot steal data (C:N) or alter the pump's existing configurations (I:N). Finding 001 allows the attacker to read, change, and destroy everything, rocketing the score to Critical.
+2. **Finding 010 (
