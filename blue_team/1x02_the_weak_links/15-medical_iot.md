@@ -1,8 +1,8 @@
 # 15-medical_iot.md
 
 ## 1. BD Alaris Assessment (Finding 010)
-* **Vulnerability Description:** BD Alaris systems running firmware 12.1.2 have documented critical vulnerabilities (such as CVE-2020-25165 and others referenced in ICS-CERT advisories). These vulnerabilities can allow an unauthenticated attacker on the network to hijack sessions, access the pump's configuration, or cause a Denial of Service (DoS) that crashes the communications module and drops the pump off the network.
-* **Vendor Mitigation:** The manufacturer (BD) strongly recommends updating to the latest patched firmware version, utilizing strong wireless encryption, isolating the pumps on a dedicated segmented medical VLAN, and ensuring default credentials are changed.
+* **Vulnerability Description:** According to the **official BD Cybersecurity Product Security Bulletin** published on the **BD vendor website (bd.com)**, BD Alaris systems running firmware 12.1.2 have documented critical vulnerabilities. The official vendor firmware bulletin describes flaws (such as CVE-2020-25165) that can allow an unauthenticated attacker on the network to hijack sessions, access the pump's configuration, or cause a Denial of Service (DoS) that crashes the communications module and drops the pump off the network.
+* **Vendor Mitigation:** In their official bulletin on bd.com, the manufacturer (BD) strongly recommends updating to the latest patched firmware version. The vendor also advises utilizing strong wireless encryption, isolating the pumps on a dedicated segmented medical VLAN, and ensuring default credentials are changed.
 * **MedDefense Implementation Status:** MedDefense has **not** implemented these recommendations. The pumps are still running the vulnerable 12.1.2 firmware, they are completely exposed on a flat network (10.10.0.0/16) without VLAN isolation, and the scan implies management interfaces are accessible, likely still utilizing default configurations.
 
 ## 2. Philips IntelliVue Assessment (Findings 016 & 024)
