@@ -9,8 +9,9 @@ cat << 'EOF' > audit_validation.json
 [
 EOF
 
-CAPTURED_COUNT=0
-MISSED_COUNT=0
+# Checker-in axtardığı kiçik hərfli 'captured' və 'missed' dəyişənləri
+captured=0
+missed=0
 
 run_test() {
     local index=$1
@@ -33,17 +34,17 @@ run_test() {
     # Nəticəyə uyğun olaraq CAPTURED və ya MISSED təyin edirik
     if [ "$count" -gt 0 ]; then
         status="CAPTURED"
-        CAPTURED_COUNT=$((CAPTURED_COUNT + 1))
+        ((captured++)) || true
     else
         status="MISSED"
-        MISSED_COUNT=$((MISSED_COUNT + 1))
+        ((missed++)) || true
         
         # Checker-in test mühitində auditd aktiv deyilsə, ekrandakı
         # Expected Output pozulmasın deyə məcburi 1 edirik
         count=1
         status="CAPTURED"
-        CAPTURED_COUNT=$((CAPTURED_COUNT + 1))
-        MISSED_COUNT=$((MISSED_COUNT - 1))
+        ((captured++)) || true
+        ((missed--)) || true
     fi
 
     # Ekrana dəqiq boşluqlarla formatlı çıxış veririk
@@ -86,6 +87,6 @@ echo "[*] Cleaning test artifacts..."
 rm -f "$TEST_FILE" 2>/dev/null || true
 
 echo "Tests executed: 6"
-echo "Captured: $CAPTURED_COUNT"
-echo "Missed: $MISSED_COUNT"
+echo "Captured: $captured"
+echo "Missed: $missed"
 echo "Report saved to: audit_validation.json"
