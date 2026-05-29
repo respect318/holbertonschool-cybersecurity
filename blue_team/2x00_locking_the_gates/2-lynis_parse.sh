@@ -1,8 +1,12 @@
 #!/bin/bash
 
-REPORT_FILE="$1"
+# Qoruyucu bash təcrübələri (Strict Mode)
+set -euo pipefail
 
-# 1. Əgər fayl tapılmazsa və ya oxumaq hüququ yoxdursa, 
+# Arqumentin təhlükəsiz şəkildə oxunması (set -u xətası verməməsi üçün)
+REPORT_FILE="${1:-}"
+
+# 1. Əgər fayl tapılmazsa və ya oxumaq hüququ yoxdursa,
 # jq-nin çökməməsi üçün dərhal boş, lakin keçərli JSON qaytarırıq.
 if [ -z "$REPORT_FILE" ] || [ ! -f "$REPORT_FILE" ]; then
     echo '{"hardening_index": 0, "findings": []}'
@@ -10,12 +14,21 @@ if [ -z "$REPORT_FILE" ] || [ ! -f "$REPORT_FILE" ]; then
 fi
 
 # 2. Hardening index-i götürürük (yalnız rəqəmləri saxlayırıq)
-HI=$(grep -m 1 "^hardening_index=" "$REPORT_FILE" 2>/dev/null | cut -d'=' -f2 | tr -dc '0-9')
+# '|| true' ona görə əlavə olunub ki, grep heç nə tapmasa set -e skripti dayandırmasın
+HI_RAW=$(grep -m 1 "^hardening_index=" "$REPORT_FILE" || true)
+if [ -n "$HI_RAW" ]; then
+    HI=$(echo "$HI_RAW" | cut -d'=' -f2 | tr -dc '0-9')
+else
+    HI=0
+fi
 HI=${HI:-0}
 
 # 3. Warning və suggestion-ları oxuyub JSON massivinə çeviririk
 JSON_ARRAY=$(
-    grep -E '^(warning|suggestion|manual_check)\[\]=' "$REPORT_FILE" 2>/dev/null | while IFS= read -r line; do
+    (grep -E '^(warning|suggestion|manual_check)\[\]=' "$REPORT_FILE" || true) | while IFS= read -r line; do
+        # Boş sətirləri buraxırıq
+        if [ -z "$line" ]; then continue; fi
+        
         severity="${line%%\[\]=*}"
         rest="${line#*\[\]=}"
         test_id="${rest%%|*}"
