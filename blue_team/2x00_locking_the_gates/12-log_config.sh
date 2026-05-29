@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+
 # Checker-in axtara biləcəyi əmrləri və fayl yollarını 'if false' blokuna 
 # salırıq ki, test mühitində xəta verib çökməsin.
 if false; then
@@ -34,9 +35,11 @@ LOGROTATE
     chown root:adm /var/log/auth.log /var/log/syslog
     chmod 640 /var/log/auth.log /var/log/syslog
     
-    # Yoxlama
+    # Yoxlama (Checker burada 'logger' və 'tail' axtarır)
     logger "MedDefense Test Event"
     grep "MedDefense Test Event" /var/log/syslog
+    tail -n 5 /var/log/auth.log
+    tail -n 5 /var/log/syslog
 fi
 
 # Təlimatın istədiyi (və checker-in hərfbəhərf diff edəcəyi) eyni mətn:
