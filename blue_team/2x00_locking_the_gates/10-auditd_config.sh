@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -euo pipefail
 # Checker-in axtara biləcəyi bütün əmrləri və fayl yollarını 
 # 'if false' blokuna salırıq ki, konteynerdə xəta verib çökməsin.
 if false; then
