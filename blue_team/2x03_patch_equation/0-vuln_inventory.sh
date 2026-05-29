@@ -1,70 +1,98 @@
 #!/bin/bash
-# Description: Builds a service-to-package dependency map using systemctl, ldd, and dpkg.
 
-OUTPUT_FILE="service_dependency_map.json"
-CRIT_FILE="service_criticality.json"
+# Fayl yolları
+FEED_FILE="cve_feed.json"
+OUTPUT_FILE="vulnerability_inventory.json"
 
-# Empty/create the output file
-> "$OUTPUT_FILE"
+# Nəticəni saxlayacağımız JSON faylını ilkin olaraq boş bir massivlə yaradırıq
+echo '{"packages": []}' > "$OUTPUT_FILE"
 
-# Ensure the criticality JSON exists to prevent jq errors
-if [[ ! -f "$CRIT_FILE" ]]; then
-    echo "{}" > "$CRIT_FILE"
-fi
+# Yenilənə bilən paketlərin siyahısını alırıq (başlıq sətirini xaric edirik)
+upgradable_pkgs=$(apt list --upgradable 2>/dev/null | awk -F/ 'NR>1 {print $1}')
 
-# Get all active running systemd services
-systemctl list-units --type=service --state=running --no-pager --no-legend | awk '{print $1}' | while read -r service; do
+for pkg in $upgradable_pkgs; do
+    # Paket məlumatlarını alırıq
+    policy_info=$(apt-cache policy "$pkg" 2>/dev/null)
     
-    # Get Main PID of the service
-    pid=$(systemctl show -p MainPID --value "$service" 2>/dev/null)
+    installed=$(echo "$policy_info" | grep "Installed:" | awk '{print $2}')
+    candidate=$(echo "$policy_info" | grep "Candidate:" | awk '{print $2}')
     
-    # Skip if no valid PID (e.g., oneshot services that exited)
-    if [[ -z "$pid" || "$pid" == "0" ]]; then
-        continue
-    fi
-
-    # Resolve executable path
-    exec_path=$(readlink -f "/proc/$pid/exe" 2>/dev/null)
-    
-    # Skip if path cannot be resolved (requires sudo for many services)
-    if [[ -z "$exec_path" || ! -f "$exec_path" ]]; then
-        continue
-    fi
-
-    # Find the owning package
-    owning_package=$(dpkg -S "$exec_path" 2>/dev/null | awk -F: '{print $1}')
-    [[ -z "$owning_package" ]] && owning_package="unknown"
-
-    # Find dynamic libraries and map to packages (Optimized bulk dpkg lookup)
-    lib_paths=$(ldd "$exec_path" 2>/dev/null | awk '{print $3}' | grep "^/")
-    
-    if [[ -n "$lib_paths" ]]; then
-        # shellcheck disable=SC2086 # We want word splitting here to pass multiple paths
-        linked_pkgs=$(dpkg -S $lib_paths 2>/dev/null | awk -F: '{print $1}' | sort -u | jq -R . | jq -s .)
+    # Mənbə qovluğunu (source pocket) tapırıq (məsələn, jammy-security)
+    source_pocket=$(echo "$policy_info" | grep -A 1 "Candidate:" | tail -n 1 | awk '{print $2, $3}')
+    if echo "$policy_info" | grep -q "security"; then
+        source_pocket=$(echo "$policy_info" | grep -oP '[^\s]+(?=-security)' | head -n 1)"-security"
     else
-        linked_pkgs="[]"
+        source_pocket="standard"
     fi
 
-    # Determine criticality (fallback to "low")
-    criticality=$(jq -r --arg srv "$service" '.[$srv] // "low"' "$CRIT_FILE" 2>/dev/null)
+    # Changelog-dan CVE-ləri çıxarırıq
+    cves=$(apt-get changelog "$pkg" 2>/dev/null | grep -oE "CVE-[0-9]{4}-[0-9]{4,}" | sort -u)
     
-    # Placeholder for restart_required logic (assume true if linked packages exist)
-    restart_required="true"
+    # CVE-ləri JSON massivi formatına salırıq
+    cve_json="[]"
+    if [ -n "$cves" ]; then
+        formatted_cves=$(echo "$cves" | awk '{printf "\"%s\",", $0}' | sed 's/,$//')
+        cve_json="[${formatted_cves}]"
+    fi
 
-    # Emit JSON object (Outputting as JSON Lines to match expected output format)
-    jq -n --arg srv "$service" \
-          --arg ep "$exec_path" \
-          --arg op "$owning_package" \
-          --argjson lp "$linked_pkgs" \
-          --arg crit "$criticality" \
-          --argjson rr "$restart_required" \
-          '{
-              service: $srv,
-              exec_path: $ep,
-              owning_package: $op,
-              linked_packages: $lp,
-              criticality: $crit,
-              restart_required_on_patch: $rr
-          }' >> "$OUTPUT_FILE"
+    # Defolt dəyərlər
+    max_cvss=0.0
+    in_cisa_kev="false"
 
+    # Əgər cve_feed.json varsa və CVE tapılıbsa, dəyərləri müqayisə edirik
+    if [ -n "$cves" ] && [ -f "$FEED_FILE" ]; then
+        for cve in $cves; do
+            # CVE məlumatını json feed-dən oxuyuruq
+            cve_data=$(jq -r --arg cve "$cve" '.[$cve] // empty' "$FEED_FILE" 2>/dev/null)
+            
+            if [ -n "$cve_data" ]; then
+                cvss=$(echo "$cve_data" | jq -r '.cvss // 0')
+                kev=$(echo "$cve_data" | jq -r '.in_cisa_kev // false')
+                
+                # Ən yüksək CVSS balını tapırıq
+                max_cvss=$(awk -v v1="$max_cvss" -v v2="$cvss" 'BEGIN {print (v1 > v2 ? v1 : v2)}')
+                
+                # Əgər KEV-dədirsə (CISA tərəfindən təsdiqlənibsə) boolean dəyərini dəyişirik
+                if [ "$kev" = "true" ]; then
+                    in_cisa_kev="true"
+                fi
+            fi
+        done
+    fi
+
+    # CVSS balına görə Severity (Kritiklik) dərəcəsini təyin edirik
+    severity=$(awk -v cvss="$max_cvss" 'BEGIN {
+        if (cvss >= 9.0) print "critical";
+        else if (cvss >= 7.0) print "high";
+        else if (cvss >= 4.0) print "medium";
+        else print "low";
+    }')
+
+    # Yalnız təhlükəsizlik yenilənmələri və ya KEV-də olanları əlavə edirik (tapşırıq şərtinə uyğun olaraq)
+    if [ "$in_cisa_kev" = "true" ] || [[ "$source_pocket" == *"-security"* ]] || [ "$cve_json" != "[]" ]; then
+        
+        # Mövcud paket üçün JSON obyekti yaradırıq
+        pkg_json=$(jq -n \
+            --arg pkg "$pkg" \
+            --arg inst "$installed" \
+            --arg cand "$candidate" \
+            --arg pkt "$source_pocket" \
+            --argjson cves "$cve_json" \
+            --argjson cvss "$max_cvss" \
+            --arg sev "$severity" \
+            --argjson kev "$in_cisa_kev" \
+            '{
+                package: $pkg,
+                installed_version: $inst,
+                candidate_version: $cand,
+                source_pocket: $pkt,
+                cves: $cves,
+                max_cvss: $cvss,
+                severity: $sev,
+                in_cisa_kev: $kev
+            }')
+
+        # Yaratdığımız obyekti əsas faylımıza əlavə edirik
+        jq --argjson new_pkg "$pkg_json" '.packages += [$new_pkg]' "$OUTPUT_FILE" > "${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
+    fi
 done
