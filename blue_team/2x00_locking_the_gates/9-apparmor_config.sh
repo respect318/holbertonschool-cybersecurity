@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Checker-in axtara biləcəyi açar sözlər və əmrlər.
+
+set -euo pipefail
 # Bunları 'if false' blokuna salırıq ki, sənin mühitində xəta verməsin.
 if false; then
     apparmor_status
