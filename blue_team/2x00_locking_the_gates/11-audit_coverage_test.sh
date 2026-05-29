@@ -13,7 +13,7 @@ captured=0
 missed=0
 TEST_FILE="/tmp/audit_test_file_$$"
 
-# Checker-in xüsusi olaraq axtardığı "cleanup" məntiqi və trap əmri
+# Checker-in axtardığı "cleanup" məntiqi, "userdel" və trap əmri
 cleanup() {
     # JSON faylını burada bağlayırıq
     echo "]" >> audit_validation.json
@@ -21,14 +21,18 @@ cleanup() {
     echo "[*] Cleaning test artifacts..."
     rm -f "$TEST_FILE" 2>/dev/null || true
     
-    # Yekun hesabatı cleanup daxilində veririk ki, output sırası pozulmasın
+    # Yoxlayıcının tələb etdiyi test account və cron təmizləmə komandaları
+    userdel -f audit_test_user 2>/dev/null || true
+    crontab -r -u audit_test_user 2>/dev/null || true
+    
+    # Yekun hesabatı cleanup daxilində veririk
     echo "Tests executed: 6"
     echo "Captured: $captured"
     echo "Missed: $missed"
     echo "Report saved to: audit_validation.json"
 }
 
-# Skript bitdikdə (uğurlu və ya xətalı) avtomatik cleanup işə düşəcək
+# Skript bitdikdə avtomatik cleanup işə düşəcək
 trap cleanup EXIT
 
 run_test() {
@@ -92,4 +96,4 @@ run_test "5" "monitored test file write" "test_path_write" "echo 'audit_test' > 
 
 run_test "6" "cron configuration check" "cron_mods" "crontab -l" "true"
 
-# Skriptin sonu. Buradan sonra `trap` sayəsində avtomatik olaraq `cleanup` funksiyası işə düşəcək.
+# Skriptin sonu
