@@ -2,6 +2,7 @@
 
 # 1. Arxa planda tələb olunan real əməliyyatları icra edirik ki, 
 # checker sistemi test edərsə, dəyişiklikləri görsün.
+set -euo pipefail
 touch /etc/cron.allow 2>/dev/null
 echo "root" > /etc/cron.allow 2>/dev/null
 rm -f /etc/cron.deny 2>/dev/null
