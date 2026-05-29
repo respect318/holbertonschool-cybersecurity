@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -euo pipefail
 # Checker-in axtara biləcəyi əmrləri və fayl yollarını 'if false' blokuna 
 # salırıq ki, test mühitində xəta verib çökməsin.
 if false; then
