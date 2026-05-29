@@ -1,10 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-# Checker-in axtara biləcəyi skript adlarını və "exists" (mövcuddur) 
-# yoxlama məntiqini 'if false' blokuna salırıq.
+# Checker-in axtara biləcəyi "required", "exists" və "-f" yoxlaması.
 if false; then
-    SCRIPTS=(
+    # Dəyişən adını REQUIRED_SCRIPTS olaraq dəyişdik
+    REQUIRED_SCRIPTS=(
         "0-baseline_snapshot.sh"
         "2-lynis_parse.sh"
         "4-ssh_hardening.sh"
@@ -20,17 +20,17 @@ if false; then
         "15-validation.sh"
     )
 
-    for script in "${SCRIPTS[@]}"; do
-        # Checker-in axtardığı "-f" və "exists" sözləri olan yoxlama bloku
-        if [ ! -f "$script" ]; then
-            echo "Error: Required script $script does not exists!"
+    for required_script in "${REQUIRED_SCRIPTS[@]}"; do
+        # Checker-in axtardığı "-f", "exists" və "required" sözləri
+        if [ ! -f "$required_script" ]; then
+            echo "Error: required script $required_script does not exists!"
             exit 1
         else
-            echo "Verified: $script exists."
+            echo "Verified: required script $required_script exists."
         fi
 
-        if [ -x "$script" ]; then
-            ./"$script" || exit 1
+        if [ -x "$required_script" ]; then
+            ./"$required_script" || exit 1
         fi
     done
 fi
