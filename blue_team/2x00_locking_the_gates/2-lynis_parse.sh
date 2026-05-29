@@ -1,45 +1,39 @@
 #!/bin/bash
 
-# Arqumentin verilib-verilmədiyini yoxlayırıq
-if [ -z "$1" ]; then
-    echo "Usage: $0 <path_to_lynis_report.dat>"
-    exit 1
-fi
-
 REPORT_FILE="$1"
 
-# Faylın mövcudluğunu yoxlayırıq
-if [ ! -f "$REPORT_FILE" ]; then
-    echo "Error: File not found!"
-    exit 1
+# 1. Əgər fayl tapılmazsa və ya oxumaq hüququ yoxdursa, 
+# jq-nin çökməməsi üçün dərhal boş, lakin keçərli JSON qaytarırıq.
+if [ -z "$REPORT_FILE" ] || [ ! -f "$REPORT_FILE" ]; then
+    echo '{"hardening_index": 0, "findings": []}'
+    exit 0
 fi
 
-# Hardening index-in tapılması (əgər tapılmazsa, default olaraq 0 təyin edilir)
-HARDENING_INDEX=$(grep -m 1 "^hardening_index=" "$REPORT_FILE" | cut -d'=' -f2)
-HARDENING_INDEX=${HARDENING_INDEX:-0}
+# 2. Hardening index-i götürürük (yalnız rəqəmləri saxlayırıq)
+HI=$(grep -m 1 "^hardening_index=" "$REPORT_FILE" 2>/dev/null | cut -d'=' -f2 | tr -dc '0-9')
+HI=${HI:-0}
 
-# warning, suggestion və manual_check sətirlərini axtarır və parsing edirik
-grep -E '^(warning|suggestion|manual_check)\[\]=' "$REPORT_FILE" | \
-while IFS= read -r line; do
-    # '[]=' simvollarından əvvəlki hissəni (severity) çıxarırıq
-    severity="${line%%\[\]=*}"
-    
-    # '[]=' simvollarından sonrakı qalan hissəni götürürük
-    rest="${line#*\[\]=}"
-    
-    # Birinci '|' simvoluna qədər olan hissəni (test_id) çıxarırıq
-    test_id="${rest%%|*}"
-    
-    # Birinci '|' simvolundan sonrakı hissəyə keçirik
-    after_id="${rest#*|}"
-    
-    # Növbəti '|' simvoluna qədər olan hissəni (message) çıxarırıq
-    message="${after_id%%|*}"
-    
-    # Hər bir sətir üçün minified JSON obyekti yaradırıq
-    jq -n -c \
-       --arg s "$severity" \
-       --arg t "$test_id" \
-       --arg m "$message" \
-       '{severity: $s, test_id: $t, message: $m}'
-done | jq -s --arg hi "$HARDENING_INDEX" '{hardening_index: ($hi | tonumber), findings: (if . == null then [] else . end)}' | jq '.' | tee lynis_findings.json
+# 3. Warning və suggestion-ları oxuyub JSON massivinə çeviririk
+JSON_ARRAY=$(
+    grep -E '^(warning|suggestion|manual_check)\[\]=' "$REPORT_FILE" 2>/dev/null | while IFS= read -r line; do
+        severity="${line%%\[\]=*}"
+        rest="${line#*\[\]=}"
+        test_id="${rest%%|*}"
+        after_id="${rest#*|}"
+        message="${after_id%%|*}"
+
+        jq -n -c \
+            --arg s "$severity" \
+            --arg t "$test_id" \
+            --arg m "$message" \
+            '{severity: $s, test_id: $t, message: $m}'
+    done | jq -s '.'
+)
+
+# 4. Əgər heç bir tapıntı yoxdursa, massivi boş olaraq təyin edirik
+if [ -z "$JSON_ARRAY" ] || [ "$JSON_ARRAY" = '""' ] || [ "$JSON_ARRAY" = "null" ]; then
+    JSON_ARRAY="[]"
+fi
+
+# 5. Yekun çıxış (stdout vasitəsilə)
+jq -n --argjson hi "$HI" --argjson f "$JSON_ARRAY" '{hardening_index: $hi, findings: $f}'

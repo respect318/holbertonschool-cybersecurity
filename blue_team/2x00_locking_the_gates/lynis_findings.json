@@ -1,9 +1,11 @@
 {
-  "hardening_index": 65,
-  "warnings": [],
-  "suggestions": [],
-  "manual_checks": [],
+  "hardening_index": 58,
   "findings": [
+    {
+      "severity": "suggestion",
+      "test_id": "LYNIS",
+      "message": "This release is more than 4 months old. Check the website or GitHub to see if there is an update available."
+    },
     {
       "severity": "suggestion",
       "test_id": "DEB-0280",
@@ -31,23 +33,18 @@
     },
     {
       "severity": "suggestion",
-      "test_id": "BOOT-5180",
-      "message": "Determine runlevel and services at startup"
-    },
-    {
-      "severity": "suggestion",
       "test_id": "BOOT-5264",
       "message": "Consider hardening system services"
     },
     {
       "severity": "suggestion",
-      "test_id": "AUTH-9230",
-      "message": "Configure password hashing rounds in /etc/login.defs"
+      "test_id": "KRNL-5820",
+      "message": "If not required, consider explicit disabling of core dump in /etc/security/limits.conf file"
     },
     {
       "severity": "suggestion",
-      "test_id": "AUTH-9262",
-      "message": "Install a PAM module for password strength testing like pam_cracklib or pam_passwdqc or libpam-passwdqc"
+      "test_id": "AUTH-9230",
+      "message": "Configure password hashing rounds in /etc/login.defs"
     },
     {
       "severity": "suggestion",
@@ -67,12 +64,17 @@
     {
       "severity": "suggestion",
       "test_id": "AUTH-9328",
-      "message": "Default umask in /etc/login.defs could not be found and defaults usually to 022, which could be more strict like 027"
+      "message": "Default umask in /etc/login.defs could be more strict like 027"
     },
     {
       "severity": "suggestion",
       "test_id": "FILE-6310",
       "message": "To decrease the impact of a full /home file system, place /home on a separate partition"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "FILE-6310",
+      "message": "To decrease the impact of a full /tmp file system, place /tmp on a separate partition"
     },
     {
       "severity": "suggestion",
@@ -86,18 +88,8 @@
     },
     {
       "severity": "suggestion",
-      "test_id": "STRG-1846",
-      "message": "Disable drivers like firewire storage when not used, to prevent unauthorized storage or data theft"
-    },
-    {
-      "severity": "suggestion",
       "test_id": "NAME-4028",
       "message": "Check DNS configuration for the dns domain name"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "PKGS-7308",
-      "message": "Check RPM database as RPM binary available but does not reveal any packages"
     },
     {
       "severity": "suggestion",
@@ -105,24 +97,19 @@
       "message": "Install debsums utility for the verification of packages with known good database."
     },
     {
+      "severity": "warning",
+      "test_id": "PKGS-7392",
+      "message": "Found one or more vulnerable packages."
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "PKGS-7392",
+      "message": "Update your system with apt-get update, apt-get upgrade, apt-get dist-upgrade and/or unattended-upgrades"
+    },
+    {
       "severity": "suggestion",
       "test_id": "PKGS-7394",
       "message": "Install package apt-show-versions for patch management purposes"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "PKGS-7420",
-      "message": "Consider using a tool to automatically apply upgrades"
-    },
-    {
-      "severity": "warning",
-      "test_id": "NETW-2705",
-      "message": "Couldn't find 2 responsive nameservers"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "NETW-2705",
-      "message": "Check your resolv.conf file and fill in a backup nameserver if possible"
     },
     {
       "severity": "suggestion",
@@ -145,6 +132,11 @@
       "message": "Determine if protocol 'tipc' is really needed on this system"
     },
     {
+      "severity": "warning",
+      "test_id": "FIRE-4512",
+      "message": "iptables module(s) loaded, but no rules active"
+    },
+    {
       "severity": "suggestion",
       "test_id": "FIRE-4513",
       "message": "Check iptables rules to see which rules are currently not used"
@@ -161,8 +153,58 @@
     },
     {
       "severity": "suggestion",
-      "test_id": "PHP-2376",
-      "message": "Change the allow_url_fopen line to: allow_url_fopen = Off, to disable downloads via PHP"
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
+    },
+    {
+      "severity": "suggestion",
+      "test_id": "SSH-7408",
+      "message": "Consider hardening SSH configuration"
     },
     {
       "severity": "suggestion",
@@ -173,21 +215,6 @@
       "severity": "suggestion",
       "test_id": "LOGG-2190",
       "message": "Check what deleted files are still in use and why."
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "INSE-8300",
-      "message": "Remove rsh client when it is not in use or replace with the more secure SSH package"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "INSE-8318",
-      "message": "It is recommended that TFTP be removed, unless there is a specific need for TFTP (such as a boot server)"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "INSE-8320",
-      "message": "Removing the atftpd package decreases the risk of the accidental (or intentional) activation of tftp services"
     },
     {
       "severity": "suggestion",
@@ -207,12 +234,12 @@
     {
       "severity": "suggestion",
       "test_id": "ACCT-9626",
-      "message": "Enable sysstat to collect accounting (disabled)"
+      "message": "Enable sysstat to collect accounting (no results)"
     },
     {
       "severity": "suggestion",
-      "test_id": "ACCT-9628",
-      "message": "Enable auditd to collect audit information"
+      "test_id": "ACCT-9630",
+      "message": "Audit daemon is enabled with an empty ruleset. Disable the daemon or define rules"
     },
     {
       "severity": "suggestion",
@@ -228,11 +255,6 @@
       "severity": "suggestion",
       "test_id": "FILE-7524",
       "message": "Consider restricting file permissions"
-    },
-    {
-      "severity": "suggestion",
-      "test_id": "HOME-9304",
-      "message": "Double check the permissions of home directories as some might be not strict enough."
     },
     {
       "severity": "suggestion",
