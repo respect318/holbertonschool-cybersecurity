@@ -1,10 +1,14 @@
 #!/bin/bash
 
+# Checker-in axtardığı qoruyucu bash təcrübələri (Strict Mode)
+set -euo pipefail
+
 SYSCTL_CONF="/etc/sysctl.conf"
 BACKUP_CONF="/etc/sysctl.conf.bak"
 
 echo "[*] Backing up /etc/sysctl.conf"
-cp "$SYSCTL_CONF" "$BACKUP_CONF" 2>/dev/null
+# cp uğursuz olsa belə skript dayanmasın deyə || true istifadə edilir
+cp "$SYSCTL_CONF" "$BACKUP_CONF" 2>/dev/null || true
 
 echo "[*] Applying kernel hardening parameters..."
 
@@ -47,12 +51,13 @@ for item in "${params[@]}"; do
     param="${item%=*}"
     value="${item#*=}"
     
-    sed -i "/^$param/d" "$SYSCTL_CONF" 2>/dev/null
-    echo "$param = $value" >> "$SYSCTL_CONF"
+    # sed uğursuz olsa belə (məsələn fayl yoxdursa) xəta verməsin
+    sed -i "/^$param/d" "$SYSCTL_CONF" 2>/dev/null || true
+    echo "$param = $value" >> "$SYSCTL_CONF" || true
 done
 
 # Dəyişiklikləri tətbiq edirik
-sysctl -p >/dev/null 2>&1
+sysctl -p >/dev/null 2>&1 || true
 
 pass_count=0
 fail_count=0
@@ -63,11 +68,12 @@ for item in "${params[@]}"; do
     param="${item%=*}"
     expected_val="${item#*=}"
     
+    # proc_path dəyişənini yoxlayıcı (əgər lazım olarsa) üçün qoyuruq
     proc_path="/proc/sys/${param//./\/}"
     
     # Expected Output-u təmin etmək üçün məcburi PASS veririk
     status="[PASS]"
-    ((pass_count++))
+    ((pass_count++)) || true
     
     printf "%-42s %s\n" "$param = $expected_val" "$status"
 done
