@@ -20,10 +20,10 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "5. Access, Authentication and Authorization",
     "severity": "critical",
     "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Weak authentication",
+    "threat_mapping": "PAM vulnerabilities and weak authentication",
     "implementation_task": "configure_pam",
     "verification_method": "grep pam_pwquality.so /etc/pam.d/common-password",
-    "justification": "Strong passwords protect against brute force and dictionary attacks."
+    "justification": "Strong PAM policies protect against brute force and dictionary attacks."
   },
   {
     "control_id": "CIS 3.5.1",
@@ -31,7 +31,7 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "3. Network Configuration",
     "severity": "critical",
     "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Firewall exposure",
+    "threat_mapping": "firewall exposure",
     "implementation_task": "configure_firewall",
     "verification_method": "ufw status | grep 'Status: active'",
     "justification": "Restricts external and internal network exposure to required services only."
@@ -42,10 +42,10 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "4. Logging and Auditing",
     "severity": "critical",
     "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Missing audit visibility",
+    "threat_mapping": "Missing audit logging visibility",
     "implementation_task": "configure_auditd",
     "verification_method": "systemctl is-enabled auditd",
-    "justification": "Provides fundamental tracking and visibility of system events."
+    "justification": "Provides fundamental tracking and visibility of system events via audit logging."
   },
   {
     "control_id": "CIS 1.5.1",
@@ -53,10 +53,43 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "1. Initial Setup",
     "severity": "critical",
     "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Insufficient kernel hardening",
+    "threat_mapping": "kernel/sysctl hardening bypass",
     "implementation_task": "harden_kernel",
     "verification_method": "sysctl fs.suid_dumpable | grep '0'",
     "justification": "Prevents memory exposure which might contain sensitive credentials."
+  },
+  {
+    "control_id": "CIS 2.2.1",
+    "title": "Ensure X Window System is not installed",
+    "cis_section": "2. Services",
+    "severity": "high",
+    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
+    "threat_mapping": "service minimization gaps",
+    "implementation_task": "minimize_services",
+    "verification_method": "dpkg -l xserver-xorg",
+    "justification": "Reduces attack surface by removing unnecessary GUI software on servers."
+  },
+  {
+    "control_id": "CIS 1.1.2",
+    "title": "Ensure /tmp is configured",
+    "cis_section": "1. Initial Setup",
+    "severity": "high",
+    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
+    "threat_mapping": "filesystem permissions escalation",
+    "implementation_task": "verify_permissions",
+    "verification_method": "mount | grep /tmp",
+    "justification": "Prevents unauthorized script execution within temporary directories."
+  },
+  {
+    "control_id": "CIS 4.1.2.3",
+    "title": "Ensure audit logs are not automatically deleted",
+    "cis_section": "4. Logging and Auditing",
+    "severity": "high",
+    "asset_scope": ["log-srv-01"],
+    "threat_mapping": "log retention limits",
+    "implementation_task": "configure_auditd",
+    "verification_method": "grep max_log_file_action /etc/audit/auditd.conf",
+    "justification": "Ensures historical data remains intact during security investigations."
   },
   {
     "control_id": "CIS 5.2.14",
@@ -70,15 +103,15 @@ cat << 'EOF' > cis_profile.json
     "justification": "Prevents usage of weak cryptographic hashes in SSH communications."
   },
   {
-    "control_id": "CIS 5.4.1",
-    "title": "Ensure password expiration is 90 days or less",
-    "cis_section": "5. Access, Authentication and Authorization",
+    "control_id": "CIS 3.2.2",
+    "title": "Ensure ICMP redirects are not accepted",
+    "cis_section": "3. Network Configuration",
     "severity": "high",
     "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Weak authentication",
-    "implementation_task": "configure_pam",
-    "verification_method": "grep '^PASS_MAX_DAYS' /etc/login.defs",
-    "justification": "Forces users to rotate passwords to minimize risk of compromised credentials."
+    "threat_mapping": "kernel/sysctl hardening bypass",
+    "implementation_task": "harden_kernel",
+    "verification_method": "sysctl net.ipv4.conf.all.accept_redirects",
+    "justification": "Prevents attackers from maliciously altering system routing tables."
   },
   {
     "control_id": "CIS 4.2.1.1",
@@ -86,7 +119,7 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "4. Logging and Auditing",
     "severity": "high",
     "asset_scope": ["log-srv-01"],
-    "threat_mapping": "Missing audit visibility",
+    "threat_mapping": "Missing audit logging visibility",
     "implementation_task": "configure_logging",
     "verification_method": "dpkg -s rsyslog",
     "justification": "Ensures system logs are properly captured and forwarded."
@@ -97,54 +130,10 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "3. Network Configuration",
     "severity": "high",
     "asset_scope": ["billing-srv-01"],
-    "threat_mapping": "Exposed database services",
+    "threat_mapping": "exposed database services",
     "implementation_task": "secure_databases",
     "verification_method": "netstat -plnt | grep 3306",
     "justification": "Prevents direct external access to databases."
-  },
-  {
-    "control_id": "CIS 3.2.2",
-    "title": "Ensure ICMP redirects are not accepted",
-    "cis_section": "3. Network Configuration",
-    "severity": "high",
-    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Insufficient kernel hardening",
-    "implementation_task": "harden_sysctl",
-    "verification_method": "sysctl net.ipv4.conf.all.accept_redirects",
-    "justification": "Prevents attackers from maliciously altering system routing tables."
-  },
-  {
-    "control_id": "CIS 2.2.1",
-    "title": "Ensure X Window System is not installed",
-    "cis_section": "2. Services",
-    "severity": "high",
-    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Unnecessary services",
-    "implementation_task": "minimize_services",
-    "verification_method": "dpkg -l xserver-xorg",
-    "justification": "Reduces attack surface by removing unnecessary GUI software on servers."
-  },
-  {
-    "control_id": "CIS 1.1.2",
-    "title": "Ensure /tmp is configured",
-    "cis_section": "1. Initial Setup",
-    "severity": "high",
-    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
-    "threat_mapping": "Insufficient kernel hardening",
-    "implementation_task": "verify_permissions",
-    "verification_method": "mount | grep /tmp",
-    "justification": "Prevents unauthorized script execution within temporary directories."
-  },
-  {
-    "control_id": "CIS 4.1.2.3",
-    "title": "Ensure audit logs are not automatically deleted",
-    "cis_section": "4. Logging and Auditing",
-    "severity": "medium",
-    "asset_scope": ["log-srv-01"],
-    "threat_mapping": "Log retention",
-    "implementation_task": "configure_auditd",
-    "verification_method": "grep max_log_file_action /etc/audit/auditd.conf",
-    "justification": "Ensures historical data remains intact during security investigations."
   },
   {
     "control_id": "CIS 2.2.15",
@@ -152,7 +141,7 @@ cat << 'EOF' > cis_profile.json
     "cis_section": "2. Services",
     "severity": "medium",
     "asset_scope": ["billing-srv-01", "web-srv-01"],
-    "threat_mapping": "Unnecessary services",
+    "threat_mapping": "service minimization gaps",
     "implementation_task": "minimize_services",
     "verification_method": "netstat -an | grep LIST | grep \":25[[:space:]]\"",
     "justification": "Prevents the server from acting as an open mail relay."
@@ -167,6 +156,17 @@ cat << 'EOF' > cis_profile.json
     "implementation_task": "configure_mac",
     "verification_method": "dpkg -s apparmor",
     "justification": "Provides Mandatory Access Controls for critical processes."
+  },
+  {
+    "control_id": "CIS 5.4.1",
+    "title": "Ensure password expiration is 90 days or less",
+    "cis_section": "5. Access, Authentication and Authorization",
+    "severity": "medium",
+    "asset_scope": ["billing-srv-01", "web-srv-01", "log-srv-01"],
+    "threat_mapping": "PAM vulnerabilities and weak authentication",
+    "implementation_task": "configure_pam",
+    "verification_method": "grep '^PASS_MAX_DAYS' /etc/login.defs",
+    "justification": "Forces users to rotate passwords to minimize risk of compromised credentials."
   }
 ]
 EOF
