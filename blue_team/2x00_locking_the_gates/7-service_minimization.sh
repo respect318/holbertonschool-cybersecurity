@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Whitelist of services required for MedDefense (Array with comments)
 whitelist=(
