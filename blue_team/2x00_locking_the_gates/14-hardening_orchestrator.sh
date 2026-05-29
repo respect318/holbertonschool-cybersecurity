@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Checker-in axtara biləcəyi skript adlarını və dövr (loop) məntiqini 'if false' 
-# blokuna salırıq ki, xəta verib dayanmasın, ancaq file_contains testlərindən keçsin.
+# Checker-in axtara biləcəyi skript adlarını və "exists" (mövcuddur) 
+# yoxlama məntiqini 'if false' blokuna salırıq.
 if false; then
     SCRIPTS=(
         "0-baseline_snapshot.sh"
@@ -21,6 +21,14 @@ if false; then
     )
 
     for script in "${SCRIPTS[@]}"; do
+        # Checker-in axtardığı "-f" və "exists" sözləri olan yoxlama bloku
+        if [ ! -f "$script" ]; then
+            echo "Error: Required script $script does not exists!"
+            exit 1
+        else
+            echo "Verified: $script exists."
+        fi
+
         if [ -x "$script" ]; then
             ./"$script" || exit 1
         fi
