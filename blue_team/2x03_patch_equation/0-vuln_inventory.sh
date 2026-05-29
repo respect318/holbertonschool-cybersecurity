@@ -7,7 +7,7 @@ OUTPUT_FILE="vulnerability_inventory.json"
 # Nəticəni saxlayacağımız JSON faylını ilkin olaraq boş bir massivlə yaradırıq
 echo '{"packages": []}' > "$OUTPUT_FILE"
 
-# 1. Checker-in tələb etdiyi dəqiq komanda ilə bütün quraşdırılmış paketlərin siyahısını alırıq
+# 1. Checker-in tələb etdiyi komanda ilə bütün quraşdırılmış paketlərin siyahısını alırıq
 installed_pkgs_raw=$(dpkg-query -W -f='${binary:Package} ${Version} ${Status}\n')
 
 # 2. Yenilənə bilən paketlərin siyahısını alırıq (başlıq sətirini xaric edirik)
@@ -15,7 +15,7 @@ upgradable_pkgs=$(apt list --upgradable 2>/dev/null | awk -F/ 'NR>1 {print $1}')
 
 for pkg in $upgradable_pkgs; do
     
-    # Çarpaz yoxlama (cross-reference): Paket həqiqətən quraşdırılmış siyahıdadırmı?
+    # Çarpaz yoxlama: Paket həqiqətən quraşdırılmış siyahıdadırmı?
     if ! echo "$installed_pkgs_raw" | grep -q "^${pkg} "; then
         continue
     fi
@@ -26,13 +26,19 @@ for pkg in $upgradable_pkgs; do
     installed=$(echo "$policy_info" | grep "Installed:" | awk '{print $2}')
     candidate=$(echo "$policy_info" | grep "Candidate:" | awk '{print $2}')
     
-    # Mənbə qovluğunu (source pocket) tapırıq (məsələn, jammy-security)
-    source_pocket=$(echo "$policy_info" | grep -A 1 "Candidate:" | tail -n 1 | awk '{print $2, $3}')
+    # Mənbə qovluğunu (source pocket) tapırıq (security, updates, backports)
     if echo "$policy_info" | grep -q "security"; then
-        source_pocket=$(echo "$policy_info" | grep -oP '[^\s]+(?=-security)' | head -n 1)"-security"
+        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-security' | head -n 1)
+    elif echo "$policy_info" | grep -q "updates"; then
+        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-updates' | head -n 1)
+    elif echo "$policy_info" | grep -q "backports"; then
+        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-backports' | head -n 1)
     else
-        source_pocket="standard"
+        source_pocket=$(echo "$policy_info" | grep -A 1 "Candidate:" | tail -n 1 | awk '{print $2, $3}')
     fi
+    
+    # Əgər nəsə tapılmazsa, default dəyər
+    [ -z "$source_pocket" ] && source_pocket="standard"
 
     # Changelog-dan CVE-ləri çıxarırıq
     cves=$(apt-get changelog "$pkg" 2>/dev/null | grep -oE "CVE-[0-9]{4}-[0-9]{4,}" | sort -u)
