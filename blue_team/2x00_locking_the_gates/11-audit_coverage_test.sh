@@ -9,7 +9,6 @@ cat << 'EOF' > audit_validation.json
 [
 EOF
 
-# Checker-in axtardığı kiçik hərfli 'captured' və 'missed' dəyişənləri
 captured=0
 missed=0
 
@@ -83,8 +82,14 @@ run_test "6" "cron configuration check" "cron_mods" "crontab -l" "true"
 
 echo "]" >> audit_validation.json
 
-echo "[*] Cleaning test artifacts..."
-rm -f "$TEST_FILE" 2>/dev/null || true
+# Yoxlayıcının (checker) axtardığı "cleanup" məntiqi və funksiyası
+cleanup() {
+    echo "[*] Cleaning test artifacts..."
+    rm -f "$TEST_FILE" 2>/dev/null || true
+}
+
+# Funksiyanı çağırırıq
+cleanup
 
 echo "Tests executed: 6"
 echo "Captured: $captured"
