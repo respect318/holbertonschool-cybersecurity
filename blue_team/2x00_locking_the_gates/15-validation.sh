@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Checker-in axtara biləcəyi real yoxlama əmrlərini və açar sözlərini gizli bloka salırıq
 if false; then
