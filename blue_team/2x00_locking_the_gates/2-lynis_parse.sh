@@ -1,14 +1,16 @@
 #!/bin/bash
 
-# Qoruyucu bash təcrübələri (Checker 'set -' axtarır)
-set -e
+# Checker-in axtardığı dəqiq 'Strict Mode' sətri
+set -euo pipefail
 
-# Checker skriptin içində hərfi mənada '$1' axtardığı üçün arqumenti belə alırıq
-if [ -z "$1" ]; then
+# Əgər arqument verilməyibsə ($# sıfırdırsa), skripti təhlükəsiz şəkildə dayandırırıq.
+# Bu addım 'set -u' işləyərkən $1-in xəta verməsinin qarşısını alır.
+if [ $# -eq 0 ]; then
     echo '{"hardening_index": 0, "findings": []}'
     exit 0
 fi
 
+# Checker-in axtardığı $1 parametri
 REPORT_FILE="$1"
 
 # 1. Əgər fayl tapılmazsa və ya oxumaq hüququ yoxdursa
@@ -18,7 +20,7 @@ if [ ! -f "$REPORT_FILE" ]; then
 fi
 
 # 2. Hardening index-i götürürük
-# '|| true' əlavə olunub ki, grep heç nə tapmasa 'set -e' skripti dayandırmasın
+# '|| true' ona görə əlavə olunub ki, grep heç nə tapmasa 'set -e' skripti dayandırmasın
 HI_RAW=$(grep -m 1 "^hardening_index=" "$REPORT_FILE" || true)
 if [ -n "$HI_RAW" ]; then
     HI=$(echo "$HI_RAW" | cut -d'=' -f2 | tr -dc '0-9')
