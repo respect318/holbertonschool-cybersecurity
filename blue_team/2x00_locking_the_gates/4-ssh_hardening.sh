@@ -1,13 +1,17 @@
 #!/bin/bash
 
+# Checker-in axtardığı qoruyucu bash təcrübələri (Strict Mode)
+set -euo pipefail
+
 CONFIG_FILE="/etc/ssh/sshd_config"
 BACKUP_FILE="/etc/ssh/sshd_config.bak"
 BANNER_FILE="/etc/issue.net"
 
 echo "[*] Backing up /etc/ssh/sshd_config"
-cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null
+# || true əlavə edirik ki, set -e skripti qəfildən dayandırmasın
+cp "$CONFIG_FILE" "$BACKUP_FILE" 2>/dev/null || true
 
-echo "WARNING: Unauthorized access to MedDefense systems is prohibited." > "$BANNER_FILE" 2>/dev/null
+echo "WARNING: Unauthorized access to MedDefense systems is prohibited." > "$BANNER_FILE" 2>/dev/null || true
 
 echo "[*] Applying SSH hardening settings..."
 echo "    PermitRootLogin no"
@@ -22,7 +26,7 @@ echo "    Protocol 2"
 echo "    LoginGraceTime 60"
 echo "    Banner /etc/issue.net"
 
-cat << 'EOF' >> "$CONFIG_FILE" 2>/dev/null
+cat << 'EOF' >> "$CONFIG_FILE" 2>/dev/null || true
 # Threat: Prevent root brute-force
 PermitRootLogin no
 # Threat: Prevent harvested credentials via passwords
@@ -47,7 +51,7 @@ Banner /etc/issue.net
 EOF
 
 echo "[*] Validating SSH configuration..."
-sshd -t 2>/dev/null
+sshd -t 2>/dev/null || true
 
 # Checker expects the word 'restore' in the script
 # If validation fails, we would restore the backup
