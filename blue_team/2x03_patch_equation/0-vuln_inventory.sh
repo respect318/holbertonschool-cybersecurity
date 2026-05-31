@@ -1,112 +1,99 @@
 #!/bin/bash
 
-# Fayl yolları
-FEED_FILE="cve_feed.json"
-OUTPUT_FILE="vulnerability_inventory.json"
+# Execute inline python3 for robust JSON and data parsing using native libraries
+python3 - << 'EOF'
+import json
+import subprocess
+import re
+import os
 
-# Nəticəni saxlayacağımız JSON faylını ilkin olaraq boş bir massivlə yaradırıq
-echo '{"packages": []}' > "$OUTPUT_FILE"
+cve_feed = {}
+if os.path.exists('cve_feed.json'):
+    with open('cve_feed.json', 'r') as f:
+        cve_feed = json.load(f)
 
-# 1. Checker-in tələb etdiyi komanda ilə bütün quraşdırılmış paketlərin siyahısını alırıq
-installed_pkgs_raw=$(dpkg-query -W -f='${binary:Package} ${Version} ${Status}\n')
+packages_data = []
 
-# 2. Yenilənə bilən paketlərin siyahısını alırıq (başlıq sətirini xaric edirik)
-upgradable_pkgs=$(apt list --upgradable 2>/dev/null | awk -F/ 'NR>1 {print $1}')
+# Get upgradable packages
+try:
+    apt_list = subprocess.check_output(['apt', 'list', '--upgradable'], stderr=subprocess.DEVNULL).decode('utf-8')
+except Exception:
+    apt_list = ""
 
-for pkg in $upgradable_pkgs; do
-    
-    # Çarpaz yoxlama: Paket həqiqətən quraşdırılmış siyahıdadırmı?
-    if ! echo "$installed_pkgs_raw" | grep -q "^${pkg} "; then
+for line in apt_list.splitlines():
+    if '/' not in line or 'Listing' in line:
         continue
-    fi
-
-    # Paket məlumatlarını alırıq
-    policy_info=$(apt-cache policy "$pkg" 2>/dev/null)
     
-    installed=$(echo "$policy_info" | grep "Installed:" | awk '{print $2}')
-    candidate=$(echo "$policy_info" | grep "Candidate:" | awk '{print $2}')
+    parts = line.split()
+    pkg = parts[0].split('/')[0]
+    cand_ver = parts[1]
     
-    # Mənbə qovluğunu (source pocket) tapırıq (security, updates, backports)
-    if echo "$policy_info" | grep -q "security"; then
-        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-security' | head -n 1)
-    elif echo "$policy_info" | grep -q "updates"; then
-        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-updates' | head -n 1)
-    elif echo "$policy_info" | grep -q "backports"; then
-        source_pocket=$(echo "$policy_info" | grep -oE '[^ ]+-backports' | head -n 1)
-    else
-        source_pocket=$(echo "$policy_info" | grep -A 1 "Candidate:" | tail -n 1 | awk '{print $2, $3}')
-    fi
-    
-    # Əgər nəsə tapılmazsa, default dəyər
-    [ -z "$source_pocket" ] && source_pocket="standard"
-
-    # Changelog-dan CVE-ləri çıxarırıq
-    cves=$(apt-get changelog "$pkg" 2>/dev/null | grep -oE "CVE-[0-9]{4}-[0-9]{4,}" | sort -u)
-    
-    # CVE-ləri JSON massivi formatına salırıq
-    cve_json="[]"
-    if [ -n "$cves" ]; then
-        formatted_cves=$(echo "$cves" | awk '{printf "\"%s\",", $0}' | sed 's/,$//')
-        cve_json="[${formatted_cves}]"
-    fi
-
-    # Defolt dəyərlər
-    max_cvss=0.0
-    in_cisa_kev="false"
-
-    # Əgər cve_feed.json varsa və CVE tapılıbsa, dəyərləri müqayisə edirik
-    if [ -n "$cves" ] && [ -f "$FEED_FILE" ]; then
-        for cve in $cves; do
-            cve_data=$(jq -r --arg cve "$cve" '.[$cve] // empty' "$FEED_FILE" 2>/dev/null)
-            
-            if [ -n "$cve_data" ]; then
-                cvss=$(echo "$cve_data" | jq -r '.cvss // 0')
-                kev=$(echo "$cve_data" | jq -r '.in_cisa_kev // false')
-                
-                # Ən yüksək CVSS balını tapırıq
-                max_cvss=$(awk -v v1="$max_cvss" -v v2="$cvss" 'BEGIN {print (v1 > v2 ? v1 : v2)}')
-                
-                # Əgər KEV-dədirsə boolean dəyərini dəyişirik
-                if [ "$kev" = "true" ]; then
-                    in_cisa_kev="true"
-                fi
-            fi
-        done
-    fi
-
-    # CVSS balına görə Severity dərəcəsini təyin edirik
-    severity=$(awk -v cvss="$max_cvss" 'BEGIN {
-        if (cvss >= 9.0) print "critical";
-        else if (cvss >= 7.0) print "high";
-        else if (cvss >= 4.0) print "medium";
-        else print "low";
-    }')
-
-    # Yalnız təhlükəsizlik yenilənmələri və ya KEV-də olanları əlavə edirik
-    if [ "$in_cisa_kev" = "true" ] || [[ "$source_pocket" == *"-security"* ]] || [ "$cve_json" != "[]" ]; then
+    # Check installed version
+    try:
+        dpkg_out = subprocess.check_output(['dpkg-query', '-W', '-f=${Version}', pkg], stderr=subprocess.DEVNULL).decode('utf-8')
+        inst_ver = dpkg_out.strip()
+    except:
+        continue
         
-        # Mövcud paket üçün JSON obyekti yaradırıq
-        pkg_json=$(jq -n \
-            --arg pkg "$pkg" \
-            --arg inst "$installed" \
-            --arg cand "$candidate" \
-            --arg pkt "$source_pocket" \
-            --argjson cves "$cve_json" \
-            --argjson cvss "$max_cvss" \
-            --arg sev "$severity" \
-            --argjson kev "$in_cisa_kev" \
-            '{
-                package: $pkg,
-                installed_version: $inst,
-                candidate_version: $cand,
-                source_pocket: $pkt,
-                cves: $cves,
-                max_cvss: $cvss,
-                severity: $sev,
-                in_cisa_kev: $kev
-            }')
+    if not inst_ver:
+        continue
 
-        # Yaratdığımız obyekti əsas faylımıza əlavə edirik
-        jq --argjson new_pkg "$pkg_json" '.packages += [$new_pkg]' "$OUTPUT_FILE" > "${OUTPUT_FILE}.tmp" && mv "${OUTPUT_FILE}.tmp" "$OUTPUT_FILE"
-    fi
-done
+    # Extract source pocket
+    pocket = "unknown"
+    try:
+        policy = subprocess.check_output(['apt-cache', 'policy', pkg], stderr=subprocess.DEVNULL).decode('utf-8')
+        for p_line in policy.splitlines():
+            if 'http' in p_line and any(x in p_line for x in ['security', 'updates', 'backports']):
+                m = re.search(r'([a-z0-9]+-\w+)', p_line)
+                if m:
+                    pocket = m.group(1)
+                    break
+    except:
+        pass
+
+    # Extract CVEs from changelog
+    cves = []
+    try:
+        clog = subprocess.check_output(['apt-get', 'changelog', pkg], stderr=subprocess.DEVNULL).decode('utf-8', errors='ignore')
+        cves = list(set(re.findall(r'CVE-\d{4}-\d+', clog)))
+    except:
+        pass
+
+    if not cves:
+        continue
+
+    # Calculate max CVSS and KEV status
+    max_cvss = 0.0
+    in_cisa = False
+    
+    for cve in cves:
+        if cve in cve_feed:
+            score = float(cve_feed[cve].get('cvss', 0.0))
+            if score > max_cvss: 
+                max_cvss = score
+            if cve_feed[cve].get('in_cisa_kev', False): 
+                in_cisa = True
+            
+    # Determine severity
+    if max_cvss == 0.0: severity = "unknown"
+    elif max_cvss < 4.0: severity = "low"
+    elif max_cvss < 7.0: severity = "medium"
+    elif max_cvss < 9.0: severity = "high"
+    else: severity = "critical"
+
+    packages_data.append({
+        "package": pkg,
+        "installed_version": inst_ver,
+        "candidate_version": cand_ver,
+        "source_pocket": pocket,
+        "cves": cves,
+        "max_cvss": max_cvss,
+        "severity": severity,
+        "in_cisa_kev": in_cisa
+    })
+
+# Write output to JSON
+with open('vulnerability_inventory.json', 'w') as f:
+    json.dump({"packages": packages_data}, f, indent=2)
+
+EOF
