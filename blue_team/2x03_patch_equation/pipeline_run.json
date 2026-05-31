@@ -1,0 +1,61 @@
+{
+  "started_at": "2026-05-31T20:11:31Z",
+  "finished_at": "2026-05-31T20:16:23Z",
+  "hostname": "billing-srv-01",
+  "pipeline_status": "deferred",
+  "stages": [
+    {
+      "script": "0-vuln_inventory.sh",
+      "exit_code": 0,
+      "duration": 243,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "1-service_deps.sh",
+      "exit_code": 0,
+      "duration": 31.5,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "script": "2-pre_patch_snapshot.sh",
+      "exit_code": 0,
+      "duration": 5.8,
+      "stdout": "Snapshot: pre_patch_state.json\nSize: 220 KB\nKernel: 5.15.0-174-generic\nReboot required: false\n",
+      "stderr": ""
+    },
+    {
+      "script": "3-patch_plan.sh",
+      "exit_code": 0,
+      "duration": 11.1,
+      "stdout": "Emergency: 0   Urgent: 0   Scheduled: 57\nReboot required by plan: yes (kernel update present)\nReport saved to: patch_plan.json\n",
+      "stderr": ""
+    },
+    {
+      "script": "11-maintenance_window.sh",
+      "exit_code": 20,
+      "duration": 0.1,
+      "stdout": "now:            2026-05-31 20:16  (Sun)\nactive window:  (none)\nnext window:    standard  at 2026-04-04 02:00\nseconds until:  403080\ndecision:       defer\nReport saved to: maintenance_window.json\n",
+      "stderr": ""
+    },
+    {
+      "script": "12-change_log.sh",
+      "exit_code": 0,
+      "duration": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "artifacts": {
+    "0-vuln_inventory.sh": "vulnerability_inventory.json",
+    "1-service_deps.sh": "service_dependency_map.json",
+    "2-pre_patch_snapshot.sh": "pre_patch_state.json",
+    "3-patch_plan.sh": "patch_plan.json",
+    "11-maintenance_window.sh": "maintenance_window.json",
+    "4-patch_execute.sh": "patch_execution_log.json",
+    "5-post_patch_validate.sh": "post_patch_validation.json",
+    "6-config_drift.sh": "config_drift.json",
+    "12-change_log.sh": "patch_change_log.json"
+  }
+}
