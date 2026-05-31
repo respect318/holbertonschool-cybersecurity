@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-05-31T20:12:25Z",
+  "hostname": "billing-srv-01",
+  "kernel": "5.15.0-174-generic",
+  "summary": {
+    "resolved": 6,
+    "open": 1,
+    "deferred_held": 1,
+    "deferred_window": 1,
+    "score": 87.5,
+    "target_score": 95,
+    "overdue": 1
+  },
+  "cves": [
+    {
+      "id": "CVE-TEST",
+      "package": "test-pkg",
+      "severity": "critical",
+      "state": "open",
+      "first_seen": "2026-05-01T00:00:00Z",
+      "resolved_at": null,
+      "justification": "N/A"
+    }
+  ]
+}
