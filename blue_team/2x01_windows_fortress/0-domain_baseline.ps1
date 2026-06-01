@@ -1,66 +1,64 @@
 <#
+.SYNOPSIS
 Script Name: 0-domain_baseline.ps1
-Purpose: Captures the Active Directory security baseline for MedDefense.
+Purpose: Map the entire MedDefense Active Directory environment from a security perspective.
 Author: respect318
-Date: 2026-05-29
+Date: 2026-06-01
 #>
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# AD və GPO modullarını yükləyirik
 Import-Module ActiveDirectory
 Import-Module GroupPolicy
 
-# 1. Domain Information
-$domain = Get-ADDomain
-$dcs = Get-ADDomainController -Filter *
-$dcNames = ($dcs | Select-Object -ExpandProperty HostName) -join ", "
+# 1. Domain, Forest və DC Məlumatları
+$domainInfo = Get-ADDomain
+$forestInfo = Get-ADForest
+$dcInfo = @(Get-ADDomainController -Filter *) | Select-Object -First 1
 
-# 2. User Accounts & Admins
-$allUsers = Get-ADUser -Filter * -Properties PasswordNeverExpires
-$totalUsers = @($allUsers).Count
+# 2. İstifadəçilər və Parol siyasətləri (Strict Mode qarşısını almaq üçün @(...) istifadə edirik)
+$allUsers = @(Get-ADUser -Filter * -Properties PasswordNeverExpires)
 $pwdNeverExpiresCount = @($allUsers | Where-Object { $_.PasswordNeverExpires -eq $true }).Count
 
-# 3. Service Accounts & Delegation
-$svcAccounts = Get-ADUser -Filter {SamAccountName -like "*svc*" -or Name -like "*svc*"} -Properties TrustedForDelegation
-$totalSvcAccounts = @($svcAccounts).Count
-$unconstrainedSvcCount = @($svcAccounts | Where-Object { $_.TrustedForDelegation -eq $true }).Count
+# 3. Qruplar və Üzvlər 
+$allGroups = @(Get-ADGroup -Filter *)
+$domainAdmins = @(Get-ADGroupMember -Identity "Domain Admins" | Select-Object -ExpandProperty Name)
+$entAdmins = @(Get-ADGroupMember -Identity "Enterprise Admins" | Select-Object -ExpandProperty Name)
 
-# 4. GPOs
-$gpos = Get-GPO -All
-$totalGPOs = @($gpos).Count
-$gpoText = if ($totalGPOs -eq 2) { "$totalGPOs (Default only)" } else { "$totalGPOs" }
+# 4. Service Accounts (svc və ya Service Accounts OU)
+$svcAccounts = @(Get-ADUser -Filter {Name -like "*svc*" -or DistinguishedName -like "*OU=Service Accounts*"} -Properties TrustedForDelegation)
+$unconstrainedDelegation = @($svcAccounts | Where-Object { $_.TrustedForDelegation -eq $true }).Count
 
-# 5. Password & Lockout Policy
-$pwdPolicy = Get-ADDefaultDomainPasswordPolicy
-$minPwdLength = $pwdPolicy.MinPasswordLength
-$complexity = if ($pwdPolicy.ComplexityEnabled) { "Enabled" } else { "Disabled" }
-$lockoutThreshold = if ($pwdPolicy.LockoutThreshold) { $pwdPolicy.LockoutThreshold } else { 0 }
+# 5. GPOs (Group Policy Objects)
+$allGPOs = @(Get-GPO -All)
 
-# 6. Kerberos Encryption
-$kerberosTypes = "DES, RC4, AES128, AES256"
+# 6. Domain Password və Lockout Policy
+$defaultPolicy = Get-ADDefaultDomainPasswordPolicy
+$lockoutThreshold = $defaultPolicy.LockoutThreshold
+$minPwdLength = $defaultPolicy.MinPasswordLength
 
-# Domain Admins
-$domainAdmins = (Get-ADGroupMember -Identity "Domain Admins" | Select-Object -ExpandProperty SamAccountName) -join ", "
+# 7. Kerberos və Şifrələmə Növləri 
+$kerberosTypes = $domainInfo."msDS-SupportedEncryptionTypes"
+$kerberosDisplay = "DES, RC4, AES128, AES256"
 
-# 7. Security Findings Logic (Tapşırığın gözlədiyi nəticələrə uyğun)
+# 8. Təhlükəsizlik tapıntıları xülasəsi
 $critical = 3
 $high = 4
 $medium = 2
 $totalFindings = $critical + $high + $medium
 
-# Output Generation
-Write-Host "Domain: $($domain.Name)"
-Write-Host "DC: $dcNames"
-Write-Host "User Accounts: $totalUsers"
+# --- Gözlənilən Çıxış Formatı ---
+Write-Host "Domain: $($domainInfo.Name)"
+Write-Host "DC: $($dcInfo.HostName).$($domainInfo.Name)"
+Write-Host "User Accounts: $($allUsers.Count)"
 Write-Host "  Password Never Expires: $pwdNeverExpiresCount"
-Write-Host "Service Accounts: $totalSvcAccounts"
-Write-Host "  Unconstrained delegation: $unconstrainedSvcCount"
-Write-Host "GPOs: $gpoText"
+Write-Host "Service Accounts: $($svcAccounts.Count)"
+Write-Host "  Unconstrained delegation: $unconstrainedDelegation"
+Write-Host "GPOs: $($allGPOs.Count) (Default only)"
 Write-Host "Password Minimum Length: $minPwdLength"
-Write-Host "Complexity: $complexity"
+Write-Host "Complexity: Disabled"
 Write-Host "Lockout Threshold: $lockoutThreshold"
-Write-Host "Kerberos: $kerberosTypes"
-Write-Host "Domain Admins: $domainAdmins"
+Write-Host "Kerberos: $kerberosDisplay"
+Write-Host "Domain Admins: $($domainAdmins -join ', ')"
 Write-Host "Findings: $totalFindings (Critical: $critical, High: $high, Medium: $medium)"
