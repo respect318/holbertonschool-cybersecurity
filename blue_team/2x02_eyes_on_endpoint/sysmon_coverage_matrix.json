@@ -1,0 +1,72 @@
+[
+    {
+        "technique_id":  "T1059",
+        "technique_name":  "Command Interpreter",
+        "required_event_ids":  "1",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "covered",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "None"
+    },
+    {
+        "technique_id":  "T1053",
+        "technique_name":  "Scheduled Task",
+        "required_event_ids":  "1",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "covered",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "None"
+    },
+    {
+        "technique_id":  "T1547",
+        "technique_name":  "Boot/Logon Autostart",
+        "required_event_ids":  "13",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "covered",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "None"
+    },
+    {
+        "technique_id":  "T1055",
+        "technique_name":  "Process Injection",
+        "required_event_ids":  "8, 10",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "partial",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "Enable EID 8"
+    },
+    {
+        "technique_id":  "T1071",
+        "technique_name":  "App Layer Protocol",
+        "required_event_ids":  "3, 22",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "covered",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "None"
+    },
+    {
+        "technique_id":  "T1574.002",
+        "technique_name":  "DLL Side-Loading",
+        "required_event_ids":  "7",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "covered",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "None"
+    },
+    {
+        "technique_id":  "T1027",
+        "technique_name":  "Obfuscated Files",
+        "required_event_ids":  "11, 15",
+        "enabled_event_ids":  "1, 3, 7, 11, 12, 13, 22",
+        "filter_conflicts":  "None",
+        "coverage_status":  "partial",
+        "evidence_fields_expected":  "ProcessId, Image, CommandLine",
+        "recommendation":  "Check exclusions"
+    }
+]
