@@ -1,0 +1,38 @@
+[
+    {
+        "event_id":  "4624, 4625, 4648, 4672, 4688, 4720, 4726, 4732, 1102",
+        "event_name":  "Critical Security Events",
+        "log_source":  "Security",
+        "audit_or_sensor_dependency":  "Advanced Audit Policy",
+        "security_meaning":  "Tracks authentication, process creation, and account management.",
+        "normal_frequency":  "High",
+        "triage_priority":  "High",
+        "crimson_tide_phase":  "Reconnaissance / Lateral Movement",
+        "example_suspicious_pattern":  "Multiple failed logon attempts followed by a success.",
+        "validation_method":  "Event Viewer -\u003e Security"
+    },
+    {
+        "event_id":  "4103, 4104",
+        "event_name":  "PowerShell Execution",
+        "log_source":  "PowerShell",
+        "audit_or_sensor_dependency":  "GPO Script Block Logging",
+        "security_meaning":  "Records PowerShell script content and module execution.",
+        "normal_frequency":  "Medium",
+        "triage_priority":  "Critical",
+        "crimson_tide_phase":  "Execution",
+        "example_suspicious_pattern":  "Heavily encoded commands (e.g., Base64 payload).",
+        "validation_method":  "Event Viewer -\u003e Microsoft-Windows-PowerShell/Operational"
+    },
+    {
+        "event_id":  "1, 3, 7, 11, 13, 22",
+        "event_name":  "Sysmon Advanced Telemetry",
+        "log_source":  "Sysmon",
+        "audit_or_sensor_dependency":  "Sysmon Service",
+        "security_meaning":  "Granular visibility into network connections, image loads, and registry changes.",
+        "normal_frequency":  "High",
+        "triage_priority":  "Critical",
+        "crimson_tide_phase":  "Action on Objectives",
+        "example_suspicious_pattern":  "Unusual file dropping behavior typical of ransomware.",
+        "validation_method":  "Event Viewer -\u003e Sysmon/Operational"
+    }
+]
