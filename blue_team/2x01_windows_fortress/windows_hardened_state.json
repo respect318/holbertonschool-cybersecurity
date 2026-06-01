@@ -1,0 +1,13 @@
+{
+    "domain_metadata":  "MedDefense Domain. Commands simulated: Get-ADDomain",
+    "gpo_inventory":  "5 GPOs deployed. Commands simulated: Get-GPO",
+    "audit_policy":  "auditpol output captured. Critical events: 4624, 4625, 4688, 1102",
+    "powershell_logging":  "Script Block Logging and Module Logging enabled. Events 4103, 4104 active.",
+    "sysmon_posture":  "Sysmon service and driver running. Configured with custom rules.",
+    "firewall_posture":  "Default deny inbound. Commands simulated: Get-NetFirewallProfile, Get-NetFirewallRule",
+    "applocker_posture":  "Audit Only. Commands simulated: Get-AppLockerPolicy",
+    "rdp_posture":  "NLA enforced. Limited to G_IT_Admins.",
+    "authentication_protocols":  "DES, RC4 disabled. AES enforced. NTLMv1 disabled. SMBv1 disabled. SMB signing required.",
+    "service_account_posture":  "delegation restricted, password age checked, privileged membership removed, interactive logon risk mitigated.",
+    "validation_summary":  "Task 15 output: not_found"
+}
