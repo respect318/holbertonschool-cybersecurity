@@ -1,0 +1,10 @@
+{
+    "id":  "FINDING-001",
+    "severity":  "Critical",
+    "category":  "Password Policy",
+    "asset":  "meddefense.local",
+    "evidence":  "MinPasswordLength is 7",
+    "risk":  "Brute-force attacks",
+    "recommended_remediation":  "Set MinPasswordLength to 14, LockoutThreshold to 5",
+    "mapped_task":  "Task 2"
+}
