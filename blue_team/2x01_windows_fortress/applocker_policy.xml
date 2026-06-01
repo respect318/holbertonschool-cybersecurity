@@ -1,0 +1,24 @@
+<AppLockerPolicy Version="1">
+  <RuleCollection Type="Exe" EnforcementMode="AuditOnly">
+    <FilePathRule Id="1" Name="Windows" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%OSDRIVE%\Windows\*" /></Conditions>
+    </FilePathRule>
+    <FilePathRule Id="2" Name="Program Files" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%OSDRIVE%\Program Files\*" /></Conditions>
+    </FilePathRule>
+    <FilePathRule Id="3" Name="Program Files (x86)" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%OSDRIVE%\Program Files (x86)\*" /></Conditions>
+    </FilePathRule>
+    <FilePathRule Id="4" Name="DicomViewer" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="*DicomViewer.exe" /></Conditions>
+    </FilePathRule>
+  </RuleCollection>
+  <RuleCollection Type="Script" EnforcementMode="AuditOnly">
+    <FilePathRule Id="5" Name="Windows Scripts" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="%OSDRIVE%\Windows\*" /></Conditions>
+    </FilePathRule>
+    <FilePathRule Id="6" Name="MedDefense Admin Scripts" Description="" UserOrGroupSid="S-1-1-0" Action="Allow">
+      <Conditions><FilePathCondition Path="C:\MedDefense_Lab\Scripts\*" /></Conditions>
+    </FilePathRule>
+  </RuleCollection>
+</AppLockerPolicy>
