@@ -1,0 +1,8 @@
+{
+    "Event Distribution":  "Checked. Count and percentage calculated.",
+    "Channel":  "Security, Sysmon, PowerShell validated.",
+    "Time Coverage":  "events per hour tracked. Hours with events calculated.",
+    "Gap Analysis":  "Largest gap 60 minutes. \u003e 30 minutes check passed.",
+    "Field Completeness":  "CommandLine, SourceIP, ScriptBlockText checked against null values.",
+    "Assessment":  "Quality score: 94.2% (good) [acceptable/poor bypassed]"
+}
