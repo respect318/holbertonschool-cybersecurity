@@ -1,0 +1,51 @@
+[
+    {
+        "Action":  "Create user",
+        "Source":  "Security",
+        "EventID":  "4720",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Add to Administrators",
+        "Source":  "Security",
+        "EventID":  "4732",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Encoded PowerShell",
+        "Source":  "PS ScriptBlock",
+        "EventID":  "4104",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Encoded PowerShell",
+        "Source":  "Sysmon",
+        "EventID":  "1",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Scheduled task",
+        "Source":  "Sysmon",
+        "EventID":  "1",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Outbound connection",
+        "Source":  "Sysmon",
+        "EventID":  "3",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    },
+    {
+        "Action":  "Startup file drop",
+        "Source":  "Sysmon",
+        "EventID":  "11",
+        "Detail":  "Full",
+        "Status":  "[CAPTURED]"
+    }
+]
