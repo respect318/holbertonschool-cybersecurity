@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
 Script name: 1-sysmon_coverage_matrix.ps1
-Purpose: Produce a structured coverage matrix mapping ATT&CK techniques.
+purpose: Produce a structured coverage matrix mapping ATT&CK techniques.
 Author: respect318
 Date: 2026-06-02
 #>
