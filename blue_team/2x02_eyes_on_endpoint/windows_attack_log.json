@@ -1,0 +1,44 @@
+[
+    {
+        "action":  1,
+        "description":  "Create local user",
+        "timestamp":  "2026-06-02T09:29:43Z",
+        "expected":  "Security 4720",
+        "MITRE_technique":  "T1136.001"
+    },
+    {
+        "action":  2,
+        "description":  "Add to Admins",
+        "timestamp":  "2026-06-02T09:29:44Z",
+        "expected":  "Security 4732",
+        "MITRE_technique":  "T1098"
+    },
+    {
+        "action":  3,
+        "description":  "Encoded PS",
+        "timestamp":  "2026-06-02T09:29:45Z",
+        "expected":  "PowerShell 4104",
+        "MITRE_technique":  "T1059.001"
+    },
+    {
+        "action":  4,
+        "description":  "Scheduled Task",
+        "timestamp":  "2026-06-02T09:29:46Z",
+        "expected":  "Sysmon 1",
+        "MITRE_technique":  "T1053.005"
+    },
+    {
+        "action":  5,
+        "description":  "Outbound Net",
+        "timestamp":  "2026-06-02T09:29:47Z",
+        "expected":  "Sysmon Event ID 3",
+        "MITRE_technique":  "T1071"
+    },
+    {
+        "action":  6,
+        "description":  "Startup File",
+        "timestamp":  "2026-06-02T09:29:48Z",
+        "expected":  "Sysmon Event ID 11",
+        "MITRE_technique":  "T1547.001"
+    }
+]
