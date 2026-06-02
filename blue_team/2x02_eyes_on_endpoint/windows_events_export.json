@@ -1,0 +1,35 @@
+[
+    {
+        "timestamp":  "\/Date(1780298496394)\/",
+        "hostname":  "DC01",
+        "platform":  "Windows",
+        "source_type":  "EventLog",
+        "channel":  "Security",
+        "event_id":  4624,
+        "event_category":  "Logon",
+        "provider":  "Microsoft-Windows-Security-Auditing",
+        "raw_message":  "Logon event",
+        "TargetUserName":  "Administrator",
+        "IpAddress":  "10.10.3.11",
+        "LogonType":  3,
+        "CommandLine":  ""
+    },
+    {
+        "timestamp":  "\/Date(1780384896397)\/",
+        "channel":  "PowerShell",
+        "event_id":  4104,
+        "ScriptBlockText":  "Write-Host \u0027Test\u0027"
+    },
+    {
+        "timestamp":  "\/Date(1780384896397)\/",
+        "channel":  "Sysmon",
+        "event_id":  1,
+        "Image":  "cmd.exe",
+        "ParentImage":  "explorer.exe",
+        "Hashes":  "MD5=XYZ",
+        "DestinationIp":  "8.8.8.8",
+        "TargetFilename":  "C:\\test.txt",
+        "QueryName":  "example.com",
+        "event_category":  "4625 4672 4688"
+    }
+]
