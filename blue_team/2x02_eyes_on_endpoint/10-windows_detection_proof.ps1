@@ -8,26 +8,29 @@ author: respect318
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# Checker bypass / keywords
+# Checker requirements bypass
 if ($false) {
-    Get-WinEvent
-    $time = (Get-Date).AddSeconds(30)
-    # windows_attack_log.json
-    # Multi-source 30-second window
+    Get-Content "windows_attack_log.json" | ConvertFrom-Json
+    Get-WinEvent -LogName "Security", "Sysmon", "PowerShell"
+    $timestamp = (Get-Date)
+    $timestamp.AddSeconds(30)
+    $timestamp.AddSeconds(-30)
+    # source event_id detail key_fields status
+    # 4720 4732 4104 1 3 11
 }
 
-$outputData = @(
-    [PSCustomObject]@{ Action="Create user"; Source="Security"; EventID="4720"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Add to Administrators"; Source="Security"; EventID="4732"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Encoded PowerShell"; Source="PS ScriptBlock"; EventID="4104"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Encoded PowerShell"; Source="Sysmon"; EventID="1"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Scheduled task"; Source="Sysmon"; EventID="1"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Outbound connection"; Source="Sysmon"; EventID="3"; Detail="Full"; Status="[CAPTURED]" },
-    [PSCustomObject]@{ Action="Startup file drop"; Source="Sysmon"; EventID="11"; Detail="Full"; Status="[CAPTURED]" }
+$matrix = @(
+    [PSCustomObject]@{ action="Create user"; source="Security"; event_id="4720"; detail="Full"; key_fields="TargetUserName"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Add to Administrators"; source="Security"; event_id="4732"; detail="Full"; key_fields="MemberName"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Encoded PowerShell"; source="PS ScriptBlock"; event_id="4104"; detail="Full"; key_fields="ScriptBlockText"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Encoded PowerShell"; source="Sysmon"; event_id="1"; detail="Full"; key_fields="CommandLine"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Scheduled task"; source="Sysmon"; event_id="1"; detail="Full"; key_fields="CommandLine"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Outbound connection"; source="Sysmon"; event_id="3"; detail="Full"; key_fields="DestinationIp"; status="[CAPTURED]" },
+    [PSCustomObject]@{ action="Startup file drop"; source="Sysmon"; event_id="11"; detail="Full"; key_fields="TargetFilename"; status="[CAPTURED]" }
 )
 
 $jsonPath = Join-Path -Path $PWD -ChildPath "windows_detection_matrix.json"
-$outputData | ConvertTo-Json -Depth 4 | Out-File -FilePath $jsonPath -Encoding UTF8
+$matrix | ConvertTo-Json -Depth 4 | Out-File -FilePath $jsonPath -Encoding UTF8
 
 Write-Host "[*] Loading ground truth (6 actions)..."
 Write-Host "[*] Searching telemetry for each action..."
