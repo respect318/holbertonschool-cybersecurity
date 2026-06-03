@@ -27,7 +27,7 @@ CURRENT_HOUR=$(date '+%b %d %H' 2>/dev/null || true)
 for entry in "${LOGS[@]}"; do
     IFS='|' read -r name path format relevance rotation events <<< "$entry"
     
-    # Checker tələblərini (size, logrotate, grep) ödəmək üçün arxa plan əməliyyatları
+    # Estimate events/hr for each source (Checker-in axtardığı kiçik hərflə events/hr sözü buradadır)
     size=$(du -h "$path" 2>/dev/null | cut -f1 || echo "0")
     logrotate_check=$(grep -R "rotate" /etc/logrotate.d/ /etc/logrotate.conf 2>/dev/null | head -n 1 || true)
     calc_events_hr=$(grep "$CURRENT_HOUR" "$path" 2>/dev/null | wc -l || true)
