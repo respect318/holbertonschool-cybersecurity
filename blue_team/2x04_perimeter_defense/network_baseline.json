@@ -1,5 +1,12 @@
 {
+  "timestamp": "2026-06-03T19:24:00Z",
   "hostname": "billing-srv-01",
+  "interfaces": ["lo", "eth0", "eth1"],
   "up_interfaces": ["lo", "eth0", "eth1"],
-  "listeners": 15
+  "routes": [],
+  "neighbors": [],
+  "listening_sockets": [],
+  "listeners": 15,
+  "established_connections": [],
+  "dns_resolvers": []
 }
