@@ -1,0 +1,27 @@
+{
+  "total_events": {
+    "platform": "mixed",
+    "source_type": "multiple",
+    "event_category": "all"
+  },
+  "detection_matrix": {
+    "simulated actions": 12,
+    "captured": 11,
+    "missed": 1,
+    "multi-source": 4
+  },
+  "ATT&CK": {
+    "covered": 9,
+    "partial": 2,
+    "blind": 1
+  },
+  "known_gaps": [
+    {
+      "description": "Blind spot in memory execution",
+      "impacted_platform": "Windows",
+      "impacted_technique": "T1055",
+      "reason": "Missing Sysmon Event ID 8",
+      "recommendation": "Update Sysmon configuration to include Process Access"
+    }
+  ]
+}

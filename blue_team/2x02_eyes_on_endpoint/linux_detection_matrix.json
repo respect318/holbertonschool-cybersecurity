@@ -1,0 +1,5 @@
+{
+  "status": "completed",
+  "captured": "6/6",
+  "tools": ["jq", "ausearch", "auth.log", "syslog"]
+}
