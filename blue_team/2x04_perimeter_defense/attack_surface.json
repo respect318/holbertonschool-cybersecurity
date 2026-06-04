@@ -1,0 +1,33 @@
+{
+  "generated_at": "2026-06-03T19:24:00Z",
+  "hostname": "billing-srv-01",
+  "sockets": [
+    {
+      "proto": "tcp",
+      "port": 3306,
+      "bind_addr": "0.0.0.0",
+      "process": "mysqld",
+      "package": "mysql-server",
+      "function": "database",
+      "criticality": "high",
+      "exposure_flags": ["bound_0.0.0.0", "database_exposed"]
+    },
+    {
+      "proto": "udp",
+      "port": 161,
+      "bind_addr": "0.0.0.0",
+      "process": "snmpd",
+      "package": "snmpd",
+      "function": "snmpv2c",
+      "criticality": "medium",
+      "exposure_flags": ["insecure_protocol_snmpv2c"]
+    }
+  ],
+  "summary": {
+    "flagged_critical": 0,
+    "flagged_high": 1,
+    "flagged_medium": 1,
+    "flagged_low": 0,
+    "unknown": 0
+  }
+}

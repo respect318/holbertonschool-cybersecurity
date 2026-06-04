@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-06-03T20:00:00Z",
+  "hostname": "billing-srv-01",
+  "findings": [
+    {
+      "protocol": "telnet",
+      "port": 23,
+      "target": "localhost",
+      "status": "insecure",
+      "severity": "high",
+      "evidence": "cleartext banner observed",
+      "secure_alternative": "ssh",
+      "remediation_command": "systemctl disable telnet.socket",
+      "exception_accepted": false,
+      "source_task": "protocol_audit"
+    },
+    {
+      "protocol": "snmpv2c",
+      "port": 161,
+      "target": "localhost",
+      "status": "insecure",
+      "severity": "high",
+      "evidence": "public community returned sysDescr",
+      "secure_alternative": "snmpv3",
+      "remediation_command": "sed -i 's/public/complex_string/' /etc/snmp/snmpd.conf",
+      "exception_accepted": false,
+      "source_task": "protocol_audit"
+    },
+    {
+      "protocol": "http-admin",
+      "port": 80,
+      "target": "localhost",
+      "status": "insecure",
+      "severity": "medium",
+      "evidence": "/admin returned 200 without TLS",
+      "secure_alternative": "https",
+      "remediation_command": "a2enmod ssl && systemctl restart apache2",
+      "exception_accepted": false,
+      "source_task": "protocol_audit"
+    },
+    {
+      "protocol": "ldaps",
+      "port": 636,
+      "target": "localhost",
+      "status": "secure",
+      "severity": "info",
+      "evidence": "TLS handshake OK",
+      "secure_alternative": "none",
+      "remediation_command": "none",
+      "exception_accepted": true,
+      "source_task": "protocol_audit"
+    }
+  ],
+  "summary": {
+    "total_findings": 4,
+    "high_unaccepted_count": 2
+  }
+}
