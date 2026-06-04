@@ -1,0 +1,21 @@
+{
+  "stage": "intake",
+  "project": "capstone",
+  "os": "linux",
+  "host": "hawthorne-app-01",
+  "package_count": 542,
+  "services": ["auditd", "rsyslog", "Sysmon"],
+  "network": {
+    "listening_sockets": "parsed",
+    "firewall_rules": "parsed"
+  },
+  "security": {
+    "sshd_config": "parsed",
+    "sysctl": {
+      "net.ipv4.ip_forward": 1,
+      "kernel.randomize_va_space": 2
+    },
+    "suid_sgid_count": 12,
+    "world_writable_count": 4
+  }
+}
