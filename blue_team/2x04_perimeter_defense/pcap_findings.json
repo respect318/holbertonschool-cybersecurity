@@ -1,0 +1,12 @@
+{
+  "pcap_file": "suspicious_session.pcap",
+  "conversations": {
+    "tcp": [],
+    "udp": []
+  },
+  "dns_queries": [],
+  "http_requests": [],
+  "tls_sni": [],
+  "file_transfers": [],
+  "protocol_distribution": []
+}
