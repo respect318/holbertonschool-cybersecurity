@@ -1,0 +1,35 @@
+{
+  "source_file": "/home/analyst/MedDefense_Lab/firewall_samples/ufw.log",
+  "line_count": 5000,
+  "parsed_count": 5000,
+  "top_denied_sources": [
+    {"ip": "10.10.5.14", "count": 1500},
+    {"ip": "192.168.1.100", "count": 800}
+  ],
+  "top_denied_ports": [
+    {"port": 22, "count": 2000},
+    {"port": 445, "count": 1200}
+  ],
+  "scan_candidates": [
+    {
+      "src_ip": "10.10.5.14",
+      "window_start": "2026-04-08T03:42:11Z",
+      "window_end": "2026-04-08T03:42:49Z",
+      "ports_touched": 87,
+      "dst_count": 4
+    }
+  ],
+  "outbound_anomalies": [
+    {
+      "src_ip": "10.0.20.5",
+      "dst_ip": "8.8.8.8",
+      "proto": "TCP",
+      "dpt": 443,
+      "action": "DROP"
+    }
+  ],
+  "hourly_histogram": {
+    "03:00": 3500,
+    "04:00": 1500
+  }
+}
