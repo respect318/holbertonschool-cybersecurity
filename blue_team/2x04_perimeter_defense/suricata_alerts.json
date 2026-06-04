@@ -1,0 +1,3 @@
+{"sig":"ET EXPLOIT PsExec Service Install","src":"10.10.1.99","dst":"10.10.1.10"}
+{"sig":"ET TROJAN Cobalt Strike Beacon","src":"10.10.1.10","dst":"185.220.101.42"}
+{"sig":"ET DNS Exfiltration Long TXT Query","src":"10.10.1.10","dst":"8.8.8.8"}
