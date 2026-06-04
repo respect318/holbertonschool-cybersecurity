@@ -1,0 +1,55 @@
+{
+  "generated_at": "2026-06-04T12:00:00Z",
+  "hostname": "billing-srv-01",
+  "zones_defined": {
+    "count": 4,
+    "names": ["DMZ", "INTERNAL", "MGMT", "MEDDEV"],
+    "CIDRs": ["10.0.10.0/24", "10.0.20.0/24", "10.0.30.0/24", "10.0.40.0/24"]
+  },
+  "flows_allowed": {
+    "count": 9,
+    "list": ["MGMT->INTERNAL:22", "MGMT->DMZ:22"]
+  },
+  "firewall_engine": {
+    "version": "1.0.2",
+    "table": "meddefense",
+    "rules_loaded": 28,
+    "log_file": "/var/log/syslog"
+  },
+  "windows_firewall": {
+    "present": true,
+    "rule_count": 6
+  },
+  "ids_engine": {
+    "version": "6.0.14",
+    "community_rule_count": 34219,
+    "custom_rule_count": 6,
+    "replay_only": true
+  },
+  "protocol_audit": {
+    "high_unaccepted": 0,
+    "medium": 1,
+    "accepted_exceptions": 1
+  },
+  "dns_filter": {
+    "active": true,
+    "blocklist_size": 814,
+    "sinkhole_validated": true
+  },
+  "evidence_package": {
+    "tarball_path": "network_artifact_package.tar.gz",
+    "manifest_sha256": "abcdef1234567890",
+    "file_count": 14,
+    "schema_version": "module3-network-v1"
+  },
+  "validation_last_run": {
+    "timestamp": "2026-04-10T10:42:18Z",
+    "passed": true,
+    "passed_count": 9,
+    "failed_count": 0
+  },
+  "known_gaps": [
+    "No memory execution visibility",
+    "Missing Sysmon Event ID 8"
+  ]
+}
