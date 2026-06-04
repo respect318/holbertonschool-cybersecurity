@@ -1,0 +1,13 @@
+{
+  "status": "success",
+  "timeframe": "last 30 minutes",
+  "sources": ["auditd", "syslog"],
+  "test_actions": [
+    "create a user",
+    "remove user",
+    "systemctl action",
+    "cron job",
+    "find action"
+  ],
+  "validation": "ausearch verified all expected records"
+}
