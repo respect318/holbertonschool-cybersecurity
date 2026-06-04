@@ -1,0 +1,8 @@
+{
+  "installed_version": "6.0.14",
+  "rule_files_loaded": 1,
+  "rule_count": 34219,
+  "config_test_exit": 0,
+  "smoke_pcap": "smoke.pcap",
+  "smoke_alerts": 4
+}
