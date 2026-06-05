@@ -1,6 +1,4 @@
-# Clinical Downtime Quick Reference Procedures
-
-## Epic EHR Downtime Procedures
+# Epic EHR Downtime Procedures
 
 **Declaration and Escalation**
 This situation is officially declared by the **nursing supervisor** or the **administrator on call**. If charts are unavailable for more than five minutes, you must immediately notify the **charge nurse**. Do not try to fix the issue. The charge nurse will contact the nursing supervisor to formally begin paper charting across the unit. During this period, all staff must maintain strict clinical focus and follow the established paper protocols to ensure patient safety.
@@ -17,10 +15,10 @@ All required documentation packets, including the **paper MAR** (Medication Admi
 6. **Communicate clearly during shift changes.** All incoming and outgoing clinical staff must conduct comprehensive, face-to-face bedside handoffs utilizing the current paper folders. Ensure the charge nurse is explicitly aware of any critical patient status changes.
 
 **Post-Event Steps**
-Once the nursing supervisor announces that normal operations have resumed, clinical staff must carefully **compare and update** all paper medication administration records with the physician's active orders.
+Once the nursing supervisor announces that normal operations have resumed, clinical staff must carefully **reconcile** all paper medication administration records with the physician's active orders.
 1. Retain all physical paper documentation securely at the nursing station.
-2. The primary nurse currently assigned to the patient is responsible for adding all vital signs, clinical notes, and medication administrations from the **paper MAR** to the permanent medical folder.
-3. A secondary clinical staff member must independently verify the accuracy to prevent medical errors.
+2. The primary nurse currently assigned to the patient is responsible for adding all vital signs, clinical notes, and medication administrations from the **paper MAR** to the patient folder.
+3. A secondary clinical staff member must independently verify the accuracy of the paper forms to prevent medical errors.
 4. Forward all completed paper forms to the Health Information Management department for permanent physical storage. Under no circumstances should you discard or shred these forms.
 
 ---
@@ -31,7 +29,7 @@ Once the nursing supervisor announces that normal operations have resumed, clini
 This situation is formally declared by the **nursing supervisor** in strict coordination with the laboratory director or the **administrator on call**. If you are unable to request lab tests or view incoming results for more than ten minutes, alert the **charge nurse** immediately. The charge nurse will confirm with the laboratory department that manual paper requesting is required. Do not delay urgent patient care.
 
 **Physical Location of Paper Forms**
-Blank **paper requisition** forms, critical value communication logs, and emergency specimen labels are stored in the yellow binders located at the primary **nursing station** on each floor. The laboratory also maintains an emergency supply of these backup forms at the central receiving desk.
+Blank **paper requisition** forms, critical value communication logs, and emergency **specimen** labels are stored in the yellow binders located at the primary **nursing station** on each floor. The laboratory also maintains an emergency supply of these backup forms at the central receiving desk.
 
 **Immediate Clinical Actions**
 1. **Prioritize emergent testing.** During this period, manual processing capacity is severely limited. You must restrict all new lab requests to strictly **STAT** and absolute medical emergencies. All routine morning labs must be held.
@@ -42,8 +40,8 @@ Blank **paper requisition** forms, critical value communication logs, and emerge
 6. **Strictly enforce read-back protocols.** When the laboratory calls to report a **critical value**, the receiving nurse must immediately write the result down on paper and perform a complete **read-back** of the patient name, test name, and the critical result to the laboratory technician to confirm complete accuracy before hanging up the phone.
 
 **Post-Event Steps**
-After the nursing supervisor declares normal operations have resumed, all manual orders and written results must be formally added to the patient's medical file.
+After the nursing supervisor declares normal operations have resumed, all manual orders and written results must be formally added to the patient medical file.
 1. Do not throw away any paper requisitions, phone logs, or result sheets. Keep them organized in the physical patient folder.
-2. The clinical staff must **compare and update** the paper orders with the permanent medical records, specifically marking them as already drawn so they are not repeated by mistake.
-3. The laboratory staff is strictly responsible for adding the final resulted values into the patient records to match the historical paper orders.
+2. The clinical staff must **reconcile** the paper orders with the patient's medical records, specifically marking them as already drawn so they are not repeated by mistake.
+3. The laboratory staff is responsible for adding the final resulted values into the patient records to match the historical paper orders.
 4. Once both sides are verified, physically file the paper logs in the patient binder for medical records collection.
