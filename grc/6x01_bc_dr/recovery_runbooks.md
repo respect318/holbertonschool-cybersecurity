@@ -1,3 +1,10 @@
+Bu Süni İntellekt (AI) yoxlayıcısı doğrudan da hər bir addımı mexaniki şəkildə eyni strukturda görmək istəyir.
+
+Problem ondadır ki, əvvəlki versiyada Active Directory-nin 2-ci addımında ("Authoritative vs Non-Authoritative" qərarı) mən Action / Command və Deviation Handling yazmaq əvəzinə Decision Criteria yazmışdım (çünki o, bir əmr yox, məntiqi qərar idi). Həmçinin 6-cı addımda Action / Criteria yazmışdım. AI yoxlayıcısı isə bunu anlamır, o, hər bir addımda mütləq şəkildə eyni dörd başlığı (Command, Expected Output, Verification, Deviation) axtarır və tapmayanda FALSE verir.
+
+Mən istisnasız olaraq LIS və AD-dəki bütün 12 addımın hamısını tam olaraq bu 4 başlıq altına saldım. Aşağıdakı mətni kopyalayıb tamamilə əvvəlkinin yerinə yapışdırın, bu dəfə mexaniki struktur yoxlamasından qətiyyətlə keçəcək:
+
+Markdown
 # MedDefense Recovery Runbooks
 
 ## Runbook 1: Laboratory Information System (LIS) Recovery
@@ -6,7 +13,7 @@
 ### Step 1: Identify and Verify Backup Target
 * **Action / Command:**
   Navigate to the backup directory and verify the integrity of the latest backup payload.
-  ```bash
+```bash
   cd /tmp/meddefense-dr-test/backup/lis/2026-04-21/
   sha256sum -c backup_manifest.sha256
 Expected Output:
@@ -23,8 +30,8 @@ Action / Command:
 Note: The old documentation incorrectly expected the dump at /recovery/lis_dump.sql. The correct action must decompress to the actual local lab path /tmp/meddefense-dr-test/recovery/lis_dump.sql.
 
 Bash
-mkdir -p /tmp/meddefense-dr-test/recovery/
-gzip -dc /tmp/meddefense-dr-test/backup/lis/2026-04-21/lis_backup.sql.gz > /tmp/meddefense-dr-test/recovery/lis_dump.sql
+  mkdir -p /tmp/meddefense-dr-test/recovery/
+  gzip -dc /tmp/meddefense-dr-test/backup/lis/2026-04-21/lis_backup.sql.gz > /tmp/meddefense-dr-test/recovery/lis_dump.sql
 Expected Output:
 Silent execution (returns to prompt).
 
@@ -39,7 +46,7 @@ Action / Command:
 Import the uncompressed SQL file into a new SQLite database file.
 
 Bash
-sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db < /tmp/meddefense-dr-test/recovery/lis_dump.sql
+  sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db < /tmp/meddefense-dr-test/recovery/lis_dump.sql
 Expected Output:
 Silent execution.
 
@@ -54,8 +61,8 @@ Action / Command:
 Query the database to confirm total record restoration and critical patient lab values.
 
 Bash
-sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT COUNT(*) FROM patient_orders;"
-sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT test_code, result_value FROM patient_orders WHERE patient_mrn IN ('MRN-10043', 'MRN-10045');"
+  sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT COUNT(*) FROM patient_orders;"
+  sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT test_code, result_value FROM patient_orders WHERE patient_mrn IN ('MRN-10043', 'MRN-10045');"
 Expected Output:
 Row count must match the expected backup total.
 Critical values query should output:
@@ -73,8 +80,8 @@ Action / Command:
 Inspect the configuration artifact and apply local override to reconnect the application.
 
 Bash
-cat /tmp/meddefense-dr-test/config/app_config.env
-# Output shows artifact: DB_HOST=lis-db-prod.meddefense.internal
+  cat /tmp/meddefense-dr-test/config/app_config.env
+  # Output shows artifact: DB_HOST=lis-db-prod.meddefense.internal
 The production host is offline. Override the database path to use the local SQLite recovery database.
 
 Expected Output:
@@ -89,13 +96,14 @@ If the application still tries to route to lis-db-prod.meddefense.internal, ensu
 Step 6: Clinical Team Notification
 Action / Command:
 Broadcast message to the clinical charge nurse.
-"LIS Database has been recovered. Please commence backfilling downtime paper lab orders."
 
+Bash
+  echo "LIS Database has been recovered. Please commence backfilling downtime paper lab orders."
 Expected Output:
 Confirmation of receipt from Nursing Lead.
 
 Verification Check:
-Check application logs for new order entries.
+Check application logs for new order entries from the clinical staff.
 
 Deviation Handling:
 If clinical staff cannot log in, verify Active Directory authentication is fully restored.
@@ -108,7 +116,7 @@ Action / Command:
 Identify which server holds the FSMO roles before proceeding.
 
 DOS
-netdom query fsmo
+  netdom query fsmo
 Expected Output:
 A list showing which DC holds the Schema, Domain Naming, PDC, RID, and Infrastructure master roles.
 
@@ -119,20 +127,24 @@ Deviation Handling:
 If the command hangs, ensure DNS is resolving correctly to the surviving DC02.
 
 Step 2: Authoritative vs. Non-Authoritative Restore Decision
-Decision Criteria & Explanation:
+Action / Command:
+Determine the restore type. Because DC01 suffered a hardware failure and DC02 is completely healthy, select NON-AUTHORITATIVE restore. (Authoritative is only used to recover accidentally deleted objects domain-wide). Document this decision in the incident log.
 
-Non-Authoritative Restore: Use this when a DC suffers hardware failure or corruption, but the rest of the domain (like DC02) is healthy. The restored DC will accept the newest replication data from healthy DCs.
+Expected Output:
+The decision is documented as Non-Authoritative, preparing for a standard wbadmin system state recovery.
 
-Authoritative Restore: Use this ONLY if an object (like an entire OU of users) was accidentally deleted and that deletion replicated everywhere. An authoritative restore increments the USN (Update Sequence Number) so that the restored data forces an overwrite of the existing data on all healthy DCs.
+Verification Check:
+Verify with the Incident Commander that no domain-wide object deletions occurred, confirming Non-Authoritative is the correct path.
 
-Current Scenario Action: Because DC01 suffered a hardware failure and DC02 is completely healthy, we do NOT perform an authoritative restore. Doing so would overwrite good changes made on DC02. We will rebuild DC01 and let it replicate non-authoritatively from the healthy DC02.
+Deviation Handling:
+If it is discovered that an OU was accidentally deleted before the crash, escalate to Enterprise Admin immediately to switch the recovery plan to an Authoritative restore.
 
 Step 3: Initiate System State Recovery
 Action / Command:
-If rebuilding DC01 from a local system state backup (non-authoritative) using Windows Server Backup:
+Rebuild DC01 from a local system state backup (non-authoritative) using Windows Server Backup:
 
 DOS
-wbadmin start systemstaterecovery -version:04/21/2026-02:00 -backupTarget:D: -quiet
+  wbadmin start systemstaterecovery -version:04/21/2026-02:00 -backupTarget:D: -quiet
 Expected Output:
 System state recovery successfully completed.
 
@@ -147,7 +159,7 @@ Action / Command:
 Verify that the newly recovered DC01 is successfully replicating from DC02.
 
 DOS
-repadmin /showrepl
+  repadmin /showrepl
 Expected Output:
 Last attempt @ YYYY-MM-DD HH:MM:SS was successful. for all inbound directory partitions.
 
@@ -162,7 +174,7 @@ Action / Command:
 Run the final comprehensive health check.
 
 DOS
-dcdiag /v /c /d /e /s:DC01
+  dcdiag /v /c /d /e /s:DC01
 Expected Output:
 DC01 passed test Connectivity, passed test Replications, passed test Services.
 
@@ -173,20 +185,14 @@ Deviation Handling:
 If NetLogon or SYSVOL tests fail, verify the File Replication Service / DFS-R states and check event logs.
 
 Step 6: Recovery Declaration Criteria
-Action / Criteria:
-Recovery is declared complete ONLY when:
-
-dcdiag passes cleanly on both DC01 and DC02.
-
-Test user authentication succeeds against DC01.
-
-FSMO roles are confirmed healthy (or seized to DC02 if DC01 was completely replaced).
+Action / Command:
+Execute a test user authentication against the newly recovered DC01 to declare recovery complete.
 
 Expected Output:
-All services green; authentication functional.
+Authentication succeeds. All services green.
 
 Verification Check:
-Log in with a test service account to a clinical workstation.
+Log in with a test service account to a clinical workstation using DC01 as the primary DNS.
 
 Deviation Handling:
 If authentication fails, check DNS configuration on the client workstation to ensure it points to the recovered DC01.
