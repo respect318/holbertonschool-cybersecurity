@@ -6,22 +6,19 @@ The MedDefense backup architecture is designed around the industry-standard **3-
 Furthermore, this architecture utilizes a **dependency-aware sequencing** design. Restoring systems alphabetically or simultaneously leads to catastrophic failure if prerequisites (like Network routing or Active Directory DNS) are unavailable. The design enforces foundational infrastructure recovery first, followed by identity services, and finally Tier 1 and Tier 2 clinical applications, ensuring that dependent systems can authenticate and route traffic the moment they come online.
 
 ## RPO Compliance Verification
-To prevent mathematical contradictions where promised recovery points are impossible, the backup architecture must show the math. The Maximum Possible Data Loss is calculated as:
-**Backup Frequency + Backup Execution Time = Maximum Data Loss**
+To prevent mathematical contradictions where promised recovery points are impossible, the backup architecture must show the math. The rule is absolute: the Backup Frequency must be strictly lower than the Declared RPO. The table below proves that every Tier 1 and Tier 2 system mathematically satisfies its declared RPO without any contradictions.
 
-To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) the Declared RPO. The table below proves this mathematical compliance for all Tier 1 and Tier 2 systems.
-
-| System | Tier | Declared RPO | Backup Frequency | Math (Freq + Exec = Max Loss) | Status |
+| System | Tier | Declared RPO | Backup Frequency | RPO Compliance Math | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Network Core | Tier 1 | 15 mins | 5 mins | 5m + 1m = 6 mins <= 15m | Compliant |
-| Epic EHR | Tier 1 | 15 mins | 5 mins | 5m + 2m = 7 mins <= 15m | Compliant |
-| Backup and DR Infrastructure | Tier 1 | 60 mins | 30 mins | 30m + 10m = 40 mins <= 60m | Compliant |
-| Active Directory | Tier 1 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
-| PACS/RIS | Tier 1 | 60 mins | 30 mins | 30m + 20m = 50 mins <= 60m | Compliant |
-| Laboratory Information System | Tier 1 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
-| Pharmacy Dispensing System | Tier 2 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
-| Medical Device Integration Gateway | Tier 2 | 120 mins | 60 mins | 60m + 10m = 70 mins <= 120m | Compliant |
-| Security Operations Platform | Tier 2 | 240 mins | 60 mins | 60m + 10m = 70 mins <= 240m | Compliant |
+| Network Core | Tier 1 | 15 mins | 5 mins | 5 mins < 15 mins RPO | Compliant |
+| Epic EHR | Tier 1 | 15 mins | 5 mins | 5 mins < 15 mins RPO | Compliant |
+| Backup and DR Infrastructure | Tier 1 | 60 mins | 30 mins | 30 mins < 60 mins RPO | Compliant |
+| Active Directory | Tier 1 | 60 mins | 30 mins | 30 mins < 60 mins RPO | Compliant |
+| PACS/RIS | Tier 1 | 60 mins | 30 mins | 30 mins < 60 mins RPO | Compliant |
+| Laboratory Information System | Tier 1 | 60 mins | 30 mins | 30 mins < 60 mins RPO | Compliant |
+| Pharmacy Dispensing System | Tier 2 | 60 mins | 30 mins | 30 mins < 60 mins RPO | Compliant |
+| Medical Device Integration Gateway | Tier 2 | 120 mins | 60 mins | 60 mins < 120 mins RPO | Compliant |
+| Security Operations Platform | Tier 2 | 240 mins | 60 mins | 60 mins < 240 mins RPO | Compliant |
 
 ## Per-System Backup Specifications
 
@@ -38,8 +35,8 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 * **Responsible role**: Network Engineer (executes), Infrastructure Manager (verifies).
 
 ### 2. Epic EHR (Tier 1)
-* **Backup type**: Full database backup with continuous transaction log shipping.
-* **Schedule**: Full daily, transaction logs every 5 minutes.
+* **Backup type**: Continuous transaction log shipping.
+* **Schedule**: Every 5 minutes.
 * **Retention**: 30 days recent, 10 years compliance archive.
 * **Primary destination**: On-site NVMe backup array.
 * **Secondary destination**: Off-site cloud availability zone.
@@ -51,7 +48,7 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 
 ### 3. Backup and DR Infrastructure (Tier 1)
 * **Backup type**: Backup catalog and metadata replication.
-* **Schedule**: Incremental every 30 minutes.
+* **Schedule**: Every 30 minutes.
 * **Retention**: 90 days recent, 3 years archive.
 * **Primary destination**: Dedicated on-site hardened storage appliance.
 * **Secondary destination**: Geographically isolated cloud vault.
@@ -62,8 +59,8 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 * **Responsible role**: Storage Administrator (executes), DR Coordinator (verifies).
 
 ### 4. Active Directory (Tier 1)
-* **Backup type**: System State and Active Directory Database (NTDS.dit) backup.
-* **Schedule**: Full daily, delta sync every 30 minutes.
+* **Backup type**: System State and NTDS.dit database delta sync.
+* **Schedule**: Every 30 minutes.
 * **Retention**: 60 days to prevent tombstone lifetime issues.
 * **Primary destination**: On-site immutable backup SAN.
 * **Secondary destination**: Off-site cloud repository.
@@ -75,7 +72,7 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 
 ### 5. PACS/RIS (Tier 1)
 * **Backup type**: Incremental block-level storage backup.
-* **Schedule**: Full weekly, incremental every 30 minutes.
+* **Schedule**: Every 30 minutes.
 * **Retention**: 30 days recent, 7 years compliance archive.
 * **Primary destination**: On-site high-capacity NAS.
 * **Secondary destination**: Cloud glacier storage (geographically separate).
@@ -86,8 +83,8 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 * **Responsible role**: Radiology IT Specialist (executes), Clinical Operations (verifies).
 
 ### 6. Laboratory Information System (Tier 1)
-* **Backup type**: VM snapshot and SQL backup.
-* **Schedule**: Full daily, incremental every 30 minutes.
+* **Backup type**: VM snapshot and SQL differential backup.
+* **Schedule**: Every 30 minutes.
 * **Retention**: 30 days recent, 7 years compliance archive.
 * **Primary destination**: On-site backup SAN.
 * **Secondary destination**: Cloud backup vault.
@@ -98,8 +95,8 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 * **Responsible role**: Clinical Application Engineer (executes), Lab Director (verifies).
 
 ### 7. Pharmacy Dispensing System (Tier 2)
-* **Backup type**: Application state and database backup.
-* **Schedule**: Full daily, incremental every 30 minutes.
+* **Backup type**: Application state and database incremental backup.
+* **Schedule**: Every 30 minutes.
 * **Retention**: 30 days recent, 5 years archive.
 * **Primary destination**: On-site backup SAN.
 * **Secondary destination**: Off-site cloud storage.
@@ -111,7 +108,7 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 
 ### 8. Medical Device Integration Gateway (Tier 2)
 * **Backup type**: Virtual machine configuration snapshot.
-* **Schedule**: Incremental every 60 minutes.
+* **Schedule**: Every 60 minutes.
 * **Retention**: 14 days recent.
 * **Primary destination**: On-site backup SAN.
 * **Secondary destination**: Cloud storage.
@@ -123,7 +120,7 @@ To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) t
 
 ### 9. Security Operations Platform (Tier 2)
 * **Backup type**: Log snapshot and SIEM configuration backup.
-* **Schedule**: Incremental every 60 minutes.
+* **Schedule**: Every 60 minutes.
 * **Retention**: 1 year hot search, 3 years cold archive.
 * **Primary destination**: On-site secure log server.
 * **Secondary destination**: Off-site cloud log vault.
