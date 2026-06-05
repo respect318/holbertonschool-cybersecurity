@@ -6,25 +6,28 @@ The MedDefense backup architecture is designed around the industry-standard **3-
 Furthermore, this architecture utilizes a **dependency-aware sequencing** design. Restoring systems alphabetically or simultaneously leads to catastrophic failure if prerequisites (like Network routing or Active Directory DNS) are unavailable. The design enforces foundational infrastructure recovery first, followed by identity services, and finally Tier 1 and Tier 2 clinical applications, ensuring that dependent systems can authenticate and route traffic the moment they come online.
 
 ## RPO Compliance Verification
-To prevent mathematical contradictions where promised recovery points are mathematically impossible, this architecture strictly mandates that **Backup Frequency + Backup Execution Window $\le$ Declared RPO**. Setting a backup frequency equal to the RPO guarantees an RPO violation if a failure occurs just before the next scheduled backup completes. All Tier 1 and Tier 2 frequencies are scheduled safely below their RPO limits.
+To prevent mathematical contradictions where promised recovery points are impossible, the backup architecture must show the math. The Maximum Possible Data Loss is calculated as:
+**Backup Frequency + Backup Execution Time = Maximum Data Loss**
 
-| System | Tier | Declared RPO | Backup Frequency | Max Possible Data Loss | Status |
+To be compliant, the Maximum Data Loss must be strictly less than or equal to (<=) the Declared RPO. The table below proves this mathematical compliance for all Tier 1 and Tier 2 systems.
+
+| System | Declared RPO | Backup Frequency | Execution Time | Math (Freq + Exec = Max Loss) | Compliance Check |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Network Core | Tier 1 | 15 minutes | Continuous Sync | < 1 minute | Compliant |
-| Epic EHR | Tier 1 | 15 minutes | 5 minutes | < 6 minutes | Compliant |
-| Backup and DR Infrastructure | Tier 1 | 1 hour | 30 minutes | < 35 minutes | Compliant |
-| Active Directory | Tier 1 | 1 hour | 30 minutes | < 35 minutes | Compliant |
-| PACS/RIS | Tier 1 | 1 hour | 30 minutes | < 45 minutes | Compliant |
-| Laboratory Information System | Tier 1 | 1 hour | 30 minutes | < 40 minutes | Compliant |
-| Pharmacy Dispensing System | Tier 2 | 1 hour | 30 minutes | < 35 minutes | Compliant |
-| Medical Device Integration Gateway | Tier 2 | 2 hours | 1 hour | < 1 hr 10 min | Compliant |
-| Security Operations Platform | Tier 2 | 4 hours | 2 hours | < 2 hrs 20 min | Compliant |
+| Network Core | 15 mins | 5 mins | 1 min | 5m + 1m = 6 mins | 6 mins <= 15 mins (PASS) |
+| Epic EHR | 15 mins | 5 mins | 2 mins | 5m + 2m = 7 mins | 7 mins <= 15 mins (PASS) |
+| Backup and DR Infrastructure | 60 mins (1h) | 30 mins | 10 mins | 30m + 10m = 40 mins | 40 mins <= 60 mins (PASS) |
+| Active Directory | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
+| PACS/RIS | 60 mins (1h) | 30 mins | 20 mins | 30m + 20m = 50 mins | 50 mins <= 60 mins (PASS) |
+| Laboratory Information System | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
+| Pharmacy Dispensing System | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
+| Medical Device Integration Gateway| 120 mins (2h) | 60 mins | 10 mins | 60m + 10m = 70 mins | 70 mins <= 120 mins (PASS) |
+| Security Operations Platform | 240 mins (4h) | 60 mins | 10 mins | 60m + 10m = 70 mins | 70 mins <= 240 mins (PASS) |
 
 ## Per-System Backup Specifications
 
 ### 1. Network Core (Tier 1)
-* **Backup type**: Continuous configuration synchronization.
-* **Schedule**: Real-time sync.
+* **Backup type**: Automated configuration snapshot.
+* **Schedule**: Every 5 minutes.
 * **Retention**: 30 days recent, 12 months archive.
 * **Primary destination**: On-site secure configuration repository.
 * **Secondary destination**: Off-site AWS S3 cloud bucket.
@@ -47,8 +50,8 @@ To prevent mathematical contradictions where promised recovery points are mathem
 * **Responsible role**: Lead Database Administrator (executes), CISO (verifies).
 
 ### 3. Backup and DR Infrastructure (Tier 1)
-* **Backup type**: Backup catalog and metadata replication (Incremental).
-* **Schedule**: Every 30 minutes.
+* **Backup type**: Backup catalog and metadata replication.
+* **Schedule**: Incremental every 30 minutes.
 * **Retention**: 90 days recent, 3 years archive.
 * **Primary destination**: Dedicated on-site hardened storage appliance.
 * **Secondary destination**: Geographically isolated cloud vault.
@@ -108,7 +111,7 @@ To prevent mathematical contradictions where promised recovery points are mathem
 
 ### 8. Medical Device Integration Gateway (Tier 2)
 * **Backup type**: Virtual machine configuration snapshot.
-* **Schedule**: Incremental every 1 hour.
+* **Schedule**: Incremental every 60 minutes.
 * **Retention**: 14 days recent.
 * **Primary destination**: On-site backup SAN.
 * **Secondary destination**: Cloud storage.
@@ -120,7 +123,7 @@ To prevent mathematical contradictions where promised recovery points are mathem
 
 ### 9. Security Operations Platform (Tier 2)
 * **Backup type**: Log snapshot and SIEM configuration backup.
-* **Schedule**: Incremental every 2 hours.
+* **Schedule**: Incremental every 60 minutes.
 * **Retention**: 1 year hot search, 3 years cold archive.
 * **Primary destination**: On-site secure log server.
 * **Secondary destination**: Off-site cloud log vault.
