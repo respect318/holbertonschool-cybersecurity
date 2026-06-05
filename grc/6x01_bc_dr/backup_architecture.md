@@ -9,19 +9,19 @@ Furthermore, this architecture utilizes a **dependency-aware sequencing** design
 To prevent mathematical contradictions where promised recovery points are impossible, the backup architecture must show the math. The Maximum Possible Data Loss is calculated as:
 **Backup Frequency + Backup Execution Time = Maximum Data Loss**
 
-To be compliant, the Maximum Data Loss must be strictly less than or equal to (<=) the Declared RPO. The table below proves this mathematical compliance for all Tier 1 and Tier 2 systems.
+To be valid, the Maximum Data Loss must be strictly less than or equal to (<=) the Declared RPO. The table below proves this mathematical compliance for all Tier 1 and Tier 2 systems.
 
-| System | Declared RPO | Backup Frequency | Execution Time | Math (Freq + Exec = Max Loss) | Compliance Check |
+| System | Tier | Declared RPO | Backup Frequency | Math (Freq + Exec = Max Loss) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Network Core | 15 mins | 5 mins | 1 min | 5m + 1m = 6 mins | 6 mins <= 15 mins (PASS) |
-| Epic EHR | 15 mins | 5 mins | 2 mins | 5m + 2m = 7 mins | 7 mins <= 15 mins (PASS) |
-| Backup and DR Infrastructure | 60 mins (1h) | 30 mins | 10 mins | 30m + 10m = 40 mins | 40 mins <= 60 mins (PASS) |
-| Active Directory | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
-| PACS/RIS | 60 mins (1h) | 30 mins | 20 mins | 30m + 20m = 50 mins | 50 mins <= 60 mins (PASS) |
-| Laboratory Information System | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
-| Pharmacy Dispensing System | 60 mins (1h) | 30 mins | 15 mins | 30m + 15m = 45 mins | 45 mins <= 60 mins (PASS) |
-| Medical Device Integration Gateway| 120 mins (2h) | 60 mins | 10 mins | 60m + 10m = 70 mins | 70 mins <= 120 mins (PASS) |
-| Security Operations Platform | 240 mins (4h) | 60 mins | 10 mins | 60m + 10m = 70 mins | 70 mins <= 240 mins (PASS) |
+| Network Core | Tier 1 | 15 mins | 5 mins | 5m + 1m = 6 mins <= 15m | Compliant |
+| Epic EHR | Tier 1 | 15 mins | 5 mins | 5m + 2m = 7 mins <= 15m | Compliant |
+| Backup and DR Infrastructure | Tier 1 | 60 mins | 30 mins | 30m + 10m = 40 mins <= 60m | Compliant |
+| Active Directory | Tier 1 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
+| PACS/RIS | Tier 1 | 60 mins | 30 mins | 30m + 20m = 50 mins <= 60m | Compliant |
+| Laboratory Information System | Tier 1 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
+| Pharmacy Dispensing System | Tier 2 | 60 mins | 30 mins | 30m + 15m = 45 mins <= 60m | Compliant |
+| Medical Device Integration Gateway | Tier 2 | 120 mins | 60 mins | 60m + 10m = 70 mins <= 120m | Compliant |
+| Security Operations Platform | Tier 2 | 240 mins | 60 mins | 60m + 10m = 70 mins <= 240m | Compliant |
 
 ## Per-System Backup Specifications
 
