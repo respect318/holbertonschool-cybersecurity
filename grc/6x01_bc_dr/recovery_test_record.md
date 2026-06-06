@@ -22,16 +22,14 @@ RTO (30 minutes) Evaluation: PASS
 **Discovered at:** 09:16:15
 **Runbook specified:** /recovery/lis_dump.sql
 **Actual path:** /tmp/meddefense-dr-test/recovery/lis_dump.sql
-**Resolution:** Corrected the command to decompress into the local lab path instead of the old Docker path:
-`mkdir -p /tmp/meddefense-dr-test/recovery && gzip -dc /tmp/meddefense-dr-test/backup/lis/2026-04-21/lis_backup.sql.gz > /tmp/meddefense-dr-test/recovery/lis_dump.sql`
+**Resolution:** Corrected the command to decompress into the local lab path instead of the old Docker path: mkdir -p /tmp/meddefense-dr-test/recovery && gzip -dc /tmp/meddefense-dr-test/backup/lis/2026-04-21/lis_backup.sql.gz > /tmp/meddefense-dr-test/recovery/lis_dump.sql
 **Time added:** 2 minutes
 
 ### Condition 2: Configuration artifact
 **Discovered at:** 09:20:30
 **Expected:** Local recovery database path for validation
 **Actual:** DB_HOST=lis-db-prod.meddefense.internal
-**Resolution:** Overrode the production path configuration by directly querying the recovered local SQLite file for validation instead of attempting a network connection:
-`sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT patient_mrn, test_code, result_value, critical_flag FROM patient_orders WHERE patient_mrn IN ('MRN-10043','MRN-10045');"`
+**Resolution:** Overrode the production path configuration by directly querying the recovered local SQLite file for validation instead of attempting a network connection: sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT patient_mrn, test_code, result_value, critical_flag FROM patient_orders WHERE patient_mrn IN ('MRN-10043','MRN-10045');"
 **Time added:** 3 minutes
 
 ### Condition 3: Row count check
@@ -44,5 +42,15 @@ RTO (30 minutes) Evaluation: PASS
 ## Recovery Validation
 
 **Recovered database file:**
-```bash
 -rw-r--r-- 1 root root 8192 Jun  6 09:19 /tmp/meddefense-dr-test/recovery/lis_recovered.db
+
+**Critical values accessible:**
+sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT patient_mrn, test_code, result_value, critical_flag FROM patient_orders WHERE patient_mrn IN ('MRN-10043','MRN-10045');"
+MRN-10043|BMP|K+: 6.1 mEq/L|TRUE
+MRN-10045|TROPONIN|0.08 ng/mL|TRUE
+
+## Test Result
+
+**Actual recovery time:** 8m 33s
+**RTO met:** YES
+**Test outcome:** PASS
