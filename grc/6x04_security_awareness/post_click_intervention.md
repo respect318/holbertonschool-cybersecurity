@@ -131,16 +131,16 @@ Each module maps to a landing page variant and delivers four structured componen
 **What you saw**
 The email used three specific techniques: (1) a sender domain that visually resembled Epic but was externally registered (`epic-healthsystems.net`); (2) urgency language tied directly to patient-care access rather than generic account expiration; (3) a deadline framed around your shift, not a calendar date. These are documented techniques from actual healthcare phishing campaigns, not generic threats.
 
-**What a real attacker gains**
+**what a real attacker gains**
 If you had entered your Epic credentials on the linked page, a real attacker would have your username and password for the EHR. With those credentials they can access patient records, medication administration logs, and clinical documentation. In the March 2026 MedDefense incident, credential capture at the clinical layer preceded lateral movement and a Cobalt Strike beacon — technical controls did not prevent the initial entry.
 
-**What to do next time**
+**what to do next time**
 Before clicking any email that threatens to block your Epic or system access:
 1. Check the sender domain — not just the display name. If it is not `meddefense.org` or a known Epic address, do not click.
 2. Use your known path: navigate to Epic through your desktop shortcut, not through the email link.
 3. Call ext. 4-HELP directly if you are unsure whether your account has a real issue. Real IT staff can confirm or deny in under two minutes.
 
-**How to report**
+**how to report**
 Use the Outlook phishing report button (flag icon in the toolbar). You can also call ext. 4-SECURITY or email security@meddefense.org. Reporting after clicking still helps — it starts the security team's response clock.
 
 ---
@@ -151,16 +151,16 @@ Use the Outlook phishing report button (flag icon in the toolbar). You can also 
 **What you saw**
 The email used three specific techniques: (1) a sender domain that resembled an internal IT address but was externally registered (`meddefense-it-support.org`); (2) a task-completion framing that matched the pattern of real compliance communications your team receives; (3) a specific penalty (3-business-day reactivation delay) that sounded official and created urgency without being verifiable.
 
-**What a real attacker gains**
+**what a real attacker gains**
 If you had entered your credentials on the linked page, the attacker would have captured your MedDefense network password. Network credentials can be used to access email, shared drives, billing systems, and patient financial data. Administrative and billing staff accounts hold access to ePHI-adjacent data that is valuable for identity fraud and insurance manipulation.
 
-**What to do next time**
+**what to do next time**
 Before completing any IT compliance task sent by email:
 1. Check the sender domain. MedDefense IT communications come from `meddefense.org` addresses — not external domains that resemble the organization's name.
 2. Open the compliance portal through your known intranet bookmark rather than the link in the email. If the task is real, it will appear in your task queue.
 3. Call ext. 4-HELP directly to confirm whether a compliance task is active before you act on an emailed request.
 
-**How to report**
+**how to report**
 Use the Outlook phishing report button. Alternatively, call ext. 4-SECURITY or email security@meddefense.org. You can report even after clicking — it is still useful to the security team.
 
 ---
@@ -171,16 +171,16 @@ Use the Outlook phishing report button. Alternatively, call ext. 4-SECURITY or e
 **What you saw**
 The email used three specific techniques: (1) a sender domain that resembled HR but was externally registered (`meddefense-hr-portal.com`); (2) a familiar enrollment process combined with a personal financial consequence (dependent coverage removal); (3) a request for dependent SSN digits that sounded like a routine verification step but is not a real MedDefense HR procedure.
 
-**What a real attacker gains**
+**what a real attacker gains**
 If you had submitted the requested information, the attacker would have captured your employee ID and partial dependent SSN data. This is identity data — valuable for downstream account takeover, financial fraud, and medical identity theft. For finance staff, a follow-up BEC request after this initial click can use the demonstrated willingness to act under financial pressure.
 
-**What to do next time**
+**what to do next time**
 Before acting on any HR benefits email:
 1. Check the sender domain. MedDefense HR communications come from `meddefense.org` — not `meddefense-hr-portal.com` or similar lookalike domains.
 2. Navigate to the HR benefits portal through your known intranet bookmark. If a task is real, it will be in your queue there.
 3. Call ext. 4-HRBEN directly to confirm any dependent verification requirement before submitting personal data through an email link.
 
-**How to report**
+**how to report**
 Use the Outlook phishing report button. You can also email security@meddefense.org or call ext. 4-SECURITY. Reporting after clicking still helps — it alerts the security team that a campaign may be active.
 
 ---
@@ -191,16 +191,16 @@ Use the Outlook phishing report button. You can also email security@meddefense.o
 **What you saw**
 The email used three specific techniques: (1) a sender domain that resembled the executive office but was externally registered (`meddefense-exec.com`), visible only on reply inspection; (2) a confidentiality instruction specifically designed to prevent the one behavior that would have stopped this — asking a colleague; (3) a vendor reference number formatted to look legitimate, providing false specificity that substitutes for real verification.
 
-**What a real attacker gains**
+**what a real attacker gains**
 In a real BEC attack, the attacker does not need you to click anything. The objective is to get you to initiate a payment, change a vendor's banking details, or send a sensitive document to the attacker-controlled reply address. The average BEC loss in healthcare is in the hundreds of thousands of dollars per event. No technical control catches this after you have replied with the routing information — the only defense is process.
 
-**What to do next time**
+**what to do next time**
 Before acting on any executive request that bypasses standard workflow:
 1. Do not reply to the email thread. Call the executive directly using their known internal extension — not a number provided in the email.
 2. Follow the standard AP authorization process for any payment or routing change, regardless of stated urgency or seniority of the requester.
 3. Treat any instruction that tells you not to consult your team as a red flag, not a reason for secrecy. Legitimate executive requests do not disable financial controls.
 
-**How to report**
+**how to report**
 Use the Outlook phishing report button. Call ext. 4-SECURITY or email security@meddefense.org. If you received a similar message and took any offline action (replied, initiated a payment inquiry), contact ext. 4-SECURITY immediately so the security team can assess.
 
 ---
@@ -209,7 +209,7 @@ Use the Outlook phishing report button. Call ext. 4-SECURITY or email security@m
 
 This protocol governs the response to employees who click in two or more consecutive simulation waves. It is a training-first protocol. The goal is behavior change, not accountability. Escalation follows the HR privacy boundary: individual results are not shared with department managers without a second confirmed offense and formal HR escalation confirmation.
 
-**Who is notified at each stage is defined below.**
+**who is notified** at each stage is defined below.
 
 ---
 
@@ -218,7 +218,7 @@ This protocol governs the response to employees who click in two or more consecu
 **Trigger:** Employee clicks a simulation link.
 **Response:** Employee receives the landing page variant and the corresponding microtraining module immediately. Microtraining completion is tracked by the Program Manager. The click event is logged in the simulation platform as an individual record visible only to the Program Manager.
 **Employee is told:** Landing page confirms this is training, not discipline. Language: "You are not in trouble. This page is here to help you recognize this type of message next time."
-**Who is notified:** Program Manager only (for training assignment).
+**who is notified**: Program Manager only (for training assignment).
 **Manager notified:** No.
 
 ---
@@ -228,7 +228,7 @@ This protocol governs the response to employees who click in two or more consecu
 **Trigger:** Employee has not completed assigned microtraining within 7 days of the first click.
 **Response:** Program Manager sends a direct reminder through the simulation platform. A second automated reminder goes out at day 10. If incomplete at day 14, Program Manager logs the gap.
 **Employee is told:** "Your security training module from [wave date] is still open. Completing it takes about 5 minutes and helps you recognize this type of message in the future."
-**Who is notified:** Program Manager only.
+**who is notified**: Program Manager only.
 **Manager notified:** No.
 
 ---
@@ -238,7 +238,7 @@ This protocol governs the response to employees who click in two or more consecu
 **Trigger:** Employee clicks in two or more consecutive simulation waves.
 **Response:** Program Manager notifies HR in writing, documenting the two click events and microtraining completion status. HR reviews for formal escalation eligibility. The Program Manager does not contact the employee's manager directly.
 **Employee is told:** A private message from the simulation platform (not from their manager): "We noticed you have completed two simulation exercises where a phishing link was clicked. We would like to schedule a brief optional coaching session to review what to look for. This is a support step, not a disciplinary one."
-**Who is notified:** Program Manager and HR Director.
+**who is notified**: Program Manager and HR Director.
 **Manager notified:** No — not at this stage.
 
 ---
@@ -248,7 +248,7 @@ This protocol governs the response to employees who click in two or more consecu
 **Trigger:** HR confirms all four conditions are met: (1) employee clicked in two consecutive waves; (2) employee did not complete assigned microtraining after both clicks; (3) HR has confirmed the formal escalation trigger in writing; (4) the purpose is coaching support.
 **Response:** HR schedules a private coaching conversation with the employee. The department manager is notified by HR with aggregate context only: "A team member has been identified for additional security awareness coaching support." No individual click data is shared with the manager.
 **Employee is told:** "This is a confidential coaching conversation to help you build skills for identifying phishing messages. It is not a performance review and will not appear in your employment record."
-**Who is notified:** HR Director, department manager (aggregate framing only), Program Manager.
+**who is notified**: HR Director, department manager (aggregate framing only), Program Manager.
 **Manager notified:** Yes — aggregate context only, no individual click data.
 
 ---
@@ -257,7 +257,7 @@ This protocol governs the response to employees who click in two or more consecu
 
 **Trigger:** Simulation click correlates with anomalous system access, IAM anomaly, or insider threat indicator within the same session window; or HR-confirmed coaching has not produced behavior change after two further waves.
 **Response:** Program Manager escalates to SOC and CISO. HR is notified in parallel. Event transitions from a training record to a security review. SOC and HR lead jointly.
-**Who is notified:** SOC, CISO, HR Director. Department manager is not the first point of contact.
+**who is notified**: SOC, CISO, HR Director. Department manager is not the first point of contact.
 **Employee is told:** SOC and HR determine communication in coordination with Legal if required.
 
 ---
