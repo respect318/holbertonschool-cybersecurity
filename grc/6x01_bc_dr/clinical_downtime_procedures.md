@@ -1,49 +1,43 @@
-# Clinical Paper Charting Procedures
+# Clinical Quick Reference Procedures
 
-## Daily Care Paper Charting
+## Epic EHR Downtime Procedures
 
-**Who Decides When to Use This**
-The **nursing supervisor** or the **administrator on call** decides when to use these steps. If you cannot find patient information for more than five minutes, immediately tell the **charge nurse**. Do not try to fix the issue. The charge nurse will contact the nursing supervisor to start paper charting for the whole unit. Focus only on the patient and follow these steps to keep everyone safe.
+The **nursing supervisor** or the **administrator on call** formally dictates when the ward shifts entirely to paper charting. If bedside charting tools are unresponsive for five minutes, notify the **charge nurse** immediately. The **charge nurse** will evaluate the ward and escalate to the **nursing supervisor** to authorize paper charting for the whole floor. Do not attempt to fix the charting tools yourself.
 
-**Where to Find Paper Forms**
-All necessary papers, including the **paper MAR** (Medication Administration Record), physician order sheets, and clinical progress notes, are in the red lockboxes behind the main desk at every **nursing station**. The keys are held by the charge nurse on duty.
+Physical forms are located in the red emergency lockboxes mounted behind the main desk at every **nursing station**. The charge nurse retains the physical key for these boxes.
 
-**Patient Care Steps**
-1. **Secure patient safety.** Focus entirely on the patient. Do not leave your assigned patients unattended. Your only job is continuing medical treatment.
-2. **Retrieve the packet.** The charge nurse will unlock the red box and give the necessary paper folders to the primary nurses.
-3. **Verify patient identities and allergies.** You must physically and verbally confirm patient names, dates of birth, and all known **allergies** directly against their hospital wristbands before giving any care, food, or medication.
-4. **Use the paper MAR.** Write all medication doses, vital signs, health checks, and intake/output directly onto the paper forms using black or blue ink only. Include the exact time of each entry.
-5. **Handle verbal orders with caution.** Use **verbal orders** strictly for life-threatening emergencies. If a physician gives a verbal order, write it on the paper sheet immediately, read it back aloud for confirmation, and have the physician physically sign it before you finish your shift.
-6. **Communicate clearly during shift changes.** All incoming and outgoing staff must conduct face-to-face bedside handoffs using the paper folders. Inform the charge nurse of any critical changes.
+Immediate Care Steps:
+1. **Ensure patient safety first.** Remain at the bedside. Direct patient care is your only priority. Assess the patient continuously.
+2. **Unlock the emergency lockboxes.** The **charge nurse** will distribute the paper charting packets to all bedside staff. Ensure you have enough forms for your entire shift.
+3. **Check physical wristbands.** You must verify patient identities and **allergies** directly against the physical hospital wristband before dispensing any medication, food, or treatment.
+4. **Initiate the paper MAR.** Document all medication administrations, vital signs, daily care assessments, and intake totals directly on the **paper MAR** using blue or black ink. Write clearly and include your initials and the exact time of care.
+5. **Manage verbal orders carefully.** Restrict **verbal orders** strictly to life-threatening emergencies. If a physician issues **verbal orders** during a bedside emergency, write them down immediately on the paper sheet, read them aloud for clinical confirmation, and secure a physical signature before the physician leaves the ward.
+6. **Conduct bedside handoffs.** All shift changes must happen physically at the bedside using the paper charts. Point out any critical changes to the incoming nurse.
 
-**Completion Steps**
-Once the nursing supervisor tells you that normal charting is back, staff must carefully **reconcile** (compare and update) all paper records with the physician’s active orders.
-1. Keep all physical paper notes securely at the nursing station.
-2. The nurse assigned to the patient is responsible for copying all vital signs, clinical notes, and medication doses from the paper charts into the patient folder.
-3. Another staff member must check the work to prevent errors.
-4. Send all completed paper forms to the medical records department for physical storage. Do not discard or shred these forms.
+When ward leadership announces that standard charting can resume, bedside staff must carefully **reconcile** the medication administrations.
+1. Keep all physical papers secured at the **nursing station**. Do not throw anything away.
+2. The primary bedside nurse must physically **reconcile** the **paper MAR** notes by transcribing the documented vital signs, nursing notes, and medications into the main clinical tool.
+3. A second clinical nurse must visually verify the transcribed medications to prevent patient harm.
+4. Hand the physical paper sheets to the ward clerk for physical medical storage. Never discard medical notes.
 
 ---
 
-## Lab Request Paper Procedures
+## Laboratory Information System Downtime Procedures
 
-**Who Decides When to Use This**
-The **nursing supervisor** or the **administrator on call** declares this event. If you cannot request lab tests or see results for more than ten minutes, alert the **charge nurse** immediately. The charge nurse will confirm that manual paper requesting is required. Do not delay urgent patient care.
+The **nursing supervisor** or the **administrator on call** formally dictates when the ward must use paper lab requests. If lab requests cannot be sent for ten minutes, notify the **charge nurse** immediately. The **charge nurse** will coordinate with the main lab and authorize paper requests.
 
-**Where to Find Paper Forms**
-Blank **paper requisition** forms, **critical value** logs, and emergency **specimen** labels are in the yellow binders at the primary **nursing station**. The lab also keeps backup forms at the central receiving desk.
+Blank **paper requisition** forms, communication logs, and emergency labels are located in the yellow binders at the primary **nursing station**. The main lab receiving desk also holds backup forms.
 
-**Patient Care Steps**
-1. **Prioritize emergent testing.** Limit all new lab requests to strictly **STAT** and absolute medical emergencies. All routine morning labs must wait.
-2. **Complete a paper requisition.** For every emergency test, fill out a manual **paper requisition** form legibly. Include the patient name, medical record number, location, physician, and the requested test.
-3. **Label every specimen manually.** Hand-write the patient details directly onto the physical label of the blood tube or container. Never send an unlabeled or partially labeled **specimen** to the lab.
-4. **Deliver samples physically.** Assign a staff member to walk the **specimen** and the paper form directly to the lab window.
-5. **Receive and document results via phone.** Lab staff will call the unit to report results. Document every result on the paper flowsheet along with the time of the call.
-6. **Strictly enforce read-back protocols.** When the lab calls to report a **critical value**, write the result on paper and perform a complete **read-back** of the patient name, test name, and the result to the lab technician to confirm accuracy before hanging up.
+Immediate Care Steps:
+1. **Prioritize emergent testing.** Manual lab testing is very slow. You must restrict all new blood draws to strictly **STAT** and absolute medical emergencies. Hold all routine morning lab draws.
+2. **Fill out the paper requisition.** For every emergency blood draw, you must fill out a manual **paper requisition** completely. Print the patient name, room number, physician name, and the exact test requested.
+3. **Label the specimen properly.** Hand-write the patient identity details directly on the glass tube or plastic cup. Ensure the ink is completely dry before touching the label to prevent smudging. Never send an unlabeled **specimen** to the lab.
+4. **Walk the specimen to the lab.** Assign a nursing assistant to physically walk the **specimen** and the attached **paper requisition** directly to the main lab receiving window. Do not use pneumatic tubes for physical transport during this period, as tracking is unavailable.
+5. **Document phone results.** Lab technicians will call the ward directly to report the findings. Write every result on the paper flowsheet and note the time of the phone call.
+6. **Execute read-back rules.** When the lab calls to report a **critical value**, you must write the number down and perform a strict **read-back**. Speak the patient name, the test name, and the **critical value** aloud to the lab technician to confirm accuracy before ending the call. Ensure the charge nurse is informed of any critical findings immediately.
 
-**Completion Steps**
-After the nursing supervisor declares normal operations, all manual orders and written results must be formally recorded in the patient file.
-1. Do not throw away any paper requisitions or result sheets. Keep them in the physical patient folder.
-2. The staff must **reconcile** (compare and update) the paper orders with the patient file, marking them as already done so they are not repeated by mistake.
-3. The lab staff is responsible for adding the final results into the patient records to match the historical paper orders.
-4. Once verified, file the paper logs in the patient binder.
+When ward leadership announces that standard lab requesting can resume, bedside staff must carefully **reconcile** the paper test results.
+1. Keep all physical lab papers secured at the **nursing station**. Do not throw away any physical documents.
+2. The bedside nurse must **reconcile** the paper orders by transcribing the completed tests into the clinical charting tool, marking them as already drawn to prevent duplicate blood draws.
+3. The lab technician is responsible for transcribing the final results to match the historical paper orders.
+4. Place the physical lab papers in the physical patient binder for safe medical storage.
