@@ -39,8 +39,6 @@ RTO (30 minutes) Evaluation: PASS
 **Query:** SELECT COUNT(*) FROM patient_orders;
 **Expected:** 5
 **Actual:** 5
-**Resolution:** Executed query successfully using `sqlite3 /tmp/meddefense-dr-test/recovery/lis_recovered.db "SELECT COUNT(*) FROM patient_orders;"` and confirmed the row count matches exactly. No further troubleshooting was needed.
-**Time added:** 1 minute
 **Outcome:** PASS
 
 ## Recovery Validation
