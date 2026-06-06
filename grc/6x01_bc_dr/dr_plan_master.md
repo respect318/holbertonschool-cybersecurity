@@ -1,32 +1,34 @@
 # MedDefense Disaster Recovery Master Plan
 
 ## Program scope
-This program covers all critical clinical and administrative systems.
-* Covered Systems: LIS, EHR, Network, Clinical Back-office.
-* Sites: Central Data Center, regional nursing stations.
-* Scenarios: Ransomware, data center power loss, LIS/EHR downtime.
-* Exclusions: Non-clinical research, secondary admin office hardware.
+This plan defines the boundaries for disaster recovery operations.
+* **Covered systems:** Electronic Health Records (EHR), Laboratory Information System (LIS), and core network routing.
+* **Covered sites:** Primary Data Center and all regional clinical facilities.
+* **Covered scenarios:** Ransomware infections, complete power failure at the primary data center, and prolonged hardware outages.
+* **Explicit exclusions:** Secondary administrative workstations and non-clinical legacy research databases.
 
 ## Roles and responsibilities
 | Role | Responsibility |
 | :--- | :--- |
-| Disaster Declaration Authority | Final approval to activate DR plans. |
-| DR Plan Coordinator | Manages testing schedules and program maintenance. |
-| Technical Recovery Lead | Executes system restoration and backup validation. |
-| Clinical Downtime Lead | Manages paper-based clinical workflow transitions. |
-| Communications Lead | Manages internal/external messaging during outages. |
+| Disaster Declaration Authority | Evaluates the incident and officially triggers the DR plan. |
+| DR Plan Coordinator | Oversees the recovery workflow and resolves resource bottlenecks. |
+| Technical Recovery Lead | Restores databases, networks, and server infrastructure. |
+| Clinical Downtime Lead | Directs nursing staff to implement paper-based continuity procedures. |
+| Communications Lead | Disseminates updates to internal staff and external stakeholders. |
 
 ## Activation criteria
-1. System Unavailability: EHR/LIS downtime for >10 minutes.
-2. Security Incident: Confirmed ransomware detected on core servers.
-3. Physical Failure: Site-wide loss of power or climate control for >1 hour.
-4. CISO Discretion: Incident deemed high-risk by CISO.
+The plan is activated when any of the following four triggers occur:
+1. Unplanned clinical system downtime exceeds 15 minutes.
+2. A ransomware payload is confirmed to have encrypted core databases.
+3. Primary data center experiences a total power or HVAC failure lasting over 1 hour.
+4. The CISO declares a preemptive shutdown due to an imminent cyber threat.
 
 ## Communication plan
-1. Declaration: Technical Recovery Lead notifies Disaster Declaration Authority.
-2. Alerting: Communications Lead alerts Clinical Downtime Lead via emergency page.
-3. Internal: Department heads informed within 15 minutes of declaration.
-4. External: Communications Lead provides status updates to Board/Stakeholders every hour.
+Notifications must follow this ordered sequence:
+1. The Technical Recovery Lead notifies the Disaster Declaration Authority of a critical system failure.
+2. The Disaster Declaration Authority officially activates the DR plan and alerts the Communications Lead.
+3. The Communications Lead pages the Clinical Downtime Lead to transition staff to offline procedures.
+4. The Communications Lead sends hourly executive status updates to the Board Risk Committee.
 
 ## Program document index
 | Document | Filename | Version | Last Updated | Last Tested |
@@ -39,9 +41,9 @@ This program covers all critical clinical and administrative systems.
 | Gap Analysis | gap_analysis.md | 1.0 | 2026-06-06 | N/A |
 
 ## Testing and revision schedule
-In accordance with HIPAA 164.308(a)(7), this program is subject to annual testing and revision.
+To maintain compliance with HIPAA 164.308(a)(7) contingency planning standards, this master plan and all supporting runbooks require an annual review and tabletop exercise.
 
 ## CISO sign-off
-Dr. Morales, CISO
-Signature: ____________________
+Approved by Dr. Morales
+Signature: ______________________
 Date: 2026-06-06
