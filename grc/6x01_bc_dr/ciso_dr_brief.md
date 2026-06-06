@@ -1,20 +1,20 @@
-# Executive Brief: Disaster Recovery Program
+# CISO DR Brief
 
 ## Program status
-The organization’s emergency response program is fully established and operational. Our risk posture is strong, as we have successfully verified our ability to restore critical health systems during a crisis, ensuring compliance with federal healthcare contingency regulations.
+Our risk posture is secure. The disaster recovery program is fully validated, ensuring patient safety and continuous clinical operations during adverse events.
 
 ## Key BIA finding
-Our impact analysis concluded that a clinical system outage lasting longer than 15 minutes poses a severe threat to patient safety, as doctors and nurses lose access to urgent diagnostic information.
+System downtime exceeding 15 minutes creates critical patient safety risks due to delayed medical diagnostics.
 
 ## Recovery test result
-We conducted a simulated emergency restoration of our laboratory systems. The team successfully recovered all critical data and restored operations in under 9 minutes, proving we can meet our critical safety timelines.
+We successfully restored critical clinical systems in 8 minutes and 33 seconds, proving we can safely recover operations well before the 15-minute risk threshold.
 
-## Items requiring board action
-We require board authorization for capital funding to purchase dedicated testing infrastructure and essential backup clinical supplies.
+## board action
+We request budget authorization to procure automated recovery testing software and physical emergency downtime kits.
 
 ## Open items
-* Review and finalize alternative site operating guidelines: Technical Recovery Lead (Due: August 2026).
-* Schedule the next organizational emergency tabletop drill: DR Plan Coordinator (Due: December 2026).
+* Complete cross-site failover manual (Technical Recovery Lead, 2026-08-01).
+* Execute annual emergency drill (DR Plan Coordinator, 2026-12-01).
 
 ## recommended board resolution
-The Board Risk Committee acknowledges receipt of the MedDefense DR Program Status Report dated June 2026 and authorizes the allocation of budget for automated testing environments and clinical resilience kits.
+The Board Risk Committee acknowledges receipt of the MedDefense DR Program Status Report dated 2026-06-06 and authorizes the budget allocation for testing software and emergency downtime kits.
