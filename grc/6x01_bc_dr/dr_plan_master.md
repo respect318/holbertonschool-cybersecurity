@@ -1,11 +1,11 @@
 # MedDefense Disaster Recovery Master Plan
 
 ## Program Scope
-This program covers all critical systems, sites, and emergency scenarios for MedDefense. 
-* **Covered Systems:** LIS, EHR (Epic), Network Infrastructure, and Clinical Back-office systems.
-* **Sites:** Central Data Center and regional nursing stations.
-* **Scenarios:** Ransomware, data center power loss, and LIS unavailability.
-* **Exclusions:** Non-clinical research databases and secondary administrative office hardware.
+This program covers all critical clinical and administrative systems.
+* **Covered Systems:** LIS, EHR, Network, Clinical Back-office.
+* **Sites:** Central Data Center, regional nursing stations.
+* **Scenarios:** Ransomware, data center power loss, LIS/EHR downtime.
+* **Exclusions:** Non-clinical research, secondary admin office hardware.
 
 ## Roles and Responsibilities
 | Role | Responsibility |
@@ -17,16 +17,16 @@ This program covers all critical systems, sites, and emergency scenarios for Med
 | **Communications Lead** | Manages internal/external messaging during outages. |
 
 ## Activation Criteria
-1. Unscheduled LIS/EHR downtime exceeding 10 minutes.
-2. Confirmed ransomware encryption on core database servers.
-3. Site-wide physical infrastructure failure (power/cooling).
-4. Cybersecurity incident identified as high-risk by the CISO.
+1. **System Unavailability:** EHR/LIS downtime for >10 minutes.
+2. **Security Incident:** Confirmed ransomware detected on core servers.
+3. **Physical Failure:** Site-wide loss of power or climate control for >1 hour.
+4. **CISO Discretion:** Incident deemed high-risk by CISO.
 
 ## Communication Plan
-1. **Notify** Disaster Declaration Authority (Immediate).
-2. **Alert** Clinical Departments via established paging system.
-3. **Inform** Technical Recovery Team to begin runbooks.
-4. **Update** Board Risk Committee if outage exceeds 1 hour.
+1. **Declaration:** Technical Recovery Lead notifies Disaster Declaration Authority.
+2. **Alerting:** Communications Lead alerts Clinical Downtime Lead via emergency page.
+3. **Internal:** Department heads informed within 15 minutes of declaration.
+4. **External:** Communications Lead provides status updates to Board/Stakeholders every hour.
 
 ## Program Document Index
 | Document | Filename | Version | Last Updated | Last Tested |
@@ -39,7 +39,7 @@ This program covers all critical systems, sites, and emergency scenarios for Med
 | Gap Analysis | gap_analysis.md | 1.0 | 2026-06-06 | N/A |
 
 ## Testing and Revision Schedule
-This program follows the HIPAA 164.308(a)(7) requirement for **annual** contingency plan testing and review.
+In accordance with HIPAA 164.308(a)(7), this program is subject to **annual** testing and revision.
 
 ## CISO Sign-off
 **Dr. Morales, CISO**
