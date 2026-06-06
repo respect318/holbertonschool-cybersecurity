@@ -14,88 +14,103 @@
 
 ## 1. Board-ready effectiveness brief
 
-**[TEMPLATE — Program manager inserts actual data at each 6-month reporting period. Bracketed fields are fill-ins. All other language is pre-approved for board distribution.]**
+*This is a two-page template Dr. Morales fills with actual numbers at each 6-month reporting period. Bracketed fields are replaced with real data. All surrounding language is written for a board audience — no security background required.*
 
 ---
 
 ### program summary
 
-**Reporting period:** [Month 1] through [Month 6]  
-**Date presented to board:** [DATE]  
-**Presenter:** Dr. [Name], [Title]
+**Reporting period:** [Month 1] through [Month 6], [Year]
+**Date:** [DATE] | **Presenter:** Dr. [Name], [Title]
 
-Six months ago, MedDefense launched a structured security awareness program in response to a phishing incident in which 23 of 41 targeted employees clicked a malicious link — more than half the workforce tested. Only 6 employees reported the message, and the security team did not detect the campaign until more than four hours after the first click. The incident resulted in confirmed credential exposure and Cobalt Strike beacon activity on internal systems.
+**What this program is and why it exists**
 
-This program was designed to change three specific behaviors: how often employees recognize and avoid suspicious messages, how quickly they report suspicious messages when they receive them, and how consistently they verify unusual requests before acting on them. This brief reports on progress against those three behaviors after six months of structured simulation, role-based training, and measured feedback.
+In early 2026, MedDefense experienced a security incident that started with a fraudulent email. Twenty-three employees — more than half of those who received it — clicked the link before anyone raised an alarm. Only six people reported it as suspicious. By the time the security team detected the problem, more than four hours had passed. That four-hour gap is the window an attacker needs to move through internal systems, access patient records, or steal credentials.
+
+The lesson was not that our employees are careless. It was that they had never practiced recognizing these messages under realistic conditions, had no clear habit for what to do when something felt wrong, and had no reassurance that reporting a suspicious message would be welcomed rather than blamed. This program was designed to close those three gaps through regular, realistic practice — not annual slide-deck training that employees forget by the next quarter.
+
+**What we measured**
+
+We track three things the board can use to judge whether this investment is working:
+
+1. **Are fewer employees being fooled?** We send realistic test messages to our own staff — the same kind of fraudulent emails attackers use — and measure how many click. This is our most direct measure of risk.
+
+2. **Are more employees raising the alarm?** We measure how many employees report a suspicious message to the security team, and how quickly. Faster reporting means the security team has more time to respond before real damage occurs.
+
+3. **Are the highest-risk employees improving?** Finance staff who handle payments, clinical staff who access patient records, and staff who receive calls impersonating executives face the most targeted attacks. We track their behavior separately.
 
 ---
 
 ### metrics table
 
-**How to read this table:** The baseline column shows where MedDefense stood after the Q1 2026 incident — before any training program existed. The current column shows where MedDefense stands today. The target column shows where the program committed to be at 6 months. The industry benchmark column shows what comparable healthcare organizations achieve after an established awareness program. Green means on track or better. Yellow means slightly behind target but trending in the right direction. Red means off target and requiring a program adjustment.
+**How to read this table:** "Before program" shows where MedDefense stood when this program started — measured from the real incident. "Today" shows current results from the most recent test. "Our goal" is what we committed to reach at six months. "Peer comparison" shows what comparable hospitals with established programs typically achieve. Status tells the board whether we are on track.
 
-| Metric | Baseline (Q1 2026) | Current ([Q]) | 6-month target | Industry benchmark | Status |
+| What we are measuring | Before program | Today | Our 6-month goal | Peer hospitals | Status |
 |---|---|---|---|---|---|
-| Overall phishing click rate | 56% (23 of 41 employees clicked) | [X]% | 35% or below | 20–28% (mature healthcare programs) | [Green/Yellow/Red] |
-| Suspicious email report rate | 15% (6 of 41 employees reported) | [X]% | 35% or above | 40–55% | [Green/Yellow/Red] |
-| Mean time to report | 74 minutes | [X] minutes | 25 minutes or less | 10–20 minutes | [Green/Yellow/Red] |
-| Clinical staff click rate | 67% | [X]% | 40% or below | 22–30% | [Green/Yellow/Red] |
-| Finance BEC verification rate | Not measured | [X]% | Baseline established | 75–85% | [Green/Yellow/Red] |
-| Post-click microtraining completion | Not measured | [X]% | 90% within 72 hours | 85–95% | [Green/Yellow/Red] |
-| Repeat clicker rate | Not measured | [X]% | Baseline established | 8–12% | [Green/Yellow/Red] |
+| Share of employees who clicked a fraudulent test message | More than 1 in 2 employees (56%) | [X in Y employees] ([X]%) | Fewer than 1 in 3 (35%) | About 1 in 5 (20–28%) — hospitals with 2+ year programs | [Green/Yellow/Red] |
+| Share of employees who reported the suspicious message | About 1 in 7 employees (15%) | [X in Y employees] ([X]%) | At least 1 in 3 (35%) | About 1 in 2 (40–55%) | [Green/Yellow/Red] |
+| How quickly employees reported after receiving the message | 74 minutes on average | [X] minutes | Within 25 minutes | Within 10–20 minutes | [Green/Yellow/Red] |
+| Clinical staff — share who clicked | About 2 in 3 clinical employees (67%) | [X]% | Fewer than 2 in 5 (40%) | About 1 in 4 (22–30%) | [Green/Yellow/Red] |
+| Finance staff — share who correctly verified before acting on unusual payment request | Not previously measured | [X]% | 75% verified correctly | 75–85% in peer programs | [Green/Yellow/Red] |
+| Employees who clicked and completed follow-up training within 3 days | Not previously measured | [X]% | 90% complete within 72 hours | 85–95% | [Green/Yellow/Red] |
+| Employees who clicked in two consecutive tests (persistent high-risk behavior) | Not previously measured | [X]% | Baseline established for coaching | Below 8–12% in peer programs | [Green/Yellow/Red] |
 
-**Industry benchmark source:** [Insert benchmarking source — healthcare sector phishing simulation data, current period]. Note: benchmarks reflect organizations with mature programs of 2+ years. MedDefense is in its first program year; benchmarks are directional targets, not immediate requirements.
+**Note on peer comparison:** Peer benchmarks come from [source — healthcare sector benchmarking data, current period] and reflect hospitals with programs that have been running for two or more years. MedDefense is in its first year. We use these benchmarks to show direction, not to hold ourselves to a fully mature standard in year one.
 
 ---
 
 ### key findings
 
-**[Program manager drafts this section using the template sentences below, substituting actual observations from the most recent simulation wave. Each bullet corresponds to a behavioral finding, not a metric dump.]**
+*Program manager writes three to four plain-language findings from the most recent test results. The template sentences below show the pattern — replace bracketed content with actual observations.*
 
-**Finding 1 — Click behavior:**  
-[Example: "Clinical staff clicked at a rate of [X]%, down from 67% at baseline. Clicks are now concentrated in [unit/segment] rather than distributed across all clinical floors, which suggests that general phishing recognition is improving but [specific lure type] remains effective against [specific group]."]
+**Finding 1 — How many employees are being fooled, and who**
 
-**Finding 2 — Reporting behavior:**  
-[Example: "The report rate increased from 15% to [X]%. Employees are reporting faster — average time to report dropped from 74 minutes to [X] minutes — but a significant portion of employees still describe uncertainty about what happens after they report. A reinforcement communication reminding employees that reports trigger a review, not a blame process, is recommended for Month 7."]
+In the most recent round of tests, [X] out of every 10 MedDefense employees who received a realistic fraudulent message clicked it — [better/worse/about the same] than six months ago, when more than 5 in 10 clicked. [Describe which group improved most, or which group remains highest risk in plain terms — e.g., "Clinical staff on the overnight shift showed the highest remaining click rate, which is consistent with our expectation that high-workload windows are when employees are most vulnerable. Our next targeted exercise focuses on that group."]
 
-**Finding 3 — High-risk role behavior:**  
-[Example: "Finance staff correctly identified and challenged [X]% of BEC simulation scenarios — above the 75% baseline target for 6 months. One executive assistant scenario (V-03 vishing analog) showed that [X]% of assistants stayed on the line with the simulated caller while attempting to verify — a partial-pass behavior that indicates the right instinct but an unsafe execution. Additional vishing reinforcement is scheduled for Month 8."]
+**Finding 2 — How quickly employees are raising the alarm**
 
-**Finding 4 — Post-click intervention:**  
-[Example: "Of employees who clicked in Wave [X], [X]% completed the post-click microtraining module within 72 hours. This is [above/below] the 90% target. Employees who did not complete cited [reason if known — e.g., 'module not accessible on mobile during shift']."]
+When employees received a suspicious test message, they reported it in an average of [X] minutes — [faster/slower] than the 74-minute baseline at the start of this program. [Explain what this means in operational terms — e.g., "A 30-minute reporting time gives our security team roughly 40 more minutes to respond than they had before the program began. In the real incident, that window was the difference between detecting the problem during the attack versus hours later."]
 
-**Attribution note:** Metrics in this brief reflect simulation behavior. They do not directly measure response to real phishing attacks, which occur at lower volume and vary in sophistication. Improvement in simulation metrics indicates behavior change in controlled conditions. Whether this translates to real-incident response improvement is assessed separately in the incident correlation analysis (see Section 3 of the program effectiveness brief). No causal claim is made that the awareness program alone caused any change in real incident frequency during this period, as concurrent technical improvements also occurred.
+**Finding 3 — Finance and payment-verification behavior**
+
+[X]% of finance and procurement staff correctly challenged or verified an unusual payment request during a simulated exercise — [above/below] our six-month target of 75%. [Plain-language interpretation — e.g., "This means roughly [X] out of every 10 finance employees now pause and verify before acting on an unusual payment instruction, compared to no established practice before this program. The [X]% who did not verify received targeted follow-up training."]
+
+**Finding 4 — Follow-through after a test**
+
+Of the employees who clicked during the most recent test, [X]% completed a short follow-up training module within three days. [Plain-language interpretation — e.g., "This matters because the moment after an employee realizes they may have made a mistake is the moment they are most ready to learn. A [X]% completion rate means most of that learning is happening — but [Y]% of employees are missing the training, primarily because [reason, e.g., the module was not accessible on mobile devices during clinical shifts]."]
+
+**What these results do and do not tell us**
+
+These results come from realistic test exercises we run on our own staff, not from real attacks. They show us how our employees behave under controlled conditions that closely resemble actual threats. We believe improvement in test results reflects real improvement in employee readiness — and the security team has recorded [X] more employee-initiated reports of real suspicious messages this period than the same period before the program began. We are not claiming the training program alone has prevented specific incidents; other security improvements occurred in the same period. What we can say is that employee behavior is measurably changing in the direction that reduces risk.
 
 ---
 
 ### recommendations for the next 6 months
 
-**[Program manager selects and customizes from the template recommendations below based on actual data.]**
+*Program manager selects the recommendations that apply based on actual results. Each recommendation states what to do, why, and what the board should expect.*
 
-1. **[If clinical click rate is above target]:** Increase simulation frequency for clinical floor staff using a different lure type — shift from account-lockout lures to secure-message lures. Clinical staff have become less susceptible to one lure type but remain susceptible to others.
+1. **[If clinical click rate is still above 40%]** Shift the type of test messages sent to clinical staff. Our current tests use account-lockout messages; clinical staff are now recognizing those more reliably. The next wave will use a different message type — one that mimics a request from a colleague about a patient record — because that is the next most common type of fraudulent message targeting nurses and physicians. The board should expect clinical click rates to temporarily plateau or dip slightly as staff encounter a new message type, then resume improvement.
 
-2. **[If report rate is below target]:** Run a targeted reporting reinforcement campaign in Month 7: a single communication to all staff showing how many real suspicious emails were reported this quarter and what the SOC did with them. Make reporting feel consequential and non-punitive.
+2. **[If report rate is below 35%]** Send a single all-staff communication in the next month explaining what actually happened when employees reported suspicious messages this quarter — how many were reviewed, whether any were real threats, and what the outcome was. Employees report more when they believe reporting is useful. This communication takes one week to prepare and has no additional cost.
 
-3. **[If mean time to report is above target]:** Add a one-click report button prominently to the email client in clinical workstations. Reporting friction is the primary driver of delay. Technical improvement reduces mean time without requiring additional training.
+3. **[If mean time to report exceeds 25 minutes]** Add a single-click report button to the email interface on all clinical workstations. Currently, reporting requires navigating a menu. The time delay is primarily friction, not reluctance. This is a technical change, not a training change, and it has the highest expected impact on reporting speed per dollar spent.
 
-4. **[If finance BEC verification is below 80%]:** Schedule a second facilitated tabletop (V-03 analog) for finance and procurement staff in Month 8. The simulated scenario showed that time pressure — not lack of knowledge — is the primary reason verification is skipped.
-
-5. **[Standard for all periods]:** Review template library before Month 7 wave. Any template in rotation for more than 6 months should be refreshed or replaced. Employees recognize repeated lures, which inflates apparent improvement without reflecting genuine behavior change.
+4. **[Standard recommendation for all periods]** Refresh at least two of the test message types before the next round. Employees who receive the same-looking test repeatedly begin to recognize it — which inflates our improvement numbers without reflecting real behavior change. Updated message types keep the measurement honest.
 
 ---
 
 ### bottom line
 
-**[Program manager selects one of the following and inserts actual metrics. The bottom line is one sentence, no jargon, no hedging beyond the attribution note.]**
+*Program manager selects one sentence and fills in the actual numbers. This sentence is read aloud to the board.*
 
-**If on track:**  
-> "After six months, MedDefense employees are clicking on realistic phishing lures [X percentage points] less often than before this program began, reporting suspicious messages [X percentage points] more often, and doing so [X] minutes faster — meaning the security team now has more time to respond to real threats before they cause damage."
+**If program is on track:**
+> "Six months into this program, fewer than [X] in 10 MedDefense employees fall for a realistic fraudulent message — down from more than 5 in 10 at the start — and employees are alerting the security team an average of [X] minutes faster than before, giving us a meaningfully larger window to respond before real damage occurs."
 
-**If partially on track:**  
-> "After six months, click rates have improved significantly, but reporting speed remains above target; the next six months will focus on reducing the time between recognizing a threat and alerting the security team, which is currently the largest remaining gap between MedDefense's human-layer defense and industry practice."
+**If program is partially on track:**
+> "Click rates have improved — fewer employees are being fooled than six months ago — but employees are still taking longer than our target to raise the alarm when something feels wrong; the next six months focus specifically on closing that reporting-speed gap, which is currently the largest remaining difference between where we are and where peer hospitals with established programs stand."
 
-**If below target:**  
-> "After six months, initial results are below target in [specific metric]; the program review initiated this quarter identified [specific cause] as the primary driver, and a modified campaign plan addressing [specific issue] begins in Month 7 with board notification if targets are not met by Month 9."
+**If program is below target:**
+> "Results after six months are below our initial targets in [specific area stated plainly]; we have identified [plain-language cause] as the primary driver, have adjusted the program plan accordingly, and will report back to the board in [timeframe] with updated results."
 
 ---
 
