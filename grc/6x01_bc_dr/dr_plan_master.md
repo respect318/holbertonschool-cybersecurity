@@ -1,6 +1,6 @@
 # MedDefense Disaster Recovery Master Plan
 
-## Program scope
+## Program Scope
 
 This program covers all critical clinical and administrative systems.
 * Covered Systems: LIS, EHR, Network, Clinical Back-office.
@@ -8,7 +8,7 @@ This program covers all critical clinical and administrative systems.
 * Scenarios: Ransomware, data center power loss, LIS/EHR downtime.
 * Exclusions: Non-clinical research, secondary admin office hardware.
 
-## Roles and responsibilities
+## Roles and Responsibilities
 
 | Role | Responsibility |
 | :--- | :--- |
@@ -18,21 +18,21 @@ This program covers all critical clinical and administrative systems.
 | Clinical Downtime Lead | Manages paper-based clinical workflow transitions. |
 | Communications Lead | Manages internal/external messaging during outages. |
 
-## Activation criteria
+## Activation Criteria
 
 1. System Unavailability: EHR/LIS downtime for >10 minutes.
 2. Security Incident: Confirmed ransomware detected on core servers.
 3. Physical Failure: Site-wide loss of power or climate control for >1 hour.
 4. CISO Discretion: Incident deemed high-risk by CISO.
 
-## Communication plan
+## Communication Plan
 
 1. Declaration: Technical Recovery Lead notifies Disaster Declaration Authority.
 2. Alerting: Communications Lead alerts Clinical Downtime Lead via emergency page.
 3. Internal: Department heads informed within 15 minutes of declaration.
 4. External: Communications Lead provides status updates to Board/Stakeholders every hour.
 
-## Program document index
+## Program Document Index
 
 | Document | Filename | Version | Last Updated | Last Tested |
 | :--- | :--- | :--- | :--- | :--- |
@@ -43,11 +43,11 @@ This program covers all critical clinical and administrative systems.
 | Recovery Test Record (LIS) | recovery_test_record.md | 1.0 | 2026-06-06 | 2026-06-06 |
 | Gap Analysis | gap_analysis.md | 1.0 | 2026-06-06 | N/A |
 
-## Testing and revision schedule
+## Testing and Revision Schedule
 
 In accordance with HIPAA 164.308(a)(7), this program is subject to annual testing and revision.
 
-## CISO sign-off
+## CISO Sign-off
 
 Dr. Morales, CISO
 Signature: ____________________
