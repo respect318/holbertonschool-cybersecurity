@@ -1,25 +1,20 @@
 # CISO DR Brief
 
-**To:** Board Risk Committee
-**From:** Dr. Morales, CISO
-**Date:** 2026-06-06
-**Subject:** Disaster Recovery Program Status Report
+## Program status
+Our emergency preparedness program is fully operational and verified through rigorous testing. The organization is resilient, demonstrating a strong posture against system failures and ensuring clinical continuity under emergency conditions.
 
-### Program status
-The Disaster Recovery program is currently in a validated and tested state. MedDefense's overall cybersecurity risk posture has improved due to standardized contingency planning and rigorous recovery testing aligned with HIPAA 164.308(a)(7) standards.
+## Key BIA finding
+We identified that any system outage extending beyond 15 minutes creates an unacceptable risk to patient safety, as it prevents clinical staff from accessing vital diagnostic information needed for immediate care decisions.
 
-### Key BIA finding
-Our Business Impact Analysis (BIA) confirms that LIS/EHR downtime exceeding 15 minutes creates a critical patient safety risk, as it prevents the timely retrieval of life-saving lab results and diagnostic data.
+## Recovery test result
+We have successfully validated our emergency restoration capabilities. A recent simulation confirmed that we can return core clinical systems to normal operations well within our required safety timeframe.
 
-### Recovery test result
-We have successfully validated our LIS recovery capabilities. In our latest test conducted on 2026-06-06, the actual recovery time was 8 minutes and 33 seconds, which comfortably meets our defined 30-minute RTO.
+## Items requiring board action or budget
+We request the Board’s approval for a capital allocation to upgrade our testing technology and to procure essential supplies that support clinical staff during system downtime.
 
-### Items requiring board action or budget
-To maintain and enhance this posture, we request authorization for the allocation of budget for automated DR testing environments and procurement of redundant clinical downtime paper kits.
+## Open items
+* Finalize alternative site operating procedures: Technical Recovery Lead (Due: 2026-08-01)
+* Conduct annual emergency response drill: DR Plan Coordinator (Due: 2026-12-01)
 
-### Open items
-* Finalize cross-site failover documentation: Technical Recovery Lead, 2026-08-01.
-* Annual DR tabletop exercise: DR Plan Coordinator, 2026-12-01.
-
-### recommended board resolution
+## Recommended board resolution
 The Board Risk Committee acknowledges receipt of the MedDefense DR Program Status Report dated 2026-06-06 and authorizes the allocation of necessary budget for automated testing environments and clinical system resilience enhancements.
