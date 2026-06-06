@@ -13,8 +13,8 @@
 
 ### Condition 1: Path mismatch
 * **Category:** Runbook Error
-* **Root cause:** The legacy documentation was written for a Docker-based architecture and specified `/recovery/lis_dump.sql`, whereas the current lab environment stages files in a local SQLite path at `/tmp/meddefense-dr-test/recovery/lis_dump.sql`.
-* **Patient safety consequence:** A 2-minute delay in restoring the LIS delays the processing of STAT labs. According to the BIA, delays beyond 15 minutes in returning critical values (e.g., Potassium, Troponin) can lead to missed diagnoses of life-threatening events like myocardial infarction. Every minute spent troubleshooting paths directly postpones critical bedside clinical decisions.
+* **Root cause:** The legacy runbook was written for a Docker-based architecture and specified `/recovery/lis_dump.sql`, but the current environment uses a local SQLite path at `/tmp/meddefense-dr-test/recovery/lis_dump.sql`.
+* **Patient safety consequence:** A 2-minute delay in restoring the LIS delays the processing of STAT labs. According to the BIA, delays beyond 15 minutes in returning critical values (e.g., Potassium, Troponin) can lead to missed diagnoses of life-threatening events. Every minute spent troubleshooting paths directly postpones critical bedside clinical decisions.
 * **Time added:** 2 minutes.
 
 ### Condition 2: Configuration artifact
@@ -37,7 +37,9 @@
 
 ## Revised RTO
 
-The declared RTO of 30 minutes is highly achievable and should be maintained. The actual recovery took 8 minutes and 33 seconds, well within the 30-minute threshold. The deviations encountered added a total of 6 minutes of troubleshooting. With the corrections implemented in the updated runbook (hardcoding the exact local recovery paths and providing explicit query strings), the target recovery time can realistically be reduced to under 5 minutes. The 30-minute RTO remains a solid, honest SLA for the clinical business units, providing a safe buffer for unforeseen hardware provisioning delays.
+Recommendation: The 30-minute RTO must be maintained. It is honestly achievable after corrections, but should not be artificially lowered based solely on this test.
+
+Evidence and Justification: The actual recovery time was 8 minutes and 33 seconds. The runbook deviations (path mismatch, configuration artifact, missing query syntax) added 6 minutes of troubleshooting. While correcting these deficiencies will mathematically reduce the test recovery time to under 3 minutes, this test utilized a simulated, lightweight SQLite database. In a real-world disaster scenario involving the full production database payload, network latency, and server provisioning, the data restoration phase will take significantly longer. Therefore, the 30-minute RTO remains an honest, evidence-based target. It is fully achievable with the updated runbook, providing a realistic buffer for production data volumes while still meeting the clinical BIA safety requirements.
 
 ## Updated LIS Recovery Runbook
 
@@ -81,7 +83,7 @@ The declared RTO of 30 minutes is highly achievable and should be maintained. Th
 
 | Priority | Action | Owner Role | Target Completion | Success Criterion |
 | :--- | :--- | :--- | :--- | :--- |
-| **High** | Update all LIS runbooks with the exact local staging paths. | Lead DBA | 1 Week | Runbook officially published in the IT portal without legacy Docker paths. |
+| **High** | Update all LIS runbooks with the exact local staging paths. | Lead DBA | 1 Week | Runbook officially published in the IT portal without legacy paths. |
 | **High** | Implement dynamic environment variables in `app_config.env` for DR scenarios. | Infrastructure Architect | 2 Weeks | Application successfully fails over to local SQLite path without manual DNS overrides. |
 | **Medium** | Add explicit SQL validation queries (row count, critical values) to documentation. | IT Documentation Specialist | 1 Week | Validation commands are directly copy-pasteable by any IT responder. |
 | **Medium** | Conduct a tabletop exercise with the newly updated LIS runbook. | Disaster Recovery Coordinator | 1 Month | Junior system admin successfully recovers the database in under 10 minutes. |
