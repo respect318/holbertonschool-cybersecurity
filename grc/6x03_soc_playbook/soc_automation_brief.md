@@ -28,13 +28,13 @@ Five alert scenarios were run against both playbooks. All five produced the expe
 
 ## Efficiency estimate
 
-At current volume, 150 alerts per day consume 20 analyst-hours of triage work daily (150 × 8 minutes ÷ 60). Of that, 67 percent — 13.4 hours/day — is enrichment lookups that the playbook can perform automatically. At an 80 percent automation rate (assuming 20 percent of alerts will still need analyst override), the formula gives:
+The SOC baseline (March review) records 150 alerts/day, 8 minutes of analyst time per alert, and 67 percent of that time spent on enrichment lookups — the exact repetitive work the playbooks automate. Applying the required formula to enrichment time only:
 
-**150 × 8 minutes × 0.67 enrichment fraction × 0.80 automation rate ÷ 60 = 10.7 hours/day saved**
+**150 alerts/day × 8 minutes × 0.67 enrichment fraction × 0.80 automation rate ÷ 60 = 10.7 hours/day saved**
 
-Projected monthly (22 working days): **~235 analyst-hours/month freed from enrichment work.**
+Projected monthly (22 working days): **approximately 235 analyst-hours/month** freed from enrichment lookups, not from full triage. The remaining 20 percent of alerts will still require analyst review of playbook output before a decision is confirmed.
 
-This is the estimate for enrichment time only — it does not claim to eliminate the analyst decision on escalated or reviewed alerts. Confidence is medium. The estimate is invalidated if: (a) the measured false-negative rate on auto-closed alerts exceeds 5 percent, requiring cases to be re-opened and re-reviewed; (b) alert volume moves outside the 120–180/day baseline; or (c) the IOC feed falls out of date, forcing analysts to override playbook verdicts at a higher rate than assumed.
+In plain terms: this estimate is likely in the range of **200–250 analyst-hours/month** depending on alert mix and override volume. It lands at the lower end if analysts override more than 20 percent of verdicts (e.g. due to a stale IOC feed or unusual alert types); it approaches the upper end only if the alert mix stays close to the tested scenarios. The estimate is invalidated if: (a) the false-negative rate on auto-closed alerts exceeds 5 percent once measured in production; (b) alert volume drops below or rises far above the 120–180/day baseline; or (c) the IOC feed is not refreshed within 24 hours, raising the analyst override rate.
 
 ---
 
