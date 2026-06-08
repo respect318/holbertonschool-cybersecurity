@@ -228,8 +228,8 @@ def run_playbook(alert_path: str) -> int:
     tag_str = ", ".join(tags) if tags else cat
     note = (
         f"Playbook verdict: {case_severity}/{case_status}. "
-        f"Source IP: {source_ip} verdict={ip_verdict} score={ip_score}"
-        + (f" ({tag_str})" if tag_str else "") + ". "
+        f"IOCs: {source_ip} ({ip_verdict}/{ip_score})"
+        + (f" [{tag_str}]" if tag_str else "") + ". "
         f"User: {username} ({privilege_label}). "
         f"MITRE: {mitre_technique} - {technique_name}. "
         f"Host: {host}. "
