@@ -28,7 +28,13 @@ Five alert scenarios were run against both playbooks. All five produced the expe
 
 ## Efficiency estimate
 
-At current volume — 150 alerts per day, 8 minutes of analyst time per alert, with 67 percent of that time spent on enrichment lookups — the phishing triage playbook running at an 80 percent automation rate would save approximately **352 analyst-hours per month** (16 hours per day × 22 working days). That is the equivalent of roughly two full analyst-weeks per month redirected from repetitive lookup work to investigation and threat hunting. This estimate assumes the alert mix and volume stay near the current baseline and that the IOC feed is kept current (updated within 24 hours). If the false-negative rate on auto-closed alerts turns out to exceed 5 percent once measured in production, the automation rate will need to drop and the savings estimate should be revised downward.
+At current volume, 150 alerts per day consume 20 analyst-hours of triage work daily (150 × 8 minutes ÷ 60). Of that, 67 percent — 13.4 hours/day — is enrichment lookups that the playbook can perform automatically. At an 80 percent automation rate (assuming 20 percent of alerts will still need analyst override), the formula gives:
+
+**150 × 8 minutes × 0.67 enrichment fraction × 0.80 automation rate ÷ 60 = 10.7 hours/day saved**
+
+Projected monthly (22 working days): **~235 analyst-hours/month freed from enrichment work.**
+
+This is the estimate for enrichment time only — it does not claim to eliminate the analyst decision on escalated or reviewed alerts. Confidence is medium. The estimate is invalidated if: (a) the measured false-negative rate on auto-closed alerts exceeds 5 percent, requiring cases to be re-opened and re-reviewed; (b) alert volume moves outside the 120–180/day baseline; or (c) the IOC feed falls out of date, forcing analysts to override playbook verdicts at a higher rate than assumed.
 
 ---
 
