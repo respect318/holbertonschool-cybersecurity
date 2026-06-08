@@ -5,7 +5,7 @@
 
 ---
 
-## 1. Current State Analysis
+## 1. Current state analysis
 
 ### Alert volume and analyst effort
 
@@ -31,7 +31,7 @@ During the April 2026 Cobalt Strike intrusion, a single IP enrichment lookup —
 
 ---
 
-## 2. Automation Candidates
+## 2. Automation candidates
 
 Prioritized by impact-to-risk ratio. "Enrich-and-act" is not approved until FP thresholds are measured in production.
 
@@ -59,7 +59,7 @@ The integration test confirmed that the phishing playbook correctly classifies i
 
 ---
 
-## 3. Expected Efficiency Gains
+## 3. Expected efficiency gains
 
 **Formula (as specified):**
 
@@ -86,7 +86,7 @@ This estimate is invalidated by any of the following:
 
 ---
 
-## 4. Risks of Over-Automation
+## 4. Risks of over-automation
 
 ### Risk 1 — Auto-closure masking a multi-phase attack
 
@@ -118,7 +118,7 @@ This estimate is invalidated by any of the following:
 
 ---
 
-## 5. Implementation Roadmap
+## 5. Implementation roadmap
 
 ### Why this sequence is non-negotiable
 
