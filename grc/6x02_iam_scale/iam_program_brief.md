@@ -1,59 +1,52 @@
 # Identity Program Brief for Dr. Morales
 
-**Prepared for:** Board Risk Committee
-**Date:** June 8, 2025
+**Prepared for:** Dr. Morales, Chief Information Security Officer
+**Date:** June 2026
+**Purpose:** Board Risk Committee Briefing — Identity Program Status
 
 ---
 
 ## Identity Posture Summary
 
-After the breach, we asked a simple question: who has access to our systems, and should they? The answer revealed 3 Critical and 4 High-severity gaps — seven conditions that increased our exposure to attack. Three of those gaps directly enabled the breach. Today, two have been fixed. The remaining five have assigned owners and firm deadlines. For the first time, we have a complete and auditable picture of our identity risk.
+The IAM audit and cloud security assessment identified **6 Critical findings** and **5 High findings** across on-premises and cloud environments.
+
+Critical findings include: a dormant service account with full administrative access (finding: `svc_epic_int`), a departed contractor account still active with Domain Admin rights (`t.morrison`), a legacy admin account unused for 187 days with no MFA (`admin.legacy`), a publicly accessible S3 bucket containing patient health records (CIS-6), the AWS root account operating without multi-factor authentication and with active access keys since 2022 (CIS-1), and three IAM roles carrying unrestricted administrator access in AWS (CIS-7). High findings include IAM console users without MFA (CIS-2), CloudTrail logging absent in the disaster recovery region (CIS-5), overly permissive backup role permissions (CIS-9), a Finance user retaining IT elevated rights after transfer (`j.yamamoto`), and ticket-routing automation holding full Domain Admin access (`svc_helpdesk`).
 
 ---
 
 ## Connection to the Incident
 
-The breach worked because one stolen password opened nearly every door. Our review found three specific conditions that made this possible — all of which were still present after the incident:
+The prior Cobalt Strike compromise followed a specific path: a workstation was breached, credentials were extracted from memory, an attacker discovered a service account with Domain Admin access, and used it to move laterally across the network.
 
-- **Finding IAM-006:** Patient health records held in backup storage were readable by anyone on the internet — no account or password needed. This was the direct path to data exposure.
-- **Finding IAM-007:** A third-party vendor account carried the same administrative rights as our most senior internal staff, with no limits on which systems it could reach. This is what allowed the attacker to move from one system to another once inside.
-- **Finding IAM-001:** The single account with master control over all our cloud systems had no second sign-in step, and its access credentials had not been changed since March 2022. Holding those credentials meant holding everything.
-
-Two of these three conditions have been corrected since the review began. The third (IAM-001) has a completion date of June 15, 2025.
+**That path exists today.** The account `svc_epic_int` — a post-EHR-migration service account that has not logged in for over three years — holds full Domain Admin membership. Its static, long-lived password can be extracted from any system where it was cached. This account directly matches the prior attack path. Similarly, `svc_helpdesk` and `svc_backup` each carry standing Domain Admin credentials that exceed their stated business functions. An attacker who compromises any one of these accounts gains the same administrative access that enabled the prior breach.
 
 ---
 
 ## What Has Been Completed
 
-- **corrected IAM policies** — The backup system's permissions were narrowed to exactly what it needs and nothing more, closing the access path exploited during the incident.
-- **SSO and user access review** — A full review of sign-on records found active accounts belonging to former employees. Those accounts have been submitted for immediate removal.
-- **Vault dynamic credentials** — High-privilege system accounts no longer use permanent passwords. Access credentials now expire automatically, removing a technique the attacker used to maintain hidden access.
-- **Ongoing audit process** — The manual, one-time review that preceded this brief has been replaced with an automated process that runs on a regular schedule and flags new gaps as they appear.
+- **Cloud IAM policies corrected:** Three over-permissive AWS policies (`original_break_glass_policy.json`, `original_ehr_backup_policy.json`, `original_siem_reader_policy.json`) were rewritten to enforce least privilege, removing unrestricted `Action: *` and `s3:*` on all resources.
+- **SAML single sign-on analyzed and validated:** Keycloak-based SSO federation was reviewed and confirmed to enforce centralized off-boarding — disabling an account in the identity provider immediately blocks access to all connected applications, closing the gap that allowed `t.morrison`'s contractor account to remain active.
+- **Dynamic credential prototype operational:** HashiCorp Vault was configured to issue short-lived database credentials (1-hour read, 15-minute write) for the LIS system, replacing the model of shared static passwords. Credentials are automatically revoked and cannot be reused after expiry.
+- **Repeatable IAM audit process established:** An automated audit script now generates machine-readable findings (`iam_findings.json`) against the full account inventory (`accounts.csv`), enabling quarterly re-assessment without manual effort.
 
 ---
 
 ## What Must Be Completed Before the Next Board Meeting
 
-| Action | Owner | Deadline |
+| Action | Owner | Target Date |
 |---|---|---|
-| Remove standing master account credentials; require second sign-in step (IAM-001, Critical) | Cloud Infrastructure Lead | June 15, 2025 |
-| Remove public access to patient backup storage; engage Privacy Officer for legal exposure review (IAM-006, Critical) | Cloud Security Lead | June 15, 2025 |
-| Reduce three over-privileged accounts to minimum required access (IAM-007, High) | IAM Administrator | June 30, 2025 |
+| Remove Domain Admin from `svc_epic_int`, `svc_helpdesk`, and `svc_backup`; migrate to Vault-issued scoped credentials | IT Security Lead | 30 days |
+| Disable `t.morrison` (departed contractor, Domain Admin, 248 days dormant) and `admin.legacy` (187 days dormant, no MFA); review `j.yamamoto` elevated rights | IT Director | 14 days |
+| Enable MFA on AWS root account; delete root access keys created 2022; restrict `MedDefenseDevRole`, `MedDefenseLegacyRole`, `MedDefenseVendorAccess` to least privilege | Cloud Operations | 21 days |
 
 ---
 
 ## What Requires Board Authorization or Budget
 
-Two improvements are validated and ready to deploy, but exceed current team capacity and budget:
-
-1. **Full deployment of automatic credential expiry (Vault)** — Tested and confirmed to work. Expanding it to all privileged accounts eliminates the class of persistent access that sustained the breach. Without board funding, this remains a proof of concept. Estimated cost: **$180,000–$240,000**.
-
-2. **Preventive account controls (SSO and cloud guardrails)** — Today, nothing prevents a misconfiguration from recreating the public-access condition that exposed patient data. A one-time structural change to our cloud environment would make that class of error technically impossible going forward. Estimated effort: **two to three weeks** with outside specialist support.
-
-Deferring either item leaves a known breach path recoverable by a single mistake or insider action.
+**Privileged Access Management (PAM) program funding** is required to extend Vault-based dynamic credentials from the current prototype to all 5 identified service accounts and to on-premises privileged user workflows. This requires licensing, a dedicated implementation engineer for approximately 90 days, and integration with the existing Keycloak SSO environment. Estimated investment: $120,000–$180,000. Without this funding, service accounts will continue to hold standing administrative credentials, and the organization remains one compromised endpoint away from a repeat of the prior incident.
 
 ---
 
 ## Board Resolution Requested
 
-The Board Risk Committee authorizes the CISO to engage a vendor and fund full deployment of the automatic credential expiry system at a cost not to exceed $240,000, and directs the technology team to implement preventive cloud account controls by September 30, 2025, with written progress reports submitted to the Risk Committee at each monthly meeting until both items are confirmed closed.
+The Board Risk Committee is asked to authorize funding not to exceed $180,000 for deployment of a Privileged Access Management program to eliminate standing administrative credentials across all critical service accounts, with completion required before the next annual HIPAA security risk assessment.
