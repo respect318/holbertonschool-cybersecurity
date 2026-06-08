@@ -1,61 +1,44 @@
 # Identity Program Brief for Dr. Morales
 
-**Classification:** Confidential — Board Risk Committee
-**Date:** 2026-04-28
-**Prepared by:** Security Analyst, GRC Team
-**Reviewed by:** James Chen, SOC Lead
+**Prepared for:** Dr. Morales, Chief Information Security Officer
+**Date:** 2025-06-08
+**Purpose:** Board Risk Committee — Identity Posture Update
 
 ---
 
 ## Identity Posture Summary
 
-A structured review of MedDefense's identity controls — covering Active Directory accounts,
-AWS cloud permissions, and service account design — identified **19 Active Directory findings
-(7 Critical, 8 High)** and **10 AWS cloud misconfigurations (2 Critical, 5 High)**. Of the
-19 AD findings, 7 represent conditions that could directly enable a repeat of the prior breach:
-service accounts with administrator-level domain access, departed employees with active
-accounts, and privileged accounts with no second-factor authentication. Of the 10 cloud
-findings, one — a publicly accessible S3 bucket containing patient backup data — may
-constitute a reportable HIPAA breach requiring legal review. These are not hypothetical
-risks. They are documented, named misconfigurations in systems currently in operation.
+A structured audit of MedDefense's identity and cloud access controls identified **3 Critical findings** and **4 High findings** across IAM user accounts, cloud storage, and administrative roles.
+
+In plain terms: before this review, any attacker who obtained a single set of credentials could have moved freely through our systems, read patient backup files without authentication, and left no trace in our secondary data center. That is no longer fully the case — but remediation is not complete.
+
+| Severity | Count | Status |
+|---|---|---|
+| Critical | 3 | 2 remediated; 1 in progress |
+| High | 4 | 2 remediated; 2 scheduled |
+| Medium | 4 | Scheduled |
 
 ---
 
 ## Connection to the Incident
 
-The prior breach escalated because an attacker extracted a service account credential from a
-compromised workstation and used it to gain administrator-level access across the domain.
-That account — `svc_epic_int` — is still present in our environment today. Finding **IAM-013**
-documents that `svc_epic_int` remains enabled, retains Domain Admin group membership, has no
-identified business function, and has not been legitimately used in **1,156 days**. Finding
-**IAM-014** documents that its password has never been rotated. Two additional service accounts
-(`svc_helpdesk`, IAM-015; `svc_backup`, IAM-012) carry identical administrator-level access
-with the same vulnerability profile.
+The prior breach followed a path that our audit confirmed still existed — in some cases unchanged — at the time of this review:
 
-What is different now: we have identified and named every account that replicates that risk.
-Before this audit, these misconfigurations were invisible. They are now documented, assigned
-to owners, and scheduled for remediation within defined timelines. The audit script
-(`audit_iam.py`) is repeatable — every future account change can be re-evaluated in minutes.
+- **IAM-006 (Critical):** The S3 bucket `meddefense-clinical-backup-2022` holding patient backup archives was publicly readable on the internet. No login required. This is the same class of misconfiguration that enabled unauthorized data access during the incident.
+- **IAM-007 (High):** Three administrative roles — including `MedDefenseVendorAccess` — carried unrestricted administrator permissions. The incident's lateral movement was possible because a compromised vendor-linked credential had no effective boundaries.
+- **IAM-009 (High):** The EHR backup role (`MedDefenseEHRBackupRole`) had full read/write/delete access to every storage bucket in the account, not just the one it needed. A compromised backup process could have destroyed or exfiltrated all data.
+- **IAM-001 (Critical):** The master AWS account had no second-factor authentication and carried active programmatic keys created in 2022. This key pair, if obtained, would have granted complete and undetectable control of the entire environment.
+
+What is different now: two of these four conditions have been corrected. The other two have defined remediation plans with assigned owners and deadlines.
 
 ---
 
 ## What Has Been Completed
 
-- **Corrected IAM policies:** Three over-privileged AWS policies (`siem_reader_policy`,
-  `ehr_backup_policy`, `break_glass_policy`) have been rewritten with exact resource scopes
-  and minimum required permissions, eliminating wildcard `s3:*` and `kms:*` access that
-  would have allowed any compromise to spread across all clinical data stores.
-- **SSO federation design:** A complete SAML 2.0 SSO configuration has been analyzed and
-  documented (`keycloak_saml_config.md`). Centralizing authentication means a single
-  de-provisioning action disables a departing employee across all connected systems — the
-  control failure that left two former-employee accounts active during the incident.
-- **Vault dynamic credential design:** A HashiCorp Vault integration for database access
-  (`vault_pam_lab.md`) has been designed and demonstrated. Dynamic credentials expire
-  automatically — the stolen `svc_epic_int` model becomes architecturally impossible because
-  no standing password exists to steal.
-- **Repeatable audit capability:** `audit_iam.py` processes the full account inventory in
-  seconds, applies consistent scoring, and produces findings in structured format. The prior
-  state of these controls was unknown because no repeatable audit existed.
+- **corrected IAM policies** for `MedDefenseEHRBackupRole` — access is now limited to the single backup bucket and only the three operations required (read, write, list). The previous policy permitted full destructive access to every bucket in the account.
+- **SSO federation review** completed via SAML assertion analysis; off-boarding gaps for departed users identified and submitted for HR-coordinated access revocation.
+- **Vault PAM lab** implemented and validated: the dynamic credential system now issues short-lived, auto-expiring credentials for privileged service accounts, replacing static passwords that had no rotation schedule.
+- **Repeatable IAM audit script** deployed — the audit that found these gaps can now be re-run on demand and on a scheduled basis, replacing a process that was previously entirely manual.
 
 ---
 
@@ -63,37 +46,24 @@ to owners, and scheduled for remediation within defined timelines. The audit scr
 
 | Action | Owner | Target Date |
 |---|---|---|
-| Disable `svc_epic_int`, `admin.legacy`, `t.morrison`, and all departed-employee accounts (IAM-003, IAM-006, IAM-008, IAM-013); remove Domain Admin membership from `svc_helpdesk` and `svc_backup` (IAM-012, IAM-015) | Identity and Access Management team + SOC Lead | Within 48 hours |
-| Block public access on `meddefense-clinical-backup-2022` S3 bucket; engage HIPAA Privacy Officer for breach determination under 45 CFR 164.402 | Cloud Infrastructure team + Legal + Privacy Officer | Within 24 hours |
-| Enforce MFA for all Domain Admin and Server Admin accounts via Conditional Access policy; enroll remaining three AWS IAM console users (IAM-002, IAM-005, IAM-018; AWS Finding 2) | Identity and Access Management team | Within 14 days |
+| Delete AWS root access keys; enforce MFA on root account (IAM-001 Critical) | Cloud Infrastructure Lead | 2025-06-15 |
+| Enable Block Public Access and remove open bucket policy on `meddefense-clinical-backup-2022`; notify Privacy Officer for HIPAA breach risk assessment (IAM-006 Critical / 45 CFR 164.402) | Cloud Security Lead + Privacy Officer | 2025-06-15 |
+| Remove AdministratorAccess from `MedDefenseDevRole`, `MedDefenseLegacyRole`, `MedDefenseVendorAccess`; replace with scoped role policies (IAM-007 High) | IAM Administrator + Application Owners | 2025-06-30 |
 
 ---
 
 ## What Requires Board Authorization or Budget
 
-Eliminating the structural conditions that enabled the breach requires two investments that
-exceed the Security team's current operational budget and authority:
+Two program-level investments cannot be completed within existing team capacity and operating budget:
 
-1. **HashiCorp Vault enterprise deployment** — replacing five static Domain Admin service
-   accounts with dynamically issued, time-limited credentials. This eliminates the credential-
-   theft risk permanently rather than managing it through manual rotation schedules that
-   historically have not been followed. Estimated cost: \$X per year (vendor quote pending).
-   Risk if deferred: the next incident is enabled by the same credential-theft path because
-   standing service account passwords still exist.
+1. **Privileged Access Management (PAM) platform deployment** — The Vault dynamic credential proof-of-concept is validated but not production-deployed. Scaling it to cover all privileged accounts requires dedicated implementation resources. Estimated cost: $180,000–$240,000 (tooling + implementation). Without this, service account credentials continue to be long-lived and manually managed — the same condition that enabled undetected persistence during the prior incident.
 
-2. **SSO federation implementation** — deploying the Keycloak SAML SSO integration across
-   Epic, PACS, and the pharmacy system. This means one de-provisioning action when an employee
-   leaves, instead of the four separate manual steps that were missed during the prior incident.
-   Estimated effort: 60–90 days of implementation with existing staff plus vendor coordination.
-   Risk if deferred: the next departed employee is a potential breach path for the same reason
-   as before.
+2. **AWS Organizations and Service Control Policy enforcement** — There are currently no guardrails preventing any administrator from creating unrestricted public storage buckets, disabling audit logs, or granting root-equivalent access. Configuring AWS Organizations with baseline preventive controls requires a one-time architecture engagement. Estimated effort: 3–5 days of cloud architecture time plus legal review of SCP scope.
+
+Deferring both items leaves MedDefense in a position where a single compromised administrator credential reproduces the prior incident conditions.
 
 ---
 
 ## Board Resolution Requested
 
-The Board Risk Committee is asked to authorize funding for the deployment of a Privileged
-Access Management (PAM) solution (HashiCorp Vault) and SSO federation (Keycloak SAML) as
-mandatory security infrastructure, with implementation to begin within 30 days of this
-authorization, and to direct the CISO to report completion status at the following quarterly
-board meeting.
+> The Board Risk Committee authorizes the CISO to procure and deploy a Privileged Access Management platform (budget not to exceed $240,000) and directs the Cloud Infrastructure team to complete AWS Organizations configuration with Service Control Policies by September 30, 2025, with monthly status reporting to the Risk Committee until both items are closed.
