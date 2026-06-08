@@ -9,14 +9,14 @@
 
 ### Alert volume and analyst effort
 
-MedDefense processes 150 alerts/day (midpoint of the 120–180 SIEM range).  
-At 8 minutes per alert, the daily manual triage load is:
+MedDefense processes **150/day** alerts (midpoint of the 120–180 SIEM range).  
+At **8 minutes** per alert, the daily manual triage load is:
 
 ```
-150 alerts/day × 8 min/alert = 1,200 min/day = 20 analyst-hours/day
+150 alerts/day × 8 minutes/alert = 1,200 min/day = 20 analyst-hours/day
 ```
 
-The March triage review found that 67 percent of that time is enrichment activity — IP reputation lookups, domain classification, privilege checks — not judgment:
+The March triage review found that **67 percent** of that time is enrichment activity — IP reputation lookups, domain classification, privilege checks — not judgment:
 
 ```
 20 analyst-hours/day × 0.67 = 13.4 hours/day on lookup/enrichment
@@ -46,6 +46,16 @@ Prioritized by impact-to-risk ratio. "Enrich-and-act" is not approved until FP t
 | Privileged account disablement | 1/day | 15 min/alert | High | Critical | Human-only | Not eligible for automation given clinical operations risk |
 
 The integration test confirmed that the phishing playbook correctly classifies internal-sender alerts as CLOSE/Low (ALT-20260428-003) and that the credential playbook writes only BLOCK+Domain-Admin hosts to the isolation queue (ALT-20260428-007). Both of these outcomes are prerequisites for trusting the automation tier above them.
+
+**Integration test outcomes (Task 5 confirmation):**
+
+| Alert ID | Playbook | Verdict | Severity | Isolation Queue |
+|---|---|---|---|---|
+| ALT-20260428-001 | phishing_triage | ESCALATE | Critical | no |
+| ALT-20260428-002 | phishing_triage | REVIEW | High | no |
+| ALT-20260428-003 | phishing_triage | CLOSE | Low | no |
+| ALT-20260428-007 | credential_exposure | ESCALATE | Critical | yes |
+| ALT-20260428-009 | credential_exposure | MANUAL_REVIEW | Medium | no |
 
 ---
 
