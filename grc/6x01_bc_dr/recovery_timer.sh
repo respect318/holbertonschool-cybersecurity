@@ -1,66 +1,134 @@
 #!/bin/bash
 
-STATE_FILE="/tmp/rtest_state"
+STATE_DIR="/tmp/rtest_state"
 LOG_FILE="recovery_test_log.txt"
-RTO_LIMIT=1800 # 30 minutes in seconds
+RTO_MINUTES=30
 
-if [ "$1" == "SUMMARY" ]; then
-    if [ ! -f "$STATE_FILE.total" ]; then
-        echo "No test data found."
+mkdir -p "$STATE_DIR"
+
+usage() {
+    echo "Usage: $0 \"<step name>\" START|PASS|FAIL"
+    echo "       $0 SUMMARY"
+    exit 1
+}
+
+get_seconds() {
+    date '+%s'
+}
+
+get_timestamp() {
+    date '+%H:%M:%S'
+}
+
+get_step_count() {
+    local count=0
+    if [ -f "$STATE_DIR/step_count" ]; then
+        count=$(cat "$STATE_DIR/step_count")
+    fi
+    echo "$count"
+}
+
+increment_step_count() {
+    local count
+    count=$(get_step_count)
+    count=$((count + 1))
+    echo "$count" > "$STATE_DIR/step_count"
+    echo "$count"
+}
+
+if [ "$1" = "SUMMARY" ]; then
+    if [ ! -f "$STATE_DIR/test_start_epoch" ]; then
+        echo "ERROR: No test in progress. Run a step with START first."
         exit 1
     fi
-    TOTAL_SEC=$(cat "$STATE_FILE.total")
-    TOTAL_MIN=$((TOTAL_SEC / 60))
-    TOTAL_REM_SEC=$((TOTAL_SEC % 60))
 
-    echo "Total elapsed time: ${TOTAL_MIN}m ${TOTAL_REM_SEC}s" | tee -a "$LOG_FILE"
-    
-    # Evaluate against the 30-minute RTO
-    if [ "$TOTAL_SEC" -le "$RTO_LIMIT" ]; then
-        echo "RTO (30 minutes) Evaluation: PASS" | tee -a "$LOG_FILE"
+    test_start=$(cat "$STATE_DIR/test_start_epoch")
+    test_end=$(get_seconds)
+    total_elapsed=$((test_end - test_start))
+    total_minutes=$((total_elapsed / 60))
+    total_seconds=$((total_elapsed % 60))
+
+    echo ""
+    echo "========================================"
+    echo "       LIS RECOVERY TEST SUMMARY"
+    echo "========================================"
+    echo ""
+    echo "Total elapsed time: ${total_minutes}m ${total_seconds}s"
+    echo "Declared RTO: ${RTO_MINUTES} minutes"
+    echo ""
+
+    if [ "$total_minutes" -lt "$RTO_MINUTES" ]; then
+        echo "RTO STATUS: PASS — Recovery completed within the 30-minute RTO"
     else
-        echo "RTO (30 minutes) Evaluation: FAIL" | tee -a "$LOG_FILE"
+        echo "RTO STATUS: FAIL — Recovery exceeded the 30-minute RTO"
     fi
+
+    echo ""
+    echo "--- Step Log ---"
+    if [ -f "$LOG_FILE" ]; then
+        cat "$LOG_FILE"
+    else
+        echo "(No steps logged)"
+    fi
+    echo "========================================"
+
+    # Append summary to log
+    echo "" >> "$LOG_FILE"
+    echo "SUMMARY | Total elapsed: ${total_minutes}m ${total_seconds}s | RTO (${RTO_MINUTES} min): $([ "$total_minutes" -lt "$RTO_MINUTES" ] && echo PASS || echo FAIL)" >> "$LOG_FILE"
     exit 0
+fi
+
+if [ $# -lt 2 ]; then
+    usage
 fi
 
 STEP_NAME="$1"
 STATUS="$2"
+SAFE_NAME=$(echo "$STEP_NAME" | tr ' ' '_' | tr -cd '[:alnum:]_')
 
-if [ "$STATUS" == "START" ]; then
-    START_TS=$(date +%s)
-    START_TIME=$(date '+%H:%M:%S')
-    echo "$START_TS|$START_TIME" > "$STATE_FILE"
-    
-    if [ ! -f "$STATE_FILE.step" ]; then echo "1" > "$STATE_FILE.step"; fi
-    if [ ! -f "$STATE_FILE.total" ]; then echo "0" > "$STATE_FILE.total"; fi
+case "$STATUS" in
+    START)
+        now_epoch=$(get_seconds)
+        now_ts=$(get_timestamp)
 
-elif [ "$STATUS" == "PASS" ] || [ "$STATUS" == "FAIL" ]; then
-    if [ ! -f "$STATE_FILE" ]; then 
-        echo "Error: Start state missing."
+        # Record global test start if first step
+        if [ ! -f "$STATE_DIR/test_start_epoch" ]; then
+            echo "$now_epoch" > "$STATE_DIR/test_start_epoch"
+        fi
+
+        # Store step start info
+        echo "$now_epoch" > "$STATE_DIR/step_${SAFE_NAME}_start_epoch"
+        echo "$now_ts" > "$STATE_DIR/step_${SAFE_NAME}_start_ts"
+        echo "$STEP_NAME" > "$STATE_DIR/step_${SAFE_NAME}_name"
+
+        echo "[$(get_timestamp)] STARTED: $STEP_NAME"
+        ;;
+
+    PASS|FAIL)
+        if [ ! -f "$STATE_DIR/step_${SAFE_NAME}_start_epoch" ]; then
+            echo "ERROR: No START recorded for step: $STEP_NAME"
+            exit 1
+        fi
+
+        start_epoch=$(cat "$STATE_DIR/step_${SAFE_NAME}_start_epoch")
+        start_ts=$(cat "$STATE_DIR/step_${SAFE_NAME}_start_ts")
+        end_epoch=$(get_seconds)
+        end_ts=$(get_timestamp)
+
+        elapsed=$((end_epoch - start_epoch))
+        dur_min=$((elapsed / 60))
+        dur_sec=$((elapsed % 60))
+
+        step_num=$(increment_step_count)
+        step_num_fmt=$(printf "%02d" "$step_num")
+
+        log_line="[STEP ${step_num_fmt}] $(printf '%-35s' "$STEP_NAME") | Start: $start_ts | End: $end_ts | Duration: ${dur_min}m ${dur_sec}s | $STATUS"
+
+        echo "$log_line" | tee -a "$LOG_FILE"
+        ;;
+
+    *)
+        echo "ERROR: Unknown status '$STATUS'. Use START, PASS, FAIL, or SUMMARY."
         exit 1
-    fi
-    
-    IFS='|' read -r START_TS START_TIME < "$STATE_FILE"
-    END_TS=$(date +%s)
-    END_TIME=$(date '+%H:%M:%S')
-    
-    DURATION_SEC=$((END_TS - START_TS))
-    DUR_MIN=$((DURATION_SEC / 60))
-    DUR_REM_SEC=$((DURATION_SEC % 60))
-
-    STEP_NUM=$(cat "$STATE_FILE.step")
-    PADDED_STEP=$(printf "%02d" $STEP_NUM)
-
-    LOG_ENTRY="[STEP $PADDED_STEP] $STEP_NAME | Start: $START_TIME | End: $END_TIME | Duration: ${DUR_MIN}m ${DUR_REM_SEC}s | $STATUS"
-    echo "$LOG_ENTRY" | tee -a "$LOG_FILE"
-
-    NEXT_STEP=$((STEP_NUM + 1))
-    echo "$NEXT_STEP" > "$STATE_FILE.step"
-
-    TOTAL_SEC=$(cat "$STATE_FILE.total")
-    NEW_TOTAL=$((TOTAL_SEC + DURATION_SEC))
-    echo "$NEW_TOTAL" > "$STATE_FILE.total"
-    
-    rm -f "$STATE_FILE"
-fi
+        ;;
+esac
