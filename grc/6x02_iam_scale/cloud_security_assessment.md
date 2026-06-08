@@ -230,4 +230,15 @@ aws iam put-role-policy \
 
 **Total estimated effort:** 3–6 days of engineering time, excluding legal engagement for Finding 6 and organizational planning for Finding 10.
 
+**Severity Classification Reference (CIS AWS Foundations Benchmark v3.0):**
+
+| Severity | Description |
+|---|---|
+| Critical | Immediate ePHI exposure or full administrative compromise possible |
+| High | Significant control gap; exploitable without chained conditions |
+| Medium | Control weakness that increases risk surface or limits detection |
+| Low | Minor deviation from best practice; no direct exploitation path identified |
+
+No findings in this assessment were rated Low. All observations present exploitable or compliance-reportable gaps.
+
 > **Note:** Findings 1, 6, and 9 should be treated as emergency remediations and completed within 24 hours. Findings 2, 5, and 7 should be completed within 72 hours. Remaining findings should be remediated within the current sprint cycle.
