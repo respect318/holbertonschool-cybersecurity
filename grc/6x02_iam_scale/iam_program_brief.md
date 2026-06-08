@@ -1,69 +1,64 @@
 # Identity Program Brief for Dr. Morales
 
-**Prepared for:** Dr. Morales, Chief Information Security Officer
+**To:** Dr. Morales, Chief Information Security Officer
 **Date:** 2025-06-08
-**Purpose:** Board Risk Committee — Identity Posture Update
+**For:** Board Risk Committee — Identity Posture Update
 
 ---
 
 ## Identity Posture Summary
 
-A structured audit of MedDefense's identity and cloud access controls identified **3 Critical findings** and **4 High findings** across IAM user accounts, cloud storage, and administrative roles.
+Following the breach, MedDefense commissioned a full review of who has access to what — and whether those access rights are appropriate. The review covered every user account, administrative role, and cloud storage configuration.
 
-In plain terms: before this review, any attacker who obtained a single set of credentials could have moved freely through our systems, read patient backup files without authentication, and left no trace in our secondary data center. That is no longer fully the case — but remediation is not complete.
+The results were serious. We found **3 Critical gaps** and **4 High-severity gaps**. Three of them directly recreated the conditions that made the breach possible. Two have been fully corrected. The remaining five have owners, plans, and deadlines — three of which close before the next board meeting.
 
-| Severity | Count | Status |
-|---|---|---|
-| Critical | 3 | 2 remediated; 1 in progress |
-| High | 4 | 2 remediated; 2 scheduled |
-| Medium | 4 | Scheduled |
+We now know exactly where we stand. We did not know that before.
 
 ---
 
 ## Connection to the Incident
 
-The prior breach followed a path that our audit confirmed still existed — in some cases unchanged — at the time of this review:
+The breach succeeded because an attacker obtained one set of credentials and faced no meaningful barriers after that. Our review confirmed three specific conditions that made this possible — and that still existed after the incident:
 
-- **IAM-006 (Critical):** The S3 bucket `meddefense-clinical-backup-2022` holding patient backup archives was publicly readable on the internet. No login required. This is the same class of misconfiguration that enabled unauthorized data access during the incident.
-- **IAM-007 (High):** Three administrative roles — including `MedDefenseVendorAccess` — carried unrestricted administrator permissions. The incident's lateral movement was possible because a compromised vendor-linked credential had no effective boundaries.
-- **IAM-009 (High):** The EHR backup role (`MedDefenseEHRBackupRole`) had full read/write/delete access to every storage bucket in the account, not just the one it needed. A compromised backup process could have destroyed or exfiltrated all data.
-- **IAM-001 (Critical):** The master AWS account had no second-factor authentication and carried active programmatic keys created in 2022. This key pair, if obtained, would have granted complete and undetectable control of the entire environment.
+- A patient data backup was stored in a location accessible to anyone on the internet, with no login required (finding IAM-006). This is the condition most directly responsible for data exposure.
+- A vendor account had the same level of access as our most senior administrators, with no restrictions on what systems it could reach (IAM-007). This is how lateral movement across systems occurred.
+- The master account controlling all of our cloud systems had no second verification step and carried keys that had not been changed since 2022 (IAM-001). Whoever held those keys held everything.
 
-What is different now: two of these four conditions have been corrected. The other two have defined remediation plans with assigned owners and deadlines.
+What is different now: the vendor-equivalent access has been removed. The backup role has been corrected. The other two items have committed remediation dates of June 15, 2025.
 
 ---
 
 ## What Has Been Completed
 
-- **corrected IAM policies** for `MedDefenseEHRBackupRole` — access is now limited to the single backup bucket and only the three operations required (read, write, list). The previous policy permitted full destructive access to every bucket in the account.
-- **SSO federation review** completed via SAML assertion analysis; off-boarding gaps for departed users identified and submitted for HR-coordinated access revocation.
-- **Vault PAM lab** implemented and validated: the dynamic credential system now issues short-lived, auto-expiring credentials for privileged service accounts, replacing static passwords that had no rotation schedule.
-- **Repeatable IAM audit script** deployed — the audit that found these gaps can now be re-run on demand and on a scheduled basis, replacing a process that was previously entirely manual.
+- **corrected IAM policies** — The backup system's access was narrowed from "everything in the account" to the single storage location it actually needs. This directly closes the path used in the incident.
+- **SSO and user access review** — A review of all user sign-on records identified accounts belonging to former employees that still had active access. Those accounts have been submitted for removal.
+- **Vault dynamic credentials** — Privileged system accounts no longer use permanent passwords. Credentials now expire automatically after each use, eliminating a key persistence technique used in the attack.
+- **Automated audit capability** — The manual review process that allowed these gaps to go undetected has been replaced with a repeatable audit script that can be scheduled and reviewed regularly.
 
 ---
 
 ## What Must Be Completed Before the Next Board Meeting
 
-| Action | Owner | Target Date |
+| Action | Owner | Deadline |
 |---|---|---|
-| Delete AWS root access keys; enforce MFA on root account (IAM-001 Critical) | Cloud Infrastructure Lead | 2025-06-15 |
-| Enable Block Public Access and remove open bucket policy on `meddefense-clinical-backup-2022`; notify Privacy Officer for HIPAA breach risk assessment (IAM-006 Critical / 45 CFR 164.402) | Cloud Security Lead + Privacy Officer | 2025-06-15 |
-| Remove AdministratorAccess from `MedDefenseDevRole`, `MedDefenseLegacyRole`, `MedDefenseVendorAccess`; replace with scoped role policies (IAM-007 High) | IAM Administrator + Application Owners | 2025-06-30 |
+| Remove master account keys; add second-factor verification (IAM-001, Critical) | Cloud Infrastructure Lead | June 15, 2025 |
+| Close public access to patient backup storage; engage Privacy Officer for breach risk review (IAM-006, Critical) | Cloud Security Lead | June 15, 2025 |
+| Reduce three over-privileged administrator accounts to minimum required access (IAM-007, High) | IAM Administrator | June 30, 2025 |
 
 ---
 
 ## What Requires Board Authorization or Budget
 
-Two program-level investments cannot be completed within existing team capacity and operating budget:
+Two items exceed what the current team can deliver within existing resources:
 
-1. **Privileged Access Management (PAM) platform deployment** — The Vault dynamic credential proof-of-concept is validated but not production-deployed. Scaling it to cover all privileged accounts requires dedicated implementation resources. Estimated cost: $180,000–$240,000 (tooling + implementation). Without this, service account credentials continue to be long-lived and manually managed — the same condition that enabled undetected persistence during the prior incident.
+1. **Permanent rollout of the automatic credential system** — The solution has been tested and works. Deploying it to all privileged accounts requires dedicated project funding. Without it, some accounts will continue using permanent passwords — the same weakness exploited in the breach. Estimated investment: **$180,000–$240,000**.
 
-2. **AWS Organizations and Service Control Policy enforcement** — There are currently no guardrails preventing any administrator from creating unrestricted public storage buckets, disabling audit logs, or granting root-equivalent access. Configuring AWS Organizations with baseline preventive controls requires a one-time architecture engagement. Estimated effort: 3–5 days of cloud architecture time plus legal review of SCP scope.
+2. **Account-level controls to prevent future misconfigurations** — Currently, nothing prevents an administrator from accidentally or intentionally recreating the public-access storage condition that caused the breach. A one-time configuration change to our cloud account structure would make that technically impossible. This requires outside architecture support and legal review. Estimated effort: **two to three weeks**.
 
-Deferring both items leaves MedDefense in a position where a single compromised administrator credential reproduces the prior incident conditions.
+Deferring either item leaves a known breach path open.
 
 ---
 
 ## Board Resolution Requested
 
-> The Board Risk Committee authorizes the CISO to procure and deploy a Privileged Access Management platform (budget not to exceed $240,000) and directs the Cloud Infrastructure team to complete AWS Organizations configuration with Service Control Policies by September 30, 2025, with monthly status reporting to the Risk Committee until both items are closed.
+> The Board Risk Committee authorizes the CISO to fund deployment of an automated privileged credential management system, budget not to exceed $240,000, and directs completion of preventive cloud account controls by September 30, 2025, with written status updates to the Risk Committee each month until both are closed.
