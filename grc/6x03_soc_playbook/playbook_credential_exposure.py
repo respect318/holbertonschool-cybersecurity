@@ -148,9 +148,10 @@ def run_playbook(alert_path):
     # -----------------------------------------------------------------------
     title = f"Credential Exposure: {rule_name} on {host}"
     description = f"Automated SOC playbook case for credential exposure by {username}"
-    iocs = [source_ip]
     
-    # 5 parametr düzgün formatda ötürülür
+    # PROBLEM BURADA İDİ: dictionary formatına çevirdik
+    iocs = [{"ioc_value": source_ip, "ioc_type": "ip"}]
+    
     case = case_manager.create_case(
         alert_id=alert_id,
         severity=severity,
@@ -159,7 +160,8 @@ def run_playbook(alert_path):
         iocs=iocs
     )
     
-    case_id = case["case_id"]
+    # Yaradılmış case-dən ID-ni çəkirik
+    case_id = case["case_id"] if isinstance(case, dict) else case
     case_manager.update_case_status(case_id, case_status)
 
     # -----------------------------------------------------------------------
@@ -213,7 +215,6 @@ def run_playbook(alert_path):
             f"Reasoning : Source IP verdict {ip_verdict}, non-Domain-Admin account. Flagged for manual review."
         )
 
-    # Case note əlavə edilir
     case_manager.add_case_note(case_id, "\n".join(note_lines))
 
     # -----------------------------------------------------------------------
