@@ -124,7 +124,7 @@ def run_playbook(alert_path):
     # -----------------------------------------------------------------------
     # Enrich source IP
     # -----------------------------------------------------------------------
-    enrichment = enrich_ioc.enrich_ioc(source_ip, "ipv4")
+    enrichment = enrich_ioc.enrich_ioc(source_ip)
     ip_verdict = enrichment.get("verdict", "ALLOW")
     ip_score = enrichment.get("score", 0)
     ip_tags = enrichment.get("tags", [])
