@@ -1,33 +1,37 @@
 # Identity Program Brief for Dr. Morales
 
-**Prepared for:** Dr. Morales, Chief Information Security Officer
-**Date:** June 2026
-**Purpose:** Board Risk Committee Briefing — Identity Program Status
+**Prepared for:** Dr. Morales, CISO | **For:** Board Risk Committee | **Date:** June 2026
 
 ---
 
 ## Identity Posture Summary
 
-The IAM audit and cloud security assessment identified **6 Critical findings** and **5 High findings** across on-premises and cloud environments.
+The identity audit and cloud security assessment produced **6 Critical findings** and **5 High findings** across our on-premises Active Directory and AWS environments. Critical findings represent conditions that could directly enable a repeat of the prior breach. High findings represent exposures that require only one additional step to become critical.
 
-Critical findings include: a dormant service account with full administrative access (finding: `svc_epic_int`), a departed contractor account still active with Domain Admin rights (`t.morrison`), a legacy admin account unused for 187 days with no MFA (`admin.legacy`), a publicly accessible S3 bucket containing patient health records (CIS-6), the AWS root account operating without multi-factor authentication and with active access keys since 2022 (CIS-1), and three IAM roles carrying unrestricted administrator access in AWS (CIS-7). High findings include IAM console users without MFA (CIS-2), CloudTrail logging absent in the disaster recovery region (CIS-5), overly permissive backup role permissions (CIS-9), a Finance user retaining IT elevated rights after transfer (`j.yamamoto`), and ticket-routing automation holding full Domain Admin access (`svc_helpdesk`).
+Key facts: three active service accounts hold the highest level of system privilege (Domain Admin) with no business justification; one AWS account bucket containing patient health records was publicly readable; and our AWS root account had no login protection enabled.
 
 ---
 
 ## Connection to the Incident
 
-The prior Cobalt Strike compromise followed a specific path: a workstation was breached, credentials were extracted from memory, an attacker discovered a service account with Domain Admin access, and used it to move laterally across the network.
+The prior Cobalt Strike breach followed this path: **compromised workstation → stolen service account credential → Domain Admin access → lateral movement across systems.**
 
-**That path exists today.** The account `svc_epic_int` — a post-EHR-migration service account that has not logged in for over three years — holds full Domain Admin membership. Its static, long-lived password can be extracted from any system where it was cached. This account directly matches the prior attack path. Similarly, `svc_helpdesk` and `svc_backup` each carry standing Domain Admin credentials that exceed their stated business functions. An attacker who compromises any one of these accounts gains the same administrative access that enabled the prior breach.
+That path remains reproducible today through findings that were still present at the start of this program:
+
+- **IAM-CRIT-001 / svc_epic_int**: A service account with full Domain Admin rights that has not been used in over three years. A static, never-rotated password on a dormant privileged account is exactly the type of credential that was exploited in the incident. This single account could recreate the prior lateral movement path in full.
+- **IAM-CRIT-002 / svc_backup** and **IAM-CRIT-003 / svc_helpdesk**: Two additional active service accounts with Domain Admin rights granted by vendors or legacy configuration, with no current review or rotation.
+- **IAM-CRIT-004 / t.morrison**: A contractor account with Domain Admin access that remained active 248 days after the contract ended — a direct off-boarding failure matching the incident timeline.
+- **CLOUD-CRIT-001 / AWS root, no MFA**: Full cloud environment takeover possible with stolen credentials and no second factor.
+- **CLOUD-CRIT-002 / meddefense-clinical-backup-2022**: Patient health records stored in a publicly accessible AWS storage bucket (Finding: `Principal: "*"` on `s3:GetObject`), creating both a breach notification risk and a data destruction risk.
 
 ---
 
 ## What Has Been Completed
 
-- **Cloud IAM policies corrected:** Three over-permissive AWS policies (`original_break_glass_policy.json`, `original_ehr_backup_policy.json`, `original_siem_reader_policy.json`) were rewritten to enforce least privilege, removing unrestricted `Action: *` and `s3:*` on all resources.
-- **SAML single sign-on analyzed and validated:** Keycloak-based SSO federation was reviewed and confirmed to enforce centralized off-boarding — disabling an account in the identity provider immediately blocks access to all connected applications, closing the gap that allowed `t.morrison`'s contractor account to remain active.
-- **Dynamic credential prototype operational:** HashiCorp Vault was configured to issue short-lived database credentials (1-hour read, 15-minute write) for the LIS system, replacing the model of shared static passwords. Credentials are automatically revoked and cannot be reused after expiry.
-- **Repeatable IAM audit process established:** An automated audit script now generates machine-readable findings (`iam_findings.json`) against the full account inventory (`accounts.csv`), enabling quarterly re-assessment without manual effort.
+- **Service account audit completed** (Evidence: accounts.csv, svc_epic_int_static_account_risk.md): All Domain Admin service accounts identified, documented, and flagged for removal or rotation. `svc_epic_int` has been isolated pending decommission.
+- **AWS IAM overpermissive policies corrected** (Evidence: original_ehr_backup_policy.json → corrected version): The backup role's permission to access any S3 bucket (`s3:*` on `Resource: *`) has been scoped to the specific backup bucket only.
+- **Vault dynamic credential design validated** (Evidence: vault_database_secrets_transcript.md, vault_lease_revoke_transcript.md): A replacement architecture for static service account passwords using short-lived, auto-rotating credentials has been tested and confirmed functional. Credentials can now be revoked in real time if an account is suspected of compromise.
+- **SAML SSO configuration reviewed** (Evidence: saml_flow_notes.md, keycloak_realm_export_meddefense.json): Federated login paths have been analyzed to ensure that identity assertions cannot be forged or replayed.
 
 ---
 
@@ -35,18 +39,20 @@ The prior Cobalt Strike compromise followed a specific path: a workstation was b
 
 | Action | Owner | Target Date |
 |---|---|---|
-| Remove Domain Admin from `svc_epic_int`, `svc_helpdesk`, and `svc_backup`; migrate to Vault-issued scoped credentials | IT Security Lead | 30 days |
-| Disable `t.morrison` (departed contractor, Domain Admin, 248 days dormant) and `admin.legacy` (187 days dormant, no MFA); review `j.yamamoto` elevated rights | IT Director | 14 days |
-| Enable MFA on AWS root account; delete root access keys created 2022; restrict `MedDefenseDevRole`, `MedDefenseLegacyRole`, `MedDefenseVendorAccess` to least privilege | Cloud Operations | 21 days |
+| Decommission or rotate all three Domain Admin service accounts (`svc_epic_int`, `svc_backup`, `svc_helpdesk`) and disable `t.morrison` and `j.yamamoto` (CRIT-004, CRIT-005) | Identity & Access Manager | 30 days |
+| Enable MFA on AWS root account and delete root access keys; enforce MFA for all three console users currently without it (CLOUD-CRIT-001, CLOUD-HIGH-002) | Cloud Security Lead | 21 days |
+| Enable CloudTrail logging in the DR region (`us-east-2`) and restrict public access on the clinical backup S3 bucket (CLOUD-CRIT-002, CLOUD-HIGH-005) | Cloud Security Lead | 21 days |
 
 ---
 
 ## What Requires Board Authorization or Budget
 
-**Privileged Access Management (PAM) program funding** is required to extend Vault-based dynamic credentials from the current prototype to all 5 identified service accounts and to on-premises privileged user workflows. This requires licensing, a dedicated implementation engineer for approximately 90 days, and integration with the existing Keycloak SSO environment. Estimated investment: $120,000–$180,000. Without this funding, service accounts will continue to hold standing administrative credentials, and the organization remains one compromised endpoint away from a repeat of the prior incident.
+Eliminating standing privileged passwords at the program level requires deploying HashiCorp Vault (or equivalent Privileged Access Management platform) across all service accounts and administrative roles. The proof-of-concept is complete. Full deployment requires dedicated engineering headcount and an estimated platform licensing and implementation budget. Without this investment, static passwords will continue to be re-created as operational teams provision new accounts, and the remediation completed above will erode within 12–18 months.
+
+Additionally, enabling AWS Organizations with Service Control Policies (CLOUD-MED-010) requires architectural change that carries operational risk and needs formal change approval.
 
 ---
 
 ## Board Resolution Requested
 
-The Board Risk Committee is asked to authorize funding not to exceed $180,000 for deployment of a Privileged Access Management program to eliminate standing administrative credentials across all critical service accounts, with completion required before the next annual HIPAA security risk assessment.
+The Board Risk Committee is asked to **authorize a budget allocation for full Privileged Access Management (PAM) platform deployment** to replace static service account credentials organization-wide, with implementation to begin within 60 days of approval — directly addressing the credential exposure that enabled the prior breach.
