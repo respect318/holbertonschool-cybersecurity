@@ -151,9 +151,9 @@ def run_playbook(alert_path):
         alert_id=alert_id,
         severity=severity,
         title=title,
-        status=case_status,
     )
     case_id = case["case_id"]
+    case_manager.update_case_status(case_id, case_status)
 
     # -----------------------------------------------------------------------
     # Isolation queue
