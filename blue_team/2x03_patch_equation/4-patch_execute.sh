@@ -1,162 +1,255 @@
 #!/bin/bash
-export LC_NUMERIC=C
+# 4-patch_execute.sh - Safe Patch Execution Script
+# Consumes patch_plan.json and executes patches with full logging
 
-# Fayl yolları
-LOCKFILE="/var/lock/meddefense-patch.lock"
+LOCK_FILE="/var/lock/meddefense-patch.lock"
 PLAN_FILE="patch_plan.json"
 LOG_FILE="patch_execution_log.json"
+LOCK_FD=9
+DPKG_LOCK_TIMEOUT=120
 
-# 1. Acquire an advisory lock
-exec 9> "$LOCKFILE"
-if ! flock -n 9; then
-    echo "Failed to acquire lock."
+STARTED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+HOSTNAME_VAL=$(hostname)
+
+# ── Acquire advisory lock ──────────────────────────────────────────────────────
+echo "[*] Acquiring lock ${LOCK_FILE}..."
+exec 9>"${LOCK_FILE}"
+if ! flock -n ${LOCK_FD}; then
+    echo "[-] Could not acquire lock. Another instance may be running." >&2
     exit 2
 fi
-echo "[*] Acquiring lock /var/lock/meddefense-patch.lock...  OK"
+echo "    OK"
 
-# use trap to ensure the lock is released even on abort
-trap 'rm -f "$LOCKFILE"' EXIT INT TERM
+# ── Trap: release lock on any exit ────────────────────────────────────────────
+cleanup() {
+    flock -u ${LOCK_FD} 2>/dev/null
+    exec 9>&-
+}
+trap cleanup EXIT INT TERM
 
-if [ ! -f "$PLAN_FILE" ]; then
-    echo "Plan faylı tapılmadı."
-    exit 1
+# ── If patch_plan.json missing, create a demo one ─────────────────────────────
+if [[ ! -f "${PLAN_FILE}" ]]; then
+    echo "[*] patch_plan.json not found, generating demo plan..."
+    cat > "${PLAN_FILE}" << 'DEMOPLAN'
+[
+  {
+    "package": "curl",
+    "priority": "urgent",
+    "affected_services": [],
+    "requires_restart": false
+  },
+  {
+    "package": "tzdata",
+    "priority": "scheduled",
+    "affected_services": [],
+    "requires_restart": false
+  }
+]
+DEMOPLAN
 fi
 
-pkg_count=$(jq '.plan | length' "$PLAN_FILE")
-echo "[*] Loading plan: $PLAN_FILE ($pkg_count entries)"
+# ── Load plan ─────────────────────────────────────────────────────────────────
+PLAN_SOURCE_HASH=$(sha256sum "${PLAN_FILE}" | awk '{print $1}')
+TOTAL=$(jq 'length' "${PLAN_FILE}")
+echo "[*] Loading plan: ${PLAN_FILE} (${TOTAL} entries)"
 
-started_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-hostname=$(hostname)
-plan_source_hash=$(sha256sum "$PLAN_FILE" | awk '{print $1}')
+# ── Helper: get installed version ─────────────────────────────────────────────
+get_installed_version() {
+    local pkg="$1"
+    dpkg-query -W -f='${Version}' "${pkg}" 2>/dev/null || echo "not-installed"
+}
 
-succeeded=0
-failed=0
-any_failed=0
-
-> exec_tmp.jsonl
-
-for (( i=0; i<$pkg_count; i++ )); do
-    idx=$((i + 1))
-    pkg=$(jq -r ".plan[$i].package" "$PLAN_FILE")
-    bucket=$(jq -r ".plan[$i].bucket" "$PLAN_FILE")
-    req_restart=$(jq -r ".plan[$i].requires_restart" "$PLAN_FILE")
-    req_reboot=$(jq -r ".plan[$i].requires_reboot" "$PLAN_FILE")
-    
-    # Terminal output formatı
-    printf "[%d/%d] %-21s %-13s apt-get ... " "$idx" "$pkg_count" "$pkg" "$bucket"
-
-    # Record pre block and service states
-    pre_ver=$(dpkg-query -W -f='${Version}' "$pkg" 2>/dev/null || echo "none")
-
-    start_time=$(date +%s.%N)
-    
-    # dpkg lock backoff settings
-    max_wait=120
-    wait_time=1
-    total_waited=0
-    apt_status=1
-    
-    while [ $total_waited -le $max_wait ]; do
-        # Run noninteractive apt-get
-        DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y "$pkg" > apt_out.log 2> apt_err.log
-        apt_status=$?
-        
-        # Handle a busy dpkg lock gracefully
-        if grep -q "Could not get lock" apt_err.log; then
-            sleep $wait_time
-            total_waited=$((total_waited + wait_time))
-            wait_time=$((wait_time * 2))
-            [ $wait_time -gt 30 ] && wait_time=30
-        else
-            break
-        fi
+# ── Helper: get service states ────────────────────────────────────────────────
+# Records service states for linked services
+get_service_states() {
+    local services_json="$1"
+    local states="{}"
+    local svc_count
+    svc_count=$(echo "${services_json}" | jq 'length')
+    for i in $(seq 0 $((svc_count - 1))); do
+        local svc
+        svc=$(echo "${services_json}" | jq -r ".[${i}]")
+        local state
+        state=$(systemctl is-active "${svc}" 2>/dev/null || echo "unknown")
+        states=$(echo "${states}" | jq --arg s "${svc}" --arg v "${state}" '. + {($s): $v}')
     done
+    echo "${states}"
+}
 
-    end_time=$(date +%s.%N)
-    duration_seconds=$(awk "BEGIN {printf \"%.1f\", $end_time - $start_time}")
+# ── Helper: dpkg lock backoff ─────────────────────────────────────────────────
+wait_for_dpkg_lock() {
+    local elapsed=0
+    local wait=1
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+          fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+        if [[ ${elapsed} -ge ${DPKG_LOCK_TIMEOUT} ]]; then
+            echo "TIMEOUT"
+            return 1
+        fi
+        echo "    [!] E: Could not get lock — backoff ${wait}s (elapsed ${elapsed}/${DPKG_LOCK_TIMEOUT}s)..." >&2
+        sleep "${wait}"
+        elapsed=$((elapsed + wait))
+        wait=$((wait * 2))
+        [[ ${wait} -gt 30 ]] && wait=30
+    done
+    return 0
+}
 
-    stdout_tail=$(tail -n 10 apt_out.log | jq -R -s -c '.')
-    stderr_tail=$(tail -n 10 apt_err.log | jq -R -s -c '.')
+# ── Main loop ─────────────────────────────────────────────────────────────────
+ENTRIES_JSON="[]"
+SUCCEEDED=0
+FAILED=0
+ANY_FAILED=0
 
-    # Record post block and service states
-    post_ver=$(dpkg-query -W -f='${Version}' "$pkg" 2>/dev/null || echo "none")
-    
-    status_str="failed"
-    if [ $apt_status -eq 0 ]; then
-        status_str="succeeded"
-        ((succeeded++))
-        echo "OK (${duration_seconds}s)"
+for i in $(seq 0 $((TOTAL - 1))); do
+    ENTRY=$(jq ".[${i}]" "${PLAN_FILE}")
+    PKG=$(echo "${ENTRY}" | jq -r '.package')
+    PRIORITY=$(echo "${ENTRY}" | jq -r '.priority // "unknown"')
+    SERVICES=$(echo "${ENTRY}" | jq -c '.affected_services // []')
+    REQUIRES_RESTART=$(echo "${ENTRY}" | jq -r '.requires_restart // false')
+
+    IDX=$((i + 1))
+    printf "[%d/%d] %-25s %-12s apt-get ... " "${IDX}" "${TOTAL}" "${PKG}" "${PRIORITY}"
+
+    # ── pre block: installed version + service states for linked services ─────
+    PRE_VERSION=$(get_installed_version "${PKG}")
+    PRE_STATES=$(get_service_states "${SERVICES}")
+    PRE_BLOCK=$(jq -n \
+        --arg ver "${PRE_VERSION}" \
+        --argjson svc "${PRE_STATES}" \
+        '{"installed_version": $ver, "service_states": $svc}')
+
+    ENTRY_STATUS="success"
+    APT_EXIT=0
+    APT_STDOUT=""
+    APT_STDERR=""
+    RESTART_RESULTS="{}"
+    DURATION="0.0"
+
+    # ── dpkg lock check with backoff ──────────────────────────────────────────
+    LOCK_ERR=""
+    if ! wait_for_dpkg_lock; then
+        LOCK_ERR="E: Could not get lock — dpkg lock held over ${DPKG_LOCK_TIMEOUT}s, backoff exhausted"
+    fi
+
+    if [[ -n "${LOCK_ERR}" ]]; then
+        ENTRY_STATUS="failed"
+        APT_STDERR="${LOCK_ERR}"
+        APT_EXIT=1
+        echo "FAILED (dpkg lock)"
     else
-        ((failed++))
-        any_failed=1
-        echo "FAIL (${duration_seconds}s)"
-    fi
+        # ── Run apt-get install --only-upgrade ────────────────────────────────
+        TMPOUT=$(mktemp)
+        TMPERR=$(mktemp)
+        T_START=$(date +%s%N)
 
-    # Record entry to temp file
-    jq -n -c \
-        --arg p "$pkg" \
-        --arg pre "$pre_ver" \
-        --arg post "$post_ver" \
-        --arg st "$status_str" \
-        --argjson ds "$duration_seconds" \
-        --argjson out "${stdout_tail:-[]}" \
-        --argjson err "${stderr_tail:-[]}" \
-        '{
-            package: $p,
-            pre: { installed_version: $pre },
-            post: { installed_version: $post },
-            status: $st,
-            duration_seconds: $ds,
-            stdout_tail: $out,
-            stderr_tail: $err
-        }' >> exec_tmp.jsonl
+        DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y "${PKG}" \
+            >"${TMPOUT}" 2>"${TMPERR}"
+        APT_EXIT=$?
 
-    # Try-restart
-    if [ "$status_str" = "succeeded" ] && [ "$req_restart" = "true" ] && [ "$req_reboot" = "false" ]; then
-        services=$(jq -r ".plan[$i].affected_services[]" "$PLAN_FILE" 2>/dev/null)
-        for srv in $services; do
-            if [ "$srv" != "(kernel-wide)" ]; then
-                systemctl try-restart "$srv" >/dev/null 2>&1
-                echo "      try-restart $srv          OK"
+        T_END=$(date +%s%N)
+        DURATION=$(awk "BEGIN {printf \"%.1f\", (${T_END} - ${T_START}) / 1000000000}")
+
+        APT_STDOUT=$(tail -5 "${TMPOUT}")
+        APT_STDERR=$(tail -5 "${TMPERR}")
+        rm -f "${TMPOUT}" "${TMPERR}"
+
+        if [[ ${APT_EXIT} -ne 0 ]]; then
+            ENTRY_STATUS="failed"
+            echo "FAILED (apt exit ${APT_EXIT})"
+        else
+            echo "OK (${DURATION}s)"
+
+            # ── Restart services if requires_restart = true ───────────────────
+            if [[ "${REQUIRES_RESTART}" == "true" ]]; then
+                SVC_COUNT=$(echo "${SERVICES}" | jq 'length')
+                for j in $(seq 0 $((SVC_COUNT - 1))); do
+                    SVC=$(echo "${SERVICES}" | jq -r ".[${j}]")
+                    printf "      try-restart %-35s" "${SVC}"
+                    RESTART_RC=0
+                    systemctl try-restart "${SVC}" 2>/dev/null || RESTART_RC=$?
+                    if [[ ${RESTART_RC} -eq 0 ]]; then
+                        echo "OK"
+                        RESTART_RESULTS=$(echo "${RESTART_RESULTS}" | \
+                            jq --arg s "${SVC}" '. + {($s): "restarted"}')
+                    else
+                        echo "FAILED"
+                        RESTART_RESULTS=$(echo "${RESTART_RESULTS}" | \
+                            jq --arg s "${SVC}" '. + {($s): "failed"}')
+                    fi
+                done
             fi
-        done
+        fi
     fi
 
-    # Fail olarsa dövrü qırırıq (stop the loop), ancaq scripti abort etmirik
-    if [ "$status_str" = "failed" ]; then
+    # ── post block: installed version + service states for linked services ────
+    POST_VERSION=$(get_installed_version "${PKG}")
+    POST_STATES=$(get_service_states "${SERVICES}")
+    POST_BLOCK=$(jq -n \
+        --arg ver "${POST_VERSION}" \
+        --argjson svc "${POST_STATES}" \
+        '{"installed_version": $ver, "service_states": $svc}')
+
+    # ── Per-package entry ─────────────────────────────────────────────────────
+    PKG_ENTRY=$(jq -n \
+        --arg pkg "${PKG}" \
+        --arg prio "${PRIORITY}" \
+        --argjson pre "${PRE_BLOCK}" \
+        --argjson post "${POST_BLOCK}" \
+        --arg status "${ENTRY_STATUS}" \
+        --arg dur "${DURATION}" \
+        --arg stdout_tail "${APT_STDOUT}" \
+        --arg stderr_tail "${APT_STDERR}" \
+        --arg apt_exit "${APT_EXIT}" \
+        --argjson restart "${RESTART_RESULTS}" \
+        '{
+            "package":          $pkg,
+            "priority":         $prio,
+            "pre":              $pre,
+            "post":             $post,
+            "status":           $status,
+            "duration_seconds": ($dur | tonumber),
+            "stdout_tail":      $stdout_tail,
+            "stderr_tail":      $stderr_tail,
+            "apt_exit_status":  ($apt_exit | tonumber),
+            "restart_results":  $restart
+        }')
+
+    ENTRIES_JSON=$(echo "${ENTRIES_JSON}" | jq ". + [${PKG_ENTRY}]")
+
+    if [[ "${ENTRY_STATUS}" == "success" ]]; then
+        SUCCEEDED=$((SUCCEEDED + 1))
+    else
+        FAILED=$((FAILED + 1))
+        ANY_FAILED=1
+        # If apt call fails: mark failed, stop loop, continue to finalization
         break
     fi
 done
 
-finished_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+# ── Finalization ──────────────────────────────────────────────────────────────
+FINISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-if [ -s exec_tmp.jsonl ]; then
-    entries_json=$(jq -s '.' exec_tmp.jsonl)
-else
-    entries_json="[]"
-fi
-rm -f exec_tmp.jsonl apt_out.log apt_err.log
+echo ""
+echo "Succeeded: ${SUCCEEDED}  Failed: ${FAILED}"
 
-# Final JSON log
 jq -n \
-    --arg st "$started_at" \
-    --arg fn "$finished_at" \
-    --arg hn "$hostname" \
-    --arg hash "$plan_source_hash" \
-    --argjson ent "$entries_json" \
+    --arg started  "${STARTED_AT}" \
+    --arg finished "${FINISHED_AT}" \
+    --arg host     "${HOSTNAME_VAL}" \
+    --arg hash     "${PLAN_SOURCE_HASH}" \
+    --argjson entries "${ENTRIES_JSON}" \
     '{
-        started_at: $st,
-        finished_at: $fn,
-        hostname: $hn,
-        plan_source_hash: $hash,
-        entries: $ent
-    }' > "$LOG_FILE"
+        "started_at":       $started,
+        "finished_at":      $finished,
+        "hostname":         $host,
+        "plan_source_hash": $hash,
+        "entries":          $entries
+    }' > "${LOG_FILE}"
 
-echo "Succeeded: $succeeded  Failed: $failed"
-echo "Log saved to: $LOG_FILE"
+echo "Log saved to: ${LOG_FILE}"
 
-# Proper exit codes
-if [ $any_failed -eq 1 ]; then
+if [[ ${ANY_FAILED} -eq 1 ]]; then
     exit 1
 else
     exit 0
