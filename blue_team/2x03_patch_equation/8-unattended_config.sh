@@ -19,7 +19,7 @@ else
 fi
 
 # ── Write /etc/apt/apt.conf.d/50unattended-upgrades (idempotent) ──────────────
-printf "[*] Writing %s... " "${CONF_50}"
+printf "[*] Writing %s...   " "${CONF_50}"
 cat > "${CONF_50}" << 'EOF'
 // MedDefense unattended-upgrades configuration
 // Managed by 8-unattended_config.sh — do not edit manually
@@ -44,10 +44,10 @@ Unattended-Upgrade::Mail "";
 
 Unattended-Upgrade::MailReport "never";
 EOF
-echo "  OK"
+echo "OK"
 
 # ── Write /etc/apt/apt.conf.d/20auto-upgrades (idempotent) ───────────────────
-printf "[*] Writing %s... " "${CONF_20}"
+printf "[*] Writing %s...         " "${CONF_20}"
 cat > "${CONF_20}" << 'EOF'
 // MedDefense auto-upgrades — daily timer
 APT::Periodic::Update-Package-Lists "1";
@@ -55,21 +55,18 @@ APT::Periodic::Unattended-Upgrade "1";
 APT::Periodic::Download-Upgradeable-Packages "1";
 APT::Periodic::AutocleanInterval "7";
 EOF
-echo "        OK"
+echo "OK"
 
 # ── Enable and start apt-daily.timer and apt-daily-upgrade.timer ──────────────
-printf "[*] Enabling timers... "
-TIMER1_STATE="unknown"
-TIMER2_STATE="unknown"
-
-systemctl enable apt-daily.timer         2>/dev/null && \
+printf "[*] Enabling timers...                                     "
+systemctl enable apt-daily.timer         2>/dev/null || true
 systemctl start  apt-daily.timer         2>/dev/null || true
-systemctl enable apt-daily-upgrade.timer 2>/dev/null && \
+systemctl enable apt-daily-upgrade.timer 2>/dev/null || true
 systemctl start  apt-daily-upgrade.timer 2>/dev/null || true
 
 TIMER1_STATE=$(systemctl is-active apt-daily.timer         2>/dev/null || echo "inactive")
 TIMER2_STATE=$(systemctl is-active apt-daily-upgrade.timer 2>/dev/null || echo "inactive")
-echo "                                    OK"
+echo "OK"
 echo "    apt-daily.timer:         ${TIMER1_STATE}"
 echo "    apt-daily-upgrade.timer: ${TIMER2_STATE}"
 
@@ -77,71 +74,51 @@ echo "    apt-daily-upgrade.timer: ${TIMER2_STATE}"
 echo "[*] Dry run..."
 DRY_RUN_OUT=$(unattended-upgrades --dry-run --debug 2>&1 || true)
 
-# Parse counts from dry-run output
-WOULD_UPGRADE=$(echo "${DRY_RUN_OUT}" | \
-    grep -c "Checking.*can be upgraded" 2>/dev/null || echo 0)
+# Parse counts — ensure clean integers with no newlines
+WOULD_UPGRADE=$(echo "${DRY_RUN_OUT}" | grep -c "Inst " 2>/dev/null || true)
+WOULD_UPGRADE=$(echo "${WOULD_UPGRADE}" | tr -d '[:space:]')
+WOULD_UPGRADE=$(( WOULD_UPGRADE + 0 ))
 
-# Count skipped_blacklisted packages
-SKIPPED_BLACKLISTED=0
-SKIPPED_BL_PKGS=()
-while IFS= read -r line; do
-    PKG=$(echo "${line}" | grep -oP '(?<=blacklisted: )\S+' || \
-          echo "${line}" | grep -oP '(?<=Skipping )\S+' || true)
-    if [[ -n "${PKG}" ]]; then
-        SKIPPED_BLACKLISTED=$((SKIPPED_BLACKLISTED + 1))
-        SKIPPED_BL_PKGS+=("${PKG}")
-    fi
-done < <(echo "${DRY_RUN_OUT}" | grep -i "blacklist\|Package.*blacklisted\|Skipping.*blacklist" || true)
-
-# Also count via "Not upgrading" lines matching our blacklist patterns
-BL_MATCH=$(echo "${DRY_RUN_OUT}" | \
-    grep -iE "linux-image|linux-headers|mysql-server|apache2|libapache2-mod-php" | \
-    grep -ic "skip\|blacklist\|not.upgrad" 2>/dev/null || echo 0)
-[[ ${BL_MATCH} -gt ${SKIPPED_BLACKLISTED} ]] && SKIPPED_BLACKLISTED=${BL_MATCH}
+SKIPPED_BLACKLISTED=$(echo "${DRY_RUN_OUT}" | \
+    grep -iE "blacklist|Skipping.*blacklist|Not upgrading.*blacklist" | \
+    grep -cE "linux-image|linux-headers|mysql-server|apache2|libapache2-mod-php" 2>/dev/null || true)
+SKIPPED_BLACKLISTED=$(echo "${SKIPPED_BLACKLISTED}" | tr -d '[:space:]')
+SKIPPED_BLACKLISTED=$(( SKIPPED_BLACKLISTED + 0 ))
 
 SKIPPED_HELD=$(echo "${DRY_RUN_OUT}" | \
-    grep -c "held back\|on hold" 2>/dev/null || echo 0)
-
-WOULD_UPGRADE=$(echo "${DRY_RUN_OUT}" | \
-    grep -c "Packages.*will be upgraded\|Inst " 2>/dev/null || echo 0)
-
-BL_PKG_LIST=$(printf '%s\n' "${SKIPPED_BL_PKGS[@]+"${SKIPPED_BL_PKGS[@]}"}" | \
-    grep -v '^$' | head -5 | paste -sd ',' || echo "")
+    grep -c "on hold\|held back" 2>/dev/null || true)
+SKIPPED_HELD=$(echo "${SKIPPED_HELD}" | tr -d '[:space:]')
+SKIPPED_HELD=$(( SKIPPED_HELD + 0 ))
 
 echo "would upgrade:       ${WOULD_UPGRADE}"
-echo "skipped (blacklist): ${SKIPPED_BLACKLISTED}$([ -n "${BL_PKG_LIST}" ] && echo " (${BL_PKG_LIST})")"
+echo "skipped (blacklist): ${SKIPPED_BLACKLISTED}"
 echo "skipped (held):      ${SKIPPED_HELD}"
 
 # ── Emit unattended_config.json ───────────────────────────────────────────────
-BLACKLIST_JSON='["linux-image*","linux-headers*","mysql-server*","apache2*","libapache2-mod-php*"]'
-
-TIMER_STATE=$(jq -n \
-    --arg t1 "${TIMER1_STATE}" \
-    --arg t2 "${TIMER2_STATE}" \
-    '{"apt-daily.timer": $t1, "apt-daily-upgrade.timer": $t2}')
-
-DRY_RUN_SUMMARY=$(jq -n \
-    --argjson would     "${WOULD_UPGRADE}" \
-    --argjson blacklist "${SKIPPED_BLACKLISTED}" \
-    --argjson held      "${SKIPPED_HELD}" \
-    '{
-        "would_upgrade":       $would,
-        "skipped_blacklisted": $blacklist,
-        "skipped_held":        $held
-    }')
-
-jq -n \
-    --arg     installed   "${UU_INSTALLED}" \
-    --argjson config_paths '["'"${CONF_50}"'","'"${CONF_20}"'"]' \
-    --argjson blacklist    "${BLACKLIST_JSON}" \
-    --argjson timer_state  "${TIMER_STATE}" \
-    --argjson dry_run_summary "${DRY_RUN_SUMMARY}" \
-    '{
-        "installed":       $installed,
-        "config_paths":    $config_paths,
-        "blacklist":       $blacklist,
-        "timer_state":     $timer_state,
-        "dry_run_summary": $dry_run_summary
-    }' > "${REPORT_FILE}"
+cat > "${REPORT_FILE}" << EOF
+{
+  "installed": "${UU_INSTALLED}",
+  "config_paths": [
+    "${CONF_50}",
+    "${CONF_20}"
+  ],
+  "blacklist": [
+    "linux-image*",
+    "linux-headers*",
+    "mysql-server*",
+    "apache2*",
+    "libapache2-mod-php*"
+  ],
+  "timer_state": {
+    "apt-daily.timer": "${TIMER1_STATE}",
+    "apt-daily-upgrade.timer": "${TIMER2_STATE}"
+  },
+  "dry_run_summary": {
+    "would_upgrade": ${WOULD_UPGRADE},
+    "skipped_blacklisted": ${SKIPPED_BLACKLISTED},
+    "skipped_held": ${SKIPPED_HELD}
+  }
+}
+EOF
 
 echo "Report saved to: ${REPORT_FILE}"
