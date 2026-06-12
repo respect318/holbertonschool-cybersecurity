@@ -1,3 +1,48 @@
-{"started":"2026-03-21T23:01:05+01:00","user":"mike","within_window":"outside","packages":47}
-{"started":"2026-03-28T02:03:12+01:00","user":"analyst","within_window":"inside","packages":6}
-{"started":"2026-03-28T02:15:44+01:00","user":"analyst","within_window":"inside","packages":1}
+{
+  "period_start": "2026-06-12  07:12:35",
+  "period_end": "2026-04-15  15:04:23",
+  "events": [
+    {
+      "started": "2026-06-12  07:12:35",
+      "ended": "2024-09-11  14:24:19",
+      "user": "analyst",
+      "within_window": "unknown",
+      "packages": 755,
+      "linked_execution_log": null,
+      "cves_resolved": []
+    },
+    {
+      "started": "2026-04-14  12:36:34",
+      "ended": "2026-04-14  12:49:07",
+      "user": "root",
+      "within_window": "unknown",
+      "packages": 361,
+      "linked_execution_log": null,
+      "cves_resolved": []
+    },
+    {
+      "started": "2026-04-14  15:06:08",
+      "ended": "2026-04-14  15:06:08",
+      "user": "analyst",
+      "within_window": "unknown",
+      "packages": 337,
+      "linked_execution_log": null,
+      "cves_resolved": []
+    },
+    {
+      "started": "2026-04-15  15:04:23",
+      "ended": "2026-04-15  15:04:23",
+      "user": "analyst",
+      "within_window": "unknown",
+      "packages": 3,
+      "linked_execution_log": null,
+      "cves_resolved": []
+    }
+  ],
+  "summary": {
+    "total_events": 4,
+    "inside_window": 0,
+    "outside_window": 4,
+    "cves_resolved": 0
+  }
+}
