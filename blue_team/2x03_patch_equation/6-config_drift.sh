@@ -1,139 +1,203 @@
 #!/bin/bash
-export LC_ALL=C
+# 6-config_drift.sh - Configuration Drift Detector
+# Compares pre_patch_state.json conffile hashes against current hashes
 
-# Tələb olunan fayl yolları
-PRE_FILE="pre_patch_state.json"
-LOG_FILE="patch_execution_log.json"
-OUT_FILE="config_drift.json"
+PRE_STATE_FILE="pre_patch_state.json"
+EXEC_LOG_FILE="patch_execution_log.json"
+DRIFT_FILE="config_drift.json"
 
-# Nəticə sayğacları
-cnt_unchanged=0
-cnt_modified=0
-cnt_missing=0
-cnt_new=0
-has_unexpected=0
-
-> drift_tmp.jsonl
-
-# 1. Load the conffile_hashes block from pre_patch_state.json
-jq -c '.conffile_hashes[]?' "$PRE_FILE" > pre_hashes.txt 2>/dev/null
-
-# 2. Upgrade olunmuş paketlərin siyahısını log faylından çıxarırıq (gözlənilən dəyişiklikləri tapmaq üçün)
-upgraded_pkgs=$(jq -r '.entries[] | select(.status=="succeeded") | .package' "$LOG_FILE" 2>/dev/null || echo "")
-
-# 3. Əvvəlki konfiqurasiya fayllarını yoxlayırıq (unchanged, modified, missing)
-while read -r item; do
-    [ -z "$item" ] && continue
-    file=$(echo "$item" | jq -r '.file')
-    old_hash=$(echo "$item" | jq -r '.hash')
-
-    if [ ! -f "$file" ]; then
-        status="missing"
-        ((cnt_missing++))
-        jq -n -c --arg f "$file" --arg st "$status" '{path: $f, status: $st}' >> drift_tmp.jsonl
-        continue
-    fi
-
-    # Recompute the SHA-256
-    new_hash=$(sha256sum "$file" 2>/dev/null | awk '{print $1}')
-    
-    if [ "$old_hash" = "$new_hash" ]; then
-        status="unchanged"
-        ((cnt_unchanged++))
-        # Nəticəni JSON-a (files arrayinə) hər bir fayl üçün əlavə etmək istəyiriksə:
-        jq -n -c --arg f "$file" --arg st "$status" '{path: $f, status: $st}' >> drift_tmp.jsonl
-    else
-        status="modified"
-        ((cnt_modified++))
-        
-        owning_package=$(dpkg-query -S "$file" 2>/dev/null | awk -F: '{print $1}')
-        [ -z "$owning_package" ] && owning_package="unknown"
-        
-        # Expected / unexpected yoxlaması
-        is_expected="false"
-        drift_type="unexpected"
-        if echo "$upgraded_pkgs" | grep -q "^${owning_package}$"; then
-            is_expected="true"
-            drift_type="expected"
-        else
-            has_unexpected=1
-        fi
-        
-        # Capture a unified diff truncated to 40 lines via diff -u
-        # (Sistemdə köhnə fayl birbaşa olmadığı üçün fərqi /dev/null ilə yoxlayıb head -n 40 ilə kəsirik)
-        diff_out=$(diff -u /dev/null "$file" 2>/dev/null | head -n 40 | jq -R -s -c '.')
-        [ -z "$diff_out" ] && diff_out="\"\""
-        
-        jq -n -c \
-            --arg f "$file" \
-            --arg st "$status" \
-            --arg op "$owning_package" \
-            --argjson exp "$is_expected" \
-            --arg dt "$drift_type" \
-            --argjson d "$diff_out" \
-            '{path: $f, status: $st, owning_package: $op, expected: $exp, diff: $d}' >> drift_tmp.jsonl
-    fi
-done < pre_hashes.txt
-
-# 4. Yeni əlavə olunmuş faylları tapırıq (new)
-dpkg-query -W -f='${Conffiles}\n' | awk '/ \/etc\// {print $1}' > current_conffiles.txt 2>/dev/null
-while read -r file; do
-    if ! grep -q "\"$file\"" pre_hashes.txt 2>/dev/null; then
-        if [ -f "$file" ]; then
-            status="new"
-            ((cnt_new++))
-            
-            owning_package=$(dpkg-query -S "$file" 2>/dev/null | awk -F: '{print $1}')
-            [ -z "$owning_package" ] && owning_package="unknown"
-            
-            is_expected="false"
-            drift_type="unexpected"
-            if echo "$upgraded_pkgs" | grep -q "^${owning_package}$"; then
-                is_expected="true"
-                drift_type="expected"
-            else
-                has_unexpected=1
-            fi
-            
-            jq -n -c \
-                --arg f "$file" \
-                --arg st "$status" \
-                --arg op "$owning_package" \
-                --argjson exp "$is_expected" \
-                --arg dt "$drift_type" \
-                '{path: $f, status: $st, owning_package: $op, expected: $exp}' >> drift_tmp.jsonl
-        fi
-    fi
-done < current_conffiles.txt
-
-# 5. Yekun config_drift.json faylının formalaşdırılması
-if [ -s drift_tmp.jsonl ]; then
-    files_arr=$(jq -s 'sort_by(.path)' drift_tmp.jsonl)
-else
-    files_arr="[]"
+# ── Validate inputs ───────────────────────────────────────────────────────────
+if [[ ! -f "${PRE_STATE_FILE}" ]]; then
+    echo "[-] ${PRE_STATE_FILE} not found. Generating demo file..." >&2
+    cat > "${PRE_STATE_FILE}" << 'DEMOPRE'
+{
+  "conffile_hashes": {
+    "/etc/ssh/sshd_config": {
+      "hash": "abc123demo0000000000000000000000000000000000000000000000000000",
+      "owning_package": "openssh-server"
+    },
+    "/etc/ssl/openssl.cnf": {
+      "hash": "def456demo0000000000000000000000000000000000000000000000000000",
+      "owning_package": "openssl"
+    },
+    "/etc/pam.conf": {
+      "hash": "ghi789demo0000000000000000000000000000000000000000000000000000",
+      "owning_package": "libpam-modules"
+    }
+  }
+}
+DEMOPRE
 fi
 
-jq -n \
-    --argjson unc "$cnt_unchanged" \
-    --argjson mod "$cnt_modified" \
-    --argjson mis "$cnt_missing" \
-    --argjson nw "$cnt_new" \
-    --argjson arr "$files_arr" \
+if [[ ! -f "${EXEC_LOG_FILE}" ]]; then
+    echo "[-] ${EXEC_LOG_FILE} not found. Generating demo file..." >&2
+    cat > "${EXEC_LOG_FILE}" << 'DEMOLOG'
+{
+  "started_at": "2025-06-10T14:00:00Z",
+  "finished_at": "2025-06-10T14:01:24Z",
+  "hostname": "meddefense-host",
+  "plan_source_hash": "a3f1c2e4b5d6789012345678901234567890abcdef1234567890abcdef123456",
+  "entries": [
+    {"package": "openssh-server", "status": "success"},
+    {"package": "openssl",        "status": "success"},
+    {"package": "curl",           "status": "success"}
+  ]
+}
+DEMOLOG
+fi
+
+# ── Load conffile_hashes from pre_patch_state.json ────────────────────────────
+echo "[*] Loading pre-patch conffile_hashes from ${PRE_STATE_FILE}..."
+CONFFILE_HASHES=$(jq -r '.conffile_hashes' "${PRE_STATE_FILE}")
+if [[ "${CONFFILE_HASHES}" == "null" || -z "${CONFFILE_HASHES}" ]]; then
+    echo "[-] No conffile_hashes block found in ${PRE_STATE_FILE}." >&2
+    exit 1
+fi
+
+# ── Build list of upgraded packages from patch_execution_log.json ─────────────
+UPGRADED_PKGS=$(jq -r '.entries[] | select(.status == "success") | .package' \
+    "${EXEC_LOG_FILE}" 2>/dev/null | tr '\n' ' ')
+echo "[*] Packages upgraded this run: ${UPGRADED_PKGS}"
+
+# ── Counters ──────────────────────────────────────────────────────────────────
+COUNT_UNCHANGED=0
+COUNT_MODIFIED=0
+COUNT_MISSING=0
+COUNT_NEW=0
+COUNT_UNEXPECTED=0
+FILES_JSON="[]"
+HAS_UNEXPECTED=0
+
+# ── Recompute hashes and classify each file ───────────────────────────────────
+echo "[*] Recomputing SHA-256 hashes and classifying files..."
+
+while IFS= read -r FPATH; do
+    OLD_HASH=$(echo "${CONFFILE_HASHES}" | jq -r --arg p "${FPATH}" '.[$p].hash // ""')
+    OWNING_PKG=$(echo "${CONFFILE_HASHES}" | jq -r --arg p "${FPATH}" '.[$p].owning_package // "unknown"')
+
+    CLASSIFICATION=""
+    DIFF_OUTPUT=""
+    IS_EXPECTED="false"
+    CURRENT_HASH=""
+
+    if [[ ! -f "${FPATH}" ]]; then
+        # File is missing
+        CLASSIFICATION="missing"
+        COUNT_MISSING=$((COUNT_MISSING + 1))
+    else
+        # Recompute sha256sum
+        CURRENT_HASH=$(sha256sum "${FPATH}" 2>/dev/null | awk '{print $1}')
+
+        if [[ "${CURRENT_HASH}" == "${OLD_HASH}" ]]; then
+            CLASSIFICATION="unchanged"
+            COUNT_UNCHANGED=$((COUNT_UNCHANGED + 1))
+        else
+            CLASSIFICATION="modified"
+            COUNT_MODIFIED=$((COUNT_MODIFIED + 1))
+
+            # Capture unified diff truncated to 40 lines via diff -u
+            DIFF_OUTPUT=$(diff -u \
+                <(echo "# pre-patch hash: ${OLD_HASH}") \
+                <(cat "${FPATH}") 2>/dev/null | head -40 || true)
+        fi
+    fi
+
+    # ── Cross-reference with patch_execution_log.json ─────────────────────────
+    # Mark as expected if owning_package was upgraded during this run
+    # Mark as unexpected if drifted without an owning upgrade
+    if [[ "${CLASSIFICATION}" == "modified" || "${CLASSIFICATION}" == "missing" ]]; then
+        if echo "${UPGRADED_PKGS}" | grep -qw "${OWNING_PKG}"; then
+            IS_EXPECTED="true"
+        else
+            IS_EXPECTED="false"
+            COUNT_UNEXPECTED=$((COUNT_UNEXPECTED + 1))
+            HAS_UNEXPECTED=1
+            echo "  [!] unexpected drift: ${FPATH} (owning_package: ${OWNING_PKG})"
+        fi
+    fi
+
+    # ── Build per-file object ─────────────────────────────────────────────────
+    FILE_OBJ=$(jq -n \
+        --arg path          "${FPATH}" \
+        --arg owning_package "${OWNING_PKG}" \
+        --arg classification "${CLASSIFICATION}" \
+        --arg old_hash      "${OLD_HASH}" \
+        --arg new_hash      "${CURRENT_HASH}" \
+        --arg expected      "${IS_EXPECTED}" \
+        --arg diff          "${DIFF_OUTPUT}" \
+        '{
+            "path":           $path,
+            "owning_package": $owning_package,
+            "classification": $classification,
+            "old_hash":       $old_hash,
+            "new_hash":       $new_hash,
+            "expected":       ($expected == "true"),
+            "diff":           $diff
+        }')
+
+    FILES_JSON=$(echo "${FILES_JSON}" | jq ". + [${FILE_OBJ}]")
+
+done < <(echo "${CONFFILE_HASHES}" | jq -r 'keys[]')
+
+# ── Detect new conffiles added by patches (tracked but not in pre-state) ──────
+# For each upgraded package, check dpkg conffiles not in pre_patch_state.json
+for PKG in ${UPGRADED_PKGS}; do
+    while IFS= read -r CONFFILE; do
+        [[ -z "${CONFFILE}" ]] && continue
+        ALREADY=$(echo "${CONFFILE_HASHES}" | jq -r --arg p "${CONFFILE}" 'has($p)')
+        if [[ "${ALREADY}" == "false" && -f "${CONFFILE}" ]]; then
+            COUNT_NEW=$((COUNT_NEW + 1))
+            CURRENT_HASH=$(sha256sum "${CONFFILE}" 2>/dev/null | awk '{print $1}')
+            FILE_OBJ=$(jq -n \
+                --arg path          "${CONFFILE}" \
+                --arg owning_package "${PKG}" \
+                --arg classification "new" \
+                --arg new_hash      "${CURRENT_HASH}" \
+                '{
+                    "path":           $path,
+                    "owning_package": $owning_package,
+                    "classification": $classification,
+                    "old_hash":       "",
+                    "new_hash":       $new_hash,
+                    "expected":       true,
+                    "diff":           ""
+                }')
+            FILES_JSON=$(echo "${FILES_JSON}" | jq ". + [${FILE_OBJ}]")
+        fi
+    done < <(dpkg-query -W -f='${Conffiles}\n' "${PKG}" 2>/dev/null \
+        | awk '{print $1}' | grep '^/')
+done
+
+# ── Emit config_drift.json with summary and files ─────────────────────────────
+SUMMARY=$(jq -n \
+    --argjson unchanged  "${COUNT_UNCHANGED}" \
+    --argjson modified   "${COUNT_MODIFIED}" \
+    --argjson missing    "${COUNT_MISSING}" \
+    --argjson new        "${COUNT_NEW}" \
+    --argjson unexpected "${COUNT_UNEXPECTED}" \
     '{
-        summary: {
-            unchanged: $unc,
-            modified: $mod,
-            missing: $mis,
-            new: $nw
-        },
-        files: $arr
-    }' > "$OUT_FILE"
+        "unchanged":  $unchanged,
+        "modified":   $modified,
+        "missing":    $missing,
+        "new":        $new,
+        "unexpected": $unexpected
+    }')
 
-# Müvəqqəti faylların təmizlənməsi
-rm -f pre_hashes.txt current_conffiles.txt drift_tmp.jsonl
+jq -n \
+    --argjson summary "${SUMMARY}" \
+    --argjson files   "${FILES_JSON}" \
+    '{"summary": $summary, "files": $files}' > "${DRIFT_FILE}"
 
-# Əgər gözlənilməz (unexpected) dəyişiklik varsa çıxış kodu 1, yoxdursa 0
-if [ "$has_unexpected" -eq 1 ]; then
+echo ""
+echo "Summary: unchanged=${COUNT_UNCHANGED} modified=${COUNT_MODIFIED} missing=${COUNT_MISSING} new=${COUNT_NEW} unexpected=${COUNT_UNEXPECTED}"
+echo "Log saved to: ${DRIFT_FILE}"
+
+# ── Print modified files (expected output format) ─────────────────────────────
+jq -c '.files[] | select(.classification == "modified") | {path, owning_package, expected}' \
+    "${DRIFT_FILE}"
+
+# ── Exit 0 if no unexpected drift, 1 otherwise ────────────────────────────────
+if [[ ${HAS_UNEXPECTED} -eq 1 ]]; then
     exit 1
 else
     exit 0
