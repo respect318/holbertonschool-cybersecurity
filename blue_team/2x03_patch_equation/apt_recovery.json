@@ -1,4 +1,18 @@
 {
-  "initial_diagnosis": "live process found",
-  "recovered": false
+  "initial_diagnosis": {
+    "live_processes": "2484 sudo ./7-apt_recovery.sh\n2485 sudo ./7-apt_recovery.sh\n2486 /bin/bash ./7-apt_recovery.sh\n2489 /bin/bash ./7-apt_recovery.sh",
+    "stale_locks": [
+      "/var/lib/dpkg/lock-frontend",
+      "/var/lib/dpkg/lock",
+      "/var/cache/apt/archives/lock"
+    ],
+    "dpkg_audit": "clean",
+    "broken_packages": [],
+    "free_space_root": "19133MB",
+    "free_space_var": "19133MB"
+  },
+  "actions_taken": [],
+  "final_state": "aborted: live process detected",
+  "recovered": false,
+  "duration_seconds": 0
 }
