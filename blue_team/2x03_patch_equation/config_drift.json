@@ -1,0 +1,38 @@
+{
+  "summary": {
+    "unchanged": 0,
+    "modified": 3,
+    "missing": 0,
+    "new": 0,
+    "unexpected": 3
+  },
+  "files": [
+    {
+      "path": "/etc/pam.conf",
+      "owning_package": "libpam-modules",
+      "classification": "modified",
+      "old_hash": "ghi789demo0000000000000000000000000000000000000000000000000000",
+      "new_hash": "8aa7f3472ec88a24a572d6ffd9748ce3da223fba3b2545098eaaae768b6408c4",
+      "expected": false,
+      "diff": "--- /dev/fd/63\t2026-06-12 07:23:03.118749108 +0200\n+++ /dev/fd/62\t2026-06-12 07:23:03.122748954 +0200\n@@ -1 +1,15 @@\n-# pre-patch hash: ghi789demo0000000000000000000000000000000000000000000000000000\n+# ---------------------------------------------------------------------------#\n+# /etc/pam.conf\t\t\t\t\t\t\t\t     #\n+# ---------------------------------------------------------------------------#\n+#\n+# NOTE\n+# ----\n+#\n+# NOTE: Most program use a file under the /etc/pam.d/ directory to setup their\n+# PAM service modules. This file is used only if that directory does not exist.\n+# ---------------------------------------------------------------------------#\n+\n+# Format:\n+# serv.\tmodule\t   ctrl\t      module [path]\t...[args..]\t\t     #\n+# name\ttype\t   flag\t\t\t\t\t\t\t     #\n+"
+    },
+    {
+      "path": "/etc/ssh/sshd_config",
+      "owning_package": "openssh-server",
+      "classification": "modified",
+      "old_hash": "abc123demo0000000000000000000000000000000000000000000000000000",
+      "new_hash": "bbca163bb6d58e2a0b1a6c8ee3b05c6bc3cab47097047a54049aa24967b0003d",
+      "expected": false,
+      "diff": "--- /dev/fd/63\t2026-06-12 07:23:03.214745427 +0200\n+++ /dev/fd/62\t2026-06-12 07:23:03.210745579 +0200\n@@ -1 +1,122 @@\n-# pre-patch hash: abc123demo0000000000000000000000000000000000000000000000000000\n+\n+# This is the sshd server system-wide configuration file.  See\n+# sshd_config(5) for more information.\n+\n+# This sshd was compiled with PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games\n+\n+# The strategy used for options in the default sshd_config shipped with\n+# OpenSSH is to specify options with their default value where\n+# possible, but leave them commented.  Uncommented options override the\n+# default value.\n+\n+Include /etc/ssh/sshd_config.d/*.conf\n+\n+#Port 22\n+#AddressFamily any\n+#ListenAddress 0.0.0.0\n+#ListenAddress ::\n+\n+#HostKey /etc/ssh/ssh_host_rsa_key\n+#HostKey /etc/ssh/ssh_host_ecdsa_key\n+#HostKey /etc/ssh/ssh_host_ed25519_key\n+\n+# Ciphers and keying\n+#RekeyLimit default none\n+\n+# Logging\n+#SyslogFacility AUTH\n+#LogLevel INFO\n+\n+# Authentication:\n+\n+#LoginGraceTime 2m\n+PermitRootLogin yes\n+#StrictModes yes\n+#MaxAuthTries 6\n+#MaxSessions 10"
+    },
+    {
+      "path": "/etc/ssl/openssl.cnf",
+      "owning_package": "openssl",
+      "classification": "modified",
+      "old_hash": "def456demo0000000000000000000000000000000000000000000000000000",
+      "new_hash": "47fdeeac79328ffb03c9d855237a500b4ad5216dc971a8b2f40a420b4b3c11ef",
+      "expected": false,
+      "diff": "--- /dev/fd/63\t2026-06-12 07:23:03.310741744 +0200\n+++ /dev/fd/62\t2026-06-12 07:23:03.306741898 +0200\n@@ -1 +1,397 @@\n-# pre-patch hash: def456demo0000000000000000000000000000000000000000000000000000\n+#\n+# OpenSSL example configuration file.\n+# See doc/man5/config.pod for more info.\n+#\n+# This is mostly being used for generation of certificate requests,\n+# but may be used for auto loading of providers\n+\n+# Note that you can include other files from the main configuration\n+# file using the .include directive.\n+#.include filename\n+\n+# This definition stops the following lines choking if HOME isn't\n+# defined.\n+HOME\t\t\t= .\n+\n+ # Use this in order to automatically load providers.\n+openssl_conf = openssl_init\n+\n+# Comment out the next line to ignore configuration errors\n+config_diagnostics = 1\n+\n+# Extra OBJECT IDENTIFIER info:\n+# oid_file       = $ENV::HOME/.oid\n+oid_section = new_oids\n+\n+# To use this configuration file with the \"-extfile\" option of the\n+# \"openssl x509\" utility, name here the section containing the\n+# X.509v3 extensions to use:\n+# extensions\t\t=\n+# (Alternatively, use a configuration file that has only\n+# X.509v3 extensions in its main [= default] section.)\n+\n+[ new_oids ]\n+# We can add new OIDs in here for use by 'ca', 'req' and 'ts'.\n+# Add a simple OID like this:\n+# testoid1=1.2.3.4"
+    }
+  ]
+}
