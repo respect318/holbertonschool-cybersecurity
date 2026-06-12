@@ -1,0 +1,44 @@
+{
+  "started_at": "2026-06-12T05:12:32Z",
+  "finished_at": "2026-06-12T05:12:42Z",
+  "hostname": "billing-srv-01",
+  "plan_source_hash": "573f0ee4f7c37111e5c47480a497410df3c9715d3751abf51292c3da334cd298",
+  "entries": [
+    {
+      "package": "curl",
+      "priority": "urgent",
+      "pre": {
+        "installed_version": "7.81.0-1ubuntu1.23",
+        "service_states": {}
+      },
+      "post": {
+        "installed_version": "7.81.0-1ubuntu1.23",
+        "service_states": {}
+      },
+      "status": "success",
+      "duration_seconds": 0.8,
+      "stdout_tail": "Reading package lists...\nBuilding dependency tree...\nReading state information...\ncurl is already the newest version (7.81.0-1ubuntu1.23).\n0 upgraded, 0 newly installed, 0 to remove and 62 not upgraded.",
+      "stderr_tail": "",
+      "apt_exit_status": 0,
+      "restart_results": {}
+    },
+    {
+      "package": "tzdata",
+      "priority": "scheduled",
+      "pre": {
+        "installed_version": "2025b-0ubuntu0.22.04.1",
+        "service_states": {}
+      },
+      "post": {
+        "installed_version": "2026a-0ubuntu0.22.04.1",
+        "service_states": {}
+      },
+      "status": "success",
+      "duration_seconds": 8.1,
+      "stdout_tail": "No containers need to be restarted.\n\nNo user sessions are running outdated binaries.\n\nNo VM guests are running outdated hypervisor (qemu) binaries on this host.",
+      "stderr_tail": "",
+      "apt_exit_status": 0,
+      "restart_results": {}
+    }
+  ]
+}
