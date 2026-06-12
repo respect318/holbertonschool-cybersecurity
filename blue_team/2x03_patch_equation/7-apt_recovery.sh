@@ -1,163 +1,258 @@
 #!/bin/bash
-export LC_ALL=C
+# 7-apt_recovery.sh - Broken Upgrade Recovery Script
+# Diagnoses and repairs a broken apt/dpkg state
 
-start_time=$(date +%s)
-OUT_FILE="apt_recovery.json"
-DEPS_FILE="service_dependency_map.json"
+RECOVERY_FILE="apt_recovery.json"
+SERVICE_MAP="service_dependency_map.json"
 
+T_START=$(date +%s)
+STARTED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+ACTIONS_JSON="[]"
+RECOVERED=false
+
+# ── Helper: add action to log ─────────────────────────────────────────────────
+add_action() {
+    local action="$1"
+    local result="$2"
+    local detail="${3:-}"
+    ACTIONS_JSON=$(echo "${ACTIONS_JSON}" | jq \
+        --arg a "${action}" \
+        --arg r "${result}" \
+        --arg d "${detail}" \
+        '. + [{"action": $a, "result": $r, "detail": $d}]')
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 1 — DIAGNOSE BEFORE CHANGING ANYTHING
+# ══════════════════════════════════════════════════════════════════════════════
 echo "[*] Diagnosing..."
 
-# 1. Diagnose: Check for live dpkg or apt processes
-live_procs=$(pgrep -fa 'dpkg|apt' | grep -Ev 'pgrep|7-apt_recovery.sh' || true)
-if [ -n "$live_procs" ]; then
-    echo "    live dpkg/apt processes: yes"
-    echo "    Refusing to proceed: live process detected."
-    # Build a minimal diagnosis JSON before exit 2
-    jq -n --arg diag "live process found" '{initial_diagnosis: $diag, recovered: false}' > "$OUT_FILE"
-    exit 2
+# ── Check for live dpkg or apt processes with pgrep -fa ──────────────────────
+LIVE_PROCS=$(pgrep -fa "dpkg|apt" 2>/dev/null || true)
+if [[ -n "${LIVE_PROCS}" ]]; then
+    echo "    live dpkg/apt processes detected:"
+    echo "${LIVE_PROCS}" | sed 's/^/      /'
 else
     echo "    live dpkg/apt processes: none"
 fi
 
-# 2. Inspect locks (lock-frontend, /var/lib/dpkg/lock, /var/cache/apt/archives/lock)
-locks=("/var/lib/dpkg/lock-frontend" "/var/lib/dpkg/lock" "/var/cache/apt/archives/lock")
-stale_locks=""
-for l in "${locks[@]}"; do
-    if [ -f "$l" ] || [ -L "$l" ]; then
-        stale_locks="$stale_locks $l"
+# ── Inspect lock files ────────────────────────────────────────────────────────
+STALE_LOCKS=()
+LOCK_FRONTEND="/var/lib/dpkg/lock-frontend"
+LOCK_DPKG="/var/lib/dpkg/lock"
+LOCK_APT="/var/cache/apt/archives/lock"
+
+for LOCKF in "${LOCK_FRONTEND}" "${LOCK_DPKG}" "${LOCK_APT}"; do
+    if [[ -f "${LOCKF}" ]]; then
+        if ! fuser "${LOCKF}" >/dev/null 2>&1; then
+            STALE_LOCKS+=("${LOCKF}")
+        fi
     fi
 done
 
-if [ -z "$stale_locks" ]; then
+if [[ ${#STALE_LOCKS[@]} -gt 0 ]]; then
+    echo "    stale locks: $(IFS=', '; echo "${STALE_LOCKS[*]}")"
+else
     echo "    stale locks: none"
-    stale_locks_json="[]"
-else
-    formatted_locks=$(echo "$stale_locks" | sed -e 's/^ *//' -e 's/ /, /g')
-    echo "    stale locks: $formatted_locks"
-    stale_locks_json=$(echo "$stale_locks" | awk '{$1=$1;print}' | jq -R -s -c 'split(" ")[:-1]')
 fi
 
-# 3. dpkg --audit
-audit_out=$(dpkg --audit 2>/dev/null || true)
-audit_pkgs=$(echo "$audit_out" | grep -E '^ [a-z0-9]' | awk '{print $1}' | paste -sd, -)
-if [ -z "$audit_pkgs" ]; then
-    echo "    dpkg --audit: clean"
-    audit_pkgs_json="[]"
-else
-    echo "    dpkg --audit: $audit_pkgs"
-    audit_pkgs_json=$(echo "$audit_pkgs" | tr ',' '\n' | jq -R -s -c 'split("\n")[:-1]')
-fi
+# ── Run dpkg --audit and parse output ────────────────────────────────────────
+AUDIT_OUT=$(dpkg --audit 2>/dev/null || true)
+echo "    dpkg --audit: ${AUDIT_OUT:-clean}"
 
-# 4. List packages in broken states (half-configured, half-installed, unpacked, triggers-pending)
-broken_pkgs=$(dpkg-query -W -f='${Package} ${Status}\n' 2>/dev/null | grep -E 'half-configured|half-installed|unpacked|triggers-pending' | awk '{print $1}')
-broken_count=$(echo "$broken_pkgs" | awk 'NF' | wc -l)
-echo "    broken packages: $broken_count"
-broken_pkgs_json=$(echo "$broken_pkgs" | awk 'NF' | jq -R -s -c 'split("\n")[:-1]')
+# ── List packages in broken states via dpkg ───────────────────────────────────
+# half-configured, half-installed, unpacked, triggers-pending
+BROKEN_PKGS=$(dpkg -l 2>/dev/null | awk '
+    /^[uhi]F/ || /^[uhi]H/ || /^[uhi]W/ || /^[uhi]T/ {print $2}
+    /^iF/ {print $2}
+    /^hH/ {print $2}
+' | sort -u || true)
 
-# 5. Check free space (df, /var)
-free_space=$(df -k / /var | awk 'NR>1 {print $6, $4}')
-free_space_json=$(echo "$free_space" | awk 'NF' | jq -R -s -c 'split("\n")[:-1]')
+# Also catch via dpkg --get-selections
+HALF_CONF=$(dpkg --get-selections 2>/dev/null | grep -E \
+    "half-configured|half-installed|unpacked|triggers-pending" | awk '{print $1}' || true)
 
-initial_diag_json=$(jq -n -c \
-    --argjson procs "[]" \
-    --argjson locks "${stale_locks_json:-[]}" \
-    --argjson aud "${audit_pkgs_json:-[]}" \
-    --argjson brk "${broken_pkgs_json:-[]}" \
-    --argjson fs "${free_space_json:-[]}" \
+ALL_BROKEN=$(printf '%s\n%s\n' "${BROKEN_PKGS}" "${HALF_CONF}" | sort -u | grep -v '^$' || true)
+BROKEN_COUNT=$(echo "${ALL_BROKEN}" | grep -c . || echo 0)
+
+echo "    broken packages: ${BROKEN_COUNT}"
+[[ -n "${ALL_BROKEN}" ]] && echo "${ALL_BROKEN}" | sed 's/^/      /'
+
+# ── Check free space on / and /var ───────────────────────────────────────────
+FREE_ROOT=$(df -m / 2>/dev/null | awk 'NR==2 {print $4}')
+FREE_VAR=$(df -m /var 2>/dev/null | awk 'NR==2 {print $4}')
+echo "    free space  /: ${FREE_ROOT}MB   /var: ${FREE_VAR}MB"
+
+# ── Build initial_diagnosis block ─────────────────────────────────────────────
+DIAG_LIVE="${LIVE_PROCS:-none}"
+DIAG_LOCKS=$(printf '%s\n' "${STALE_LOCKS[@]+"${STALE_LOCKS[@]}"}" | jq -R . | jq -sc .)
+DIAG_BROKEN=$(echo "${ALL_BROKEN}" | grep -v '^$' | jq -R . | jq -sc . || echo '[]')
+
+INITIAL_DIAGNOSIS=$(jq -n \
+    --arg live        "${DIAG_LIVE}" \
+    --argjson locks   "${DIAG_LOCKS}" \
+    --arg audit       "${AUDIT_OUT:-clean}" \
+    --argjson broken  "${DIAG_BROKEN}" \
+    --arg free_root   "${FREE_ROOT}MB" \
+    --arg free_var    "${FREE_VAR}MB" \
     '{
-        live_processes: $procs,
-        stale_locks: $locks,
-        audit_packages: $aud,
-        broken_packages: $brk,
-        free_space: $fs
+        "live_processes":  $live,
+        "stale_locks":     $locks,
+        "dpkg_audit":      $audit,
+        "broken_packages": $broken,
+        "free_space_root": $free_root,
+        "free_space_var":  $free_var
     }')
 
-# Repair phase
+# ── Refuse if live process detected ───────────────────────────────────────────
+if [[ -n "${LIVE_PROCS}" ]]; then
+    echo ""
+    echo "[!] Live dpkg/apt process detected. Cannot proceed safely."
+    echo "    Diagnose complete. Refusing to repair while live process is running."
+
+    T_END=$(date +%s)
+    DURATION=$((T_END - T_START))
+
+    jq -n \
+        --argjson diag     "${INITIAL_DIAGNOSIS}" \
+        --argjson actions  "${ACTIONS_JSON}" \
+        --arg     final    "aborted: live process detected" \
+        --argjson recovered false \
+        --argjson duration "${DURATION}" \
+        '{
+            "initial_diagnosis": $diag,
+            "actions_taken":     $actions,
+            "final_state":       $final,
+            "recovered":         $recovered,
+            "duration_seconds":  $duration
+        }' > "${RECOVERY_FILE}"
+
+    echo "Report saved to: ${RECOVERY_FILE}"
+    exit 2
+fi
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 2 — REPAIR IN STRICT ORDER
+# ══════════════════════════════════════════════════════════════════════════════
 echo "[*] Repairing..."
-> actions_tmp.jsonl
 
-# Remove stale locks
-if [ -n "$stale_locks" ]; then
-    for l in $stale_locks; do
-        rm -f "$l"
-    done
-fi
-echo "    remove stale locks                     OK"
-jq -n -c '{step: "remove stale locks", status: "OK"}' >> actions_tmp.jsonl
+# ── Step 1: Remove only stale lock files ─────────────────────────────────────
+for LOCKF in "${STALE_LOCKS[@]+"${STALE_LOCKS[@]}"}"; do
+    if ! fuser "${LOCKF}" >/dev/null 2>&1; then
+        rm -f "${LOCKF}"
+        printf "    remove stale lock %-40s OK\n" "${LOCKF}"
+        add_action "remove stale lock ${LOCKF}" "OK" ""
+    else
+        printf "    remove stale lock %-40s SKIPPED (still held)\n" "${LOCKF}"
+        add_action "remove stale lock ${LOCKF}" "SKIPPED" "lock still held by process"
+    fi
+done
 
-# dpkg --configure -a
-dpkg --configure -a > /dev/null 2>&1
-echo "    dpkg --configure -a                    OK"
-jq -n -c '{step: "dpkg --configure -a", status: "OK"}' >> actions_tmp.jsonl
-
-# apt-get --fix-broken install
-DEBIAN_FRONTEND=noninteractive apt-get --fix-broken install -y > /dev/null 2>&1
-echo "    apt-get --fix-broken install           OK"
-jq -n -c '{step: "apt-get --fix-broken install", status: "OK"}' >> actions_tmp.jsonl
-
-# dpkg --audit (re-run)
-audit_rerun=$(dpkg --audit 2>/dev/null || true)
-if [ -z "$audit_rerun" ]; then
-    echo "    dpkg --audit (re-run)                  clean"
-    jq -n -c '{step: "dpkg --audit", status: "clean"}' >> actions_tmp.jsonl
-    recovered_bool="true"
-    final_audit="clean"
+# ── Step 2: dpkg --configure -a ──────────────────────────────────────────────
+printf "    %-45s" "dpkg --configure -a"
+CONFIGURE_OUT=$(DEBIAN_FRONTEND=noninteractive dpkg --configure -a 2>&1)
+CONFIGURE_RC=$?
+if [[ ${CONFIGURE_RC} -eq 0 ]]; then
+    echo "OK"
+    add_action "dpkg --configure -a" "OK" "${CONFIGURE_OUT}"
 else
-    echo "    dpkg --audit (re-run)                  failed"
-    jq -n -c '{step: "dpkg --audit", status: "failed"}' >> actions_tmp.jsonl
-    recovered_bool="false"
-    final_audit="broken"
+    echo "FAILED (exit ${CONFIGURE_RC})"
+    add_action "dpkg --configure -a" "FAILED" "${CONFIGURE_OUT}"
 fi
 
-final_state_json=$(jq -n -c --arg st "$final_audit" '{audit: $st}')
-actions_taken_json=$(jq -s '.' actions_tmp.jsonl)
-rm -f actions_tmp.jsonl
+# ── Step 3: apt-get --fix-broken install -y with noninteractive ──────────────
+printf "    %-45s" "apt-get --fix-broken install"
+FIXBROKEN_OUT=$(DEBIAN_FRONTEND=noninteractive apt-get --fix-broken install -y 2>&1)
+FIXBROKEN_RC=$?
+if [[ ${FIXBROKEN_RC} -eq 0 ]]; then
+    echo "OK"
+    add_action "apt-get --fix-broken install -y" "OK" "$(echo "${FIXBROKEN_OUT}" | tail -5)"
+else
+    echo "FAILED (exit ${FIXBROKEN_RC})"
+    add_action "apt-get --fix-broken install -y" "FAILED" "$(echo "${FIXBROKEN_OUT}" | tail -5)"
+fi
 
-# Restart services
+# ── Step 4: Re-run dpkg --audit and confirm empty ────────────────────────────
+printf "    %-45s" "dpkg --audit (re-run)"
+AUDIT_FINAL=$(dpkg --audit 2>/dev/null || true)
+if [[ -z "${AUDIT_FINAL}" ]]; then
+    echo "clean"
+    add_action "dpkg --audit re-run" "clean" ""
+    RECOVERED=true
+else
+    echo "RESIDUAL BROKEN"
+    add_action "dpkg --audit re-run" "residual broken" "${AUDIT_FINAL}"
+    RECOVERED=false
+fi
+
+# ── Step 5: Restart services listed in service_dependency_map.json ───────────
 echo "[*] Restarting affected services..."
-if [ -n "$broken_pkgs" ] && [ -f "$DEPS_FILE" ]; then
-    for pkg in $broken_pkgs; do
-        # dependencies-dən tapan məntiq
-        services=$(jq -r --arg p "$pkg" '.[] | select(.linked_packages[]? == $p or .owning_package == $p) | .service' "$DEPS_FILE" 2>/dev/null | sort -u)
-        for srv in $services; do
-            if [ "$srv" != "(kernel-wide)" ]; then
-                systemctl restart "$srv" > /dev/null 2>&1
-                srv_state=$(systemctl show -p ActiveState --value "$srv" 2>/dev/null)
-                printf "    %-38s %s\n" "$srv" "$srv_state"
-            fi
-        done
+if [[ -f "${SERVICE_MAP}" ]]; then
+    SVC_COUNT=$(jq 'length' "${SERVICE_MAP}" 2>/dev/null || echo 0)
+    for idx in $(seq 0 $((SVC_COUNT - 1))); do
+        SVC_PKG=$(jq -r ".[${idx}].package // empty" "${SERVICE_MAP}" 2>/dev/null)
+        SVC_NAME=$(jq -r ".[${idx}].service // empty" "${SERVICE_MAP}" 2>/dev/null)
+        [[ -z "${SVC_NAME}" ]] && continue
+
+        # Only restart if package was in the broken set
+        if echo "${ALL_BROKEN}" | grep -qw "${SVC_PKG}"; then
+            RESTART_RC=0
+            systemctl try-restart "${SVC_NAME}" 2>/dev/null || RESTART_RC=$?
+            STATE=$(systemctl is-active "${SVC_NAME}" 2>/dev/null || echo "unknown")
+            printf "    %-40s %s\n" "${SVC_NAME}" "${STATE}"
+            add_action "systemctl try-restart ${SVC_NAME}" "${STATE}" "package: ${SVC_PKG}"
+        fi
+    done
+else
+    # No service map — try restarting services for known broken packages
+    for PKG in ${ALL_BROKEN}; do
+        SVC="${PKG}.service"
+        if systemctl list-units --all "${SVC}" 2>/dev/null | grep -q "${SVC}"; then
+            RESTART_RC=0
+            systemctl try-restart "${SVC}" 2>/dev/null || RESTART_RC=$?
+            STATE=$(systemctl is-active "${SVC}" 2>/dev/null || echo "unknown")
+            printf "    %-40s %s\n" "${SVC}" "${STATE}"
+            add_action "systemctl try-restart ${SVC}" "${STATE}" "package: ${PKG}"
+        fi
     done
 fi
 
-end_time=$(date +%s)
-duration=$((end_time - start_time))
+# ══════════════════════════════════════════════════════════════════════════════
+# FINALIZATION
+# ══════════════════════════════════════════════════════════════════════════════
+T_END=$(date +%s)
+DURATION=$((T_END - T_START))
+FINISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-rec_text="yes"
-if [ "$recovered_bool" = "false" ]; then
-    rec_text="no"
-fi
+FINAL_STATE="clean"
+[[ "${RECOVERED}" == "false" ]] && FINAL_STATE="residual broken packages"
 
-echo "RECOVERED: $rec_text"
-echo "Duration: ${duration}s"
-echo "Report saved to: $OUT_FILE"
+echo ""
+echo "RECOVERED: $(if [[ "${RECOVERED}" == "true" ]]; then echo yes; else echo no; fi)"
+echo "Duration: ${DURATION}s"
 
-# Write final JSON (apt_recovery.json, initial_diagnosis, actions_taken, final_state, recovered)
+# ── Emit apt_recovery.json ────────────────────────────────────────────────────
 jq -n \
-    --argjson init "$initial_diag_json" \
-    --argjson acts "$actions_taken_json" \
-    --argjson fin "$final_state_json" \
-    --argjson rec "$recovered_bool" \
-    --argjson dur "$duration" \
+    --argjson diag       "${INITIAL_DIAGNOSIS}" \
+    --argjson actions    "${ACTIONS_JSON}" \
+    --arg     final      "${FINAL_STATE}" \
+    --argjson recovered  "$(if [[ "${RECOVERED}" == "true" ]]; then echo true; else echo false; fi)" \
+    --argjson duration   "${DURATION}" \
+    --arg     started    "${STARTED_AT}" \
+    --arg     finished   "${FINISHED_AT}" \
     '{
-        initial_diagnosis: $init,
-        actions_taken: $acts,
-        final_state: $fin,
-        recovered: $rec,
-        duration_seconds: $dur
-    }' > "$OUT_FILE"
+        "initial_diagnosis": $diag,
+        "actions_taken":     $actions,
+        "final_state":       $final,
+        "recovered":         $recovered,
+        "duration_seconds":  $duration,
+        "started_at":        $started,
+        "finished_at":       $finished
+    }' > "${RECOVERY_FILE}"
 
-# Exit codes
-if [ "$recovered_bool" = "true" ]; then
+echo "Report saved to: ${RECOVERY_FILE}"
+
+if [[ "${RECOVERED}" == "true" ]]; then
     exit 0
 else
     exit 1
