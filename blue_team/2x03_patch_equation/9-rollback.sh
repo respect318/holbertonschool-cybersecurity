@@ -1,119 +1,232 @@
 #!/bin/bash
-export LC_ALL=C
+# 9-rollback.sh - Package Rollback to Pre-Patch Version
+# Downgrades a package to its pre-patch version from pre_patch_state.json
 
-if [ -z "$1" ]; then
-    echo "Usage: $0 <package>"
+PRE_STATE_FILE="pre_patch_state.json"
+SERVICE_MAP="service_dependency_map.json"
+SERVICE_PROBES="service_probes.json"
+RESULT_FILE="rollback_result.json"
+
+# ── Accept single positional argument: package name ───────────────────────────
+if [[ -z "${1:-}" ]]; then
+    echo "[-] Usage: $0 <package>" >&2
+    echo "    package argument is required." >&2
+    exit 1
+fi
+PACKAGE="$1"
+
+SUCCESS=false
+HOLD_APPLIED=false
+FROM_VERSION=""
+TO_VERSION=""
+PROBES_JSON="[]"
+
+# ── Load pre_patch_state.json ─────────────────────────────────────────────────
+if [[ ! -f "${PRE_STATE_FILE}" ]]; then
+    echo "[-] ${PRE_STATE_FILE} not found." >&2
+    cat > "${RESULT_FILE}" << EOF
+{
+  "package": "${PACKAGE}",
+  "from_version": "",
+  "to_version": "",
+  "hold_applied": false,
+  "probes": [],
+  "success": false,
+  "error": "${PRE_STATE_FILE} not found"
+}
+EOF
     exit 1
 fi
 
-# package argument handling
-package="$1"
+# Load target version from pre_patch_state.json packages block
+TARGET_VERSION=$(jq -r --arg pkg "${PACKAGE}" \
+    '.packages[$pkg].version // .packages[$pkg] // empty' \
+    "${PRE_STATE_FILE}" 2>/dev/null || true)
 
-PRE_FILE="pre_patch_state.json"
-DEPS_FILE="service_dependency_map.json"
-PROBES_FILE="service_probes.json"
-OUT_FILE="rollback_result.json"
-
-# Load target version from pre_patch_state.json (packages array)
-target_version=$(jq -r --arg p "$package" '.packages[] | select(.package == $p) | .version' "$PRE_FILE" 2>/dev/null)
-
-if [ -z "$target_version" ] || [ "$target_version" = "null" ]; then
-    echo "Error: target version for package $package not found in $PRE_FILE"
+if [[ -z "${TARGET_VERSION}" || "${TARGET_VERSION}" == "null" ]]; then
+    echo "[-] Package '${PACKAGE}' not found in ${PRE_STATE_FILE} packages block." >&2
+    cat > "${RESULT_FILE}" << EOF
+{
+  "package": "${PACKAGE}",
+  "from_version": "",
+  "to_version": "",
+  "hold_applied": false,
+  "probes": [],
+  "success": false,
+  "error": "package not found in pre_patch_state.json packages"
+}
+EOF
     exit 1
 fi
 
-echo "[*] Target version from pre_patch_state.json: $target_version"
+echo "[*] Target version from pre_patch_state.json: ${TARGET_VERSION}"
 
-# Confirm version is available via apt-cache madison
-madison_check=$(apt-cache madison "$package" 2>/dev/null | grep "$target_version")
-if [ -z "$madison_check" ]; then
-    echo "[*] Version available in cache: no"
-    exit 1
+# ── Get current installed version ────────────────────────────────────────────
+FROM_VERSION=$(dpkg-query -W -f='${Version}' "${PACKAGE}" 2>/dev/null || echo "not-installed")
+
+# ── Confirm target version is available via apt-cache madison ─────────────────
+printf "[*] Version available in cache: "
+MADISON_OUT=$(apt-cache madison "${PACKAGE}" 2>/dev/null || true)
+if echo "${MADISON_OUT}" | grep -q "${TARGET_VERSION}"; then
+    echo "yes"
+    VERSION_AVAILABLE=true
 else
-    echo "[*] Version available in cache: yes"
-fi
-
-from_version=$(dpkg-query -W -f='${Version}' "$package" 2>/dev/null || echo "none")
-to_version="$target_version"
-
-# Execute allow-downgrades apt install
-printf "[*] Downgrading %-41s " "$package..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-downgrades "${package}=${target_version}" >/dev/null 2>&1
-
-if [ $? -eq 0 ]; then
-    echo "OK"
-    success_bool="true"
-else
-    echo "FAIL"
-    success_bool="false"
-fi
-
-# Apply apt-mark hold
-hold_applied="false"
-if [ "$success_bool" = "true" ]; then
-    printf "[*] apt-mark hold %-39s " "$package"
-    apt-mark hold "$package" >/dev/null 2>&1
-    if [ $? -eq 0 ]; then
-        echo "OK"
-        hold_applied="true"
+    echo "no — checking if already installed at target version"
+    if [[ "${FROM_VERSION}" == "${TARGET_VERSION}" ]]; then
+        echo "    already at target version ${TARGET_VERSION}, nothing to do."
+        VERSION_AVAILABLE=true
     else
-        echo "FAIL"
+        VERSION_AVAILABLE=false
+        echo "[-] Target version ${TARGET_VERSION} not available in repository." >&2
     fi
 fi
 
-echo "[*] Re-running probes for affected services..."
-> probes_tmp.jsonl
-
-if [ "$success_bool" = "true" ] && [ -f "$DEPS_FILE" ] && [ -f "$PROBES_FILE" ]; then
-    affected_services=$(jq -r --arg p "$package" '.[] | select(.linked_packages[]? == $p) | .service' "$DEPS_FILE" 2>/dev/null | sort -u)
-    
-    for srv in $affected_services; do
-        probe_cmd=$(jq -r --arg s "$srv" '.[$s] // empty' "$PROBES_FILE" 2>/dev/null)
-        if [ -n "$probe_cmd" ] && [ "$probe_cmd" != "null" ]; then
-            if eval "$probe_cmd" >/dev/null 2>&1; then
-                printf "    %-46s PASS\n" "$srv probe ($probe_cmd)"
-                jq -n -c --arg s "$srv" --arg st "PASS" '{service: $s, status: $st}' >> probes_tmp.jsonl
-            else
-                printf "    %-46s FAIL\n" "$srv probe ($probe_cmd)"
-                jq -n -c --arg s "$srv" --arg st "FAIL" '{service: $s, status: $st}' >> probes_tmp.jsonl
-                success_bool="false"
-            fi
-        fi
-    done
+if [[ "${VERSION_AVAILABLE}" == "false" ]]; then
+    cat > "${RESULT_FILE}" << EOF
+{
+  "package": "${PACKAGE}",
+  "from_version": "${FROM_VERSION}",
+  "to_version": "${TARGET_VERSION}",
+  "hold_applied": false,
+  "probes": [],
+  "success": false,
+  "error": "target version not available in cache or repository"
+}
+EOF
+    exit 1
 fi
 
-if [ -s probes_tmp.jsonl ]; then
-    probes_json=$(jq -s '.' probes_tmp.jsonl)
+# ── Execute apt-get install --allow-downgrades ────────────────────────────────
+printf "[*] Downgrading %s...                                 " "${PACKAGE}"
+DOWNGRADE_RC=0
+DOWNGRADE_OUT=$(DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y --allow-downgrades "${PACKAGE}=${TARGET_VERSION}" 2>&1) || DOWNGRADE_RC=$?
+
+if [[ ${DOWNGRADE_RC} -eq 0 ]]; then
+    echo "OK"
+    TO_VERSION=$(dpkg-query -W -f='${Version}' "${PACKAGE}" 2>/dev/null || echo "${TARGET_VERSION}")
 else
-    probes_json="[]"
+    echo "FAILED (exit ${DOWNGRADE_RC})"
+    echo "    ${DOWNGRADE_OUT}" | tail -3
+    cat > "${RESULT_FILE}" << EOF
+{
+  "package": "${PACKAGE}",
+  "from_version": "${FROM_VERSION}",
+  "to_version": "${TARGET_VERSION}",
+  "hold_applied": false,
+  "probes": [],
+  "success": false,
+  "error": "apt-get install --allow-downgrades failed with exit ${DOWNGRADE_RC}"
+}
+EOF
+    exit 1
 fi
-rm -f probes_tmp.jsonl
 
-# Emit rollback_result.json
-jq -n \
-    --arg p "$package" \
-    --arg fv "$from_version" \
-    --arg tv "$to_version" \
-    --argjson ha "$hold_applied" \
-    --argjson pr "$probes_json" \
-    --argjson suc "$success_bool" \
-    '{
-        package: $p,
-        from_version: $fv,
-        to_version: $tv,
-        hold_applied: $ha,
-        probes: $pr,
-        success: $suc
-    }' > "$OUT_FILE"
+# ── apt-mark hold after successful downgrade ──────────────────────────────────
+printf "[*] apt-mark hold %s                                  " "${PACKAGE}"
+HOLD_RC=0
+apt-mark hold "${PACKAGE}" 2>/dev/null || HOLD_RC=$?
+if [[ ${HOLD_RC} -eq 0 ]]; then
+    echo "OK"
+    HOLD_APPLIED=true
+else
+    echo "FAILED"
+    HOLD_APPLIED=false
+fi
 
-res_text="success"
-[ "$success_bool" = "false" ] && res_text="failure"
+# ── Re-run probes for affected services ───────────────────────────────────────
+echo "[*] Re-running probes for affected services..."
 
-echo "ROLLBACK: $res_text"
-echo "from $from_version to $to_version"
-echo "Report saved to: rollback_result.json"
+# Load service_dependency_map.json to find services linked to this package
+if [[ -f "${SERVICE_MAP}" ]]; then
+    SVC_COUNT=$(jq 'length' "${SERVICE_MAP}" 2>/dev/null || echo 0)
+    for idx in $(seq 0 $((SVC_COUNT - 1))); do
+        SVC_NAME=$(jq -r ".[${idx}].service // empty" "${SERVICE_MAP}" 2>/dev/null)
+        [[ -z "${SVC_NAME}" ]] && continue
 
-if [ "$success_bool" = "true" ]; then
+        # Check if this service's linked_packages contains our package
+        HAS_PKG=$(jq -r --arg pkg "${PACKAGE}" \
+            ".[${idx}].linked_packages // [] | index(\$pkg) != null" \
+            "${SERVICE_MAP}" 2>/dev/null || echo "false")
+        [[ "${HAS_PKG}" != "true" ]] && continue
+
+        # Load probe details from service_probes.json if available
+        PROBE_CMD=""
+        PROBE_TYPE="systemctl"
+        if [[ -f "${SERVICE_PROBES}" ]]; then
+            PROBE_CMD=$(jq -r --arg svc "${SVC_NAME}" \
+                '.[$svc].probe_cmd // empty' "${SERVICE_PROBES}" 2>/dev/null || true)
+            PROBE_TYPE=$(jq -r --arg svc "${SVC_NAME}" \
+                '.[$svc].type // "systemctl"' "${SERVICE_PROBES}" 2>/dev/null || echo "systemctl")
+        fi
+
+        # Run probe
+        PROBE_RESULT="FAIL"
+        PROBE_DETAIL=""
+        if [[ -n "${PROBE_CMD}" ]]; then
+            PROBE_OUT=$(eval "${PROBE_CMD}" 2>&1) && PROBE_RESULT="PASS" || PROBE_RESULT="FAIL"
+            PROBE_DETAIL="${PROBE_OUT}"
+        else
+            # Default: check systemctl is-active
+            SVC_STATE=$(systemctl is-active "${SVC_NAME}" 2>/dev/null || echo "inactive")
+            if [[ "${SVC_STATE}" == "active" ]]; then
+                PROBE_RESULT="PASS"
+            else
+                PROBE_RESULT="FAIL"
+                # Try restarting
+                systemctl try-restart "${SVC_NAME}" 2>/dev/null || true
+                SVC_STATE=$(systemctl is-active "${SVC_NAME}" 2>/dev/null || echo "inactive")
+                [[ "${SVC_STATE}" == "active" ]] && PROBE_RESULT="PASS"
+            fi
+            PROBE_DETAIL="systemctl is-active: ${SVC_STATE}"
+        fi
+
+        printf "    %-40s %s\n" "${SVC_NAME} probe (${PROBE_TYPE})" "${PROBE_RESULT}"
+
+        PROBE_OBJ=$(jq -n \
+            --arg svc    "${SVC_NAME}" \
+            --arg type   "${PROBE_TYPE}" \
+            --arg result "${PROBE_RESULT}" \
+            --arg detail "${PROBE_DETAIL}" \
+            '{"service": $svc, "probe_type": $type, "result": $result, "detail": $detail}')
+        PROBES_JSON=$(echo "${PROBES_JSON}" | jq ". + [${PROBE_OBJ}]")
+    done
+else
+    echo "    service_dependency_map.json not found — skipping service probes"
+fi
+
+# ── Determine overall success ─────────────────────────────────────────────────
+FAILED_PROBES=$(echo "${PROBES_JSON}" | jq '[.[] | select(.result == "FAIL")] | length')
+if [[ ${FAILED_PROBES} -eq 0 ]]; then
+    SUCCESS=true
+else
+    SUCCESS=false
+fi
+
+# ── Emit rollback_result.json ─────────────────────────────────────────────────
+PROBES_STR=$(echo "${PROBES_JSON}")
+
+cat > "${RESULT_FILE}" << EOF
+{
+  "package": "${PACKAGE}",
+  "from_version": "${FROM_VERSION}",
+  "to_version": "${TO_VERSION}",
+  "hold_applied": ${HOLD_APPLIED},
+  "probes": ${PROBES_STR},
+  "success": ${SUCCESS}
+}
+EOF
+
+echo ""
+if [[ "${SUCCESS}" == "true" ]]; then
+    echo "ROLLBACK: success"
+else
+    echo "ROLLBACK: failed (${FAILED_PROBES} probe(s) failed)"
+fi
+echo "from ${FROM_VERSION} to ${TO_VERSION}"
+echo "Report saved to: ${RESULT_FILE}"
+
+if [[ "${SUCCESS}" == "true" ]]; then
     exit 0
 else
     exit 1
