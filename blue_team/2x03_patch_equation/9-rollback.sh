@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # 9-rollback.sh - Package Rollback to Pre-Patch Version
 
 PRE_STATE_FILE="pre_patch_state.json"
