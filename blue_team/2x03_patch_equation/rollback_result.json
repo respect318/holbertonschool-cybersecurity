@@ -1,0 +1,8 @@
+{
+  "package": "apache2",
+  "from_version": "2.4.52-1ubuntu4.19",
+  "to_version": "2.4.52-1ubuntu4.19",
+  "hold_applied": true,
+  "probes": [],
+  "success": true
+}
