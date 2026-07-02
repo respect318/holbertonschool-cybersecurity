@@ -2,59 +2,64 @@
 #
 # 2-frontend.sh
 #
-# PASSIVE RECON ONLY.
-# No exploitation, no authentication bypass, no injection — this script
-# only reads what the target (victim) host already serves publicly:
-# the HTML page and the JS/CSS files it references. That is the whole
-# point of "passive" recon: everything used here is information the
-# server voluntarily hands to any normal browser.
+# Lab: The-Onion / passive_recon — Layer 1 continued.
+# Target: portal.otono.example.
 #
-# Target (victim) host: portal.otono.example
-#
-# What it does:
-#   1) fetches the target's front page
-#   2) inventories every JS/CSS dependency it loads
-#   3) extracts the actually-loaded version of each dependency
-#   4) compares it against the version the site declares (integrity
-#      hash / sourceMappingURL / inline version banner)
-#   5) reports:
-#        - the critical library and its actually-loaded version
-#        - the name of a dependency that is already outdated
+# Declared dependency versions live in /static/deps.json. Actually-
+# loaded versions are extracted from each served file's own banner
+# comment. The critical library is the one where declared != actual
+# (a version dissonance). An outdated dependency is one whose actual
+# version is older than the latest release reported by the lab's
+# local EOL API. Bounded timeouts and a small per-request delay keep
+# request rate low. Only the two requested flag values go to stdout.
 #
 # Usage: ./2-frontend.sh
 #
 
+set -u
+
 TARGET="https://portal.otono.example"
+EOL_API="http://eol-api.otono.internal"
 UA="Mozilla/5.0 (compatible; DependencyForensics/1.0)"
+CURL_OPTS=(-sk --max-time 8 --connect-timeout 4 -A "$UA")
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
-CRITICAL_LIB="ExampleLib"
+declare -A DISPLAY_NAME=(
+  [jquery]="jQuery"
+  [vue]="Vue"
+  [bootstrap]="Bootstrap"
+  [lodash]="Lodash"
+  [axios]="Axios"
+  ["chart.js"]="Chart.js"
+  [dompurify]="DOMPurify"
+  [moment]="Moment"
+)
+
 CRITICAL_LINE=""
 OUTDATED_DEP=""
 
-# ---------------------------------------------------------------------
-# Step 1: fetch the portal HTML and pull out every JS/CSS resource URL
-# (src=... for scripts, href=... for stylesheets)
-# ---------------------------------------------------------------------
 PAGE="$WORKDIR/index.html"
-curl -s -A "$UA" "$TARGET" -o "$PAGE"
+curl "${CURL_OPTS[@]}" "$TARGET/" -o "$PAGE" 2>/dev/null
 
-grep -oE '(src|href)="[^"]+\.(js|css)"' "$PAGE" \
+DEPS_JSON="$WORKDIR/deps.json"
+curl "${CURL_OPTS[@]}" "$TARGET/static/deps.json" -o "$DEPS_JSON" 2>/dev/null
+
+grep -oE '(src|href)="[^"]+\.(js|css)"' "$PAGE" 2>/dev/null \
     | sed -E 's/^(src|href)="//; s/"$//' \
     | sort -u > "$WORKDIR/resources.txt"
 
-# ---------------------------------------------------------------------
-# Step 2: walk each resource, download it, and try to determine:
-#   - its declared version (integrity hash, sourceMappingURL, or an
-#     explicit "@version" style header comment)
-#   - its actually-loaded version (parsed out of the served file itself,
-#     e.g. "/*! ExampleLib v3.0.0 */" or a filename like lib-3.0.0.min.js)
-# ---------------------------------------------------------------------
+# Look up a declared version for a given dependency key in deps.json.
+lookup_declared() {
+    local key="$1"
+    grep -oE "\"${key}\"[[:space:]]*:[[:space:]]*\"[0-9]+\.[0-9]+\.[0-9]+\"" "$DEPS_JSON" 2>/dev/null \
+        | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1
+}
+
 while read -r resource; do
     [ -z "$resource" ] && continue
+    sleep 0.3   # moderate request rate
 
-    # Build an absolute URL if the resource path was relative
     case "$resource" in
         http*) url="$resource" ;;
         /*)    url="${TARGET}${resource}" ;;
@@ -62,58 +67,54 @@ while read -r resource; do
     esac
 
     fname="$(basename "$resource")"
-    dep="$(echo "$fname" | sed -E 's/(\.min)?\.(js|css)$//; s/-[0-9]+(\.[0-9]+)*$//')"
+    raw="$(echo "$fname" | sed -E 's/(\.min)?\.(js|css)$//')"
 
-    body="$WORKDIR/$fname"
-    curl -s -A "$UA" "$url" -o "$body"
+    body="$WORKDIR/$(echo "$fname" | md5sum | cut -d' ' -f1)"
+    curl "${CURL_OPTS[@]}" "$url" -o "$body" 2>/dev/null
 
-    # Declared version: look for an integrity attribute for this src/href
-    # in the original page, or a sourceMappingURL comment inside the file.
-    declared="$(grep -oE "integrity=\"[^\"]*\"" "$PAGE" | grep -A0 "$fname" 2>/dev/null)"
-    [ -z "$declared" ] && declared="$(grep -oE 'sourceMappingURL=[^ ]+' "$body" 2>/dev/null | head -n1)"
+    # Actually-loaded version: whatever version number appears in the
+    # file's own leading banner comment, regardless of exact banner
+    # wording ("v3.4.1", "3.4.1", "moment.js 2.29.4", etc.)
+    actual="$(head -n5 "$body" 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1)"
+    [ -z "$actual" ] && continue
 
-    # Actually-loaded version: parsed straight out of the delivered file
-    # (banner comment "vX.Y.Z" or filename embedding "-X.Y.Z")
-    actual="$(grep -oE '[Vv]ersion[: ]+[0-9]+\.[0-9]+\.[0-9]+' "$body" 2>/dev/null | head -n1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
-    [ -z "$actual" ] && actual="$(echo "$fname" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
-
-    if [ -n "$actual" ]; then
-        # Flag the critical library's loaded version
-        if [ "$dep" = "$CRITICAL_LIB" ] || echo "$dep" | grep -qi "$CRITICAL_LIB"; then
-            CRITICAL_LINE="${CRITICAL_LIB}/${actual}"
+    # Match this resource to a deps.json key: try the raw name as-is,
+    # with ".js" appended (e.g. chart -> chart.js), and the segment
+    # before the first dot (e.g. bootstrap.bundle -> bootstrap).
+    matched_key=""
+    declared=""
+    for candidate in "$raw" "${raw}.js" "${raw%%.*}"; do
+        val="$(lookup_declared "$candidate")"
+        if [ -n "$val" ]; then
+            matched_key="$candidate"
+            declared="$val"
+            break
         fi
+    done
+    [ -z "$matched_key" ] && continue
 
-        # Compare loaded vs declared (dissonance detection)
-        if [ -n "$declared" ] && ! echo "$declared" | grep -q "$actual"; then
-            echo "[dissonance] $dep: declared != loaded ($actual)" >&2
-        fi
+    display="${DISPLAY_NAME[$matched_key]:-$matched_key}"
 
-        # Compare loaded version against the latest published release
-        # to flag already-outdated dependencies.
-        latest="$(curl -s "https://registry.example.com/npm/${dep}/latest" \
-                    | grep -oE '"version":"[0-9]+\.[0-9]+\.[0-9]+"' \
-                    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+    # Dissonance: declared version != actually-loaded version.
+    if [ "$declared" != "$actual" ] && [ -z "$CRITICAL_LINE" ]; then
+        CRITICAL_LINE="${display}/${actual}"
+    fi
+
+    # Outdated check: compare actual against the local EOL API's
+    # latest published release for this dependency.
+    if [ -z "$OUTDATED_DEP" ]; then
+        latest_json="$(curl -s --max-time 5 --connect-timeout 3 "${EOL_API}/api/${matched_key}.json" 2>/dev/null)"
+        latest="$(echo "$latest_json" | grep -oE '"latest":"[0-9]+\.[0-9]+\.[0-9]+"' \
+                    | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | sort -V | tail -n1)"
         if [ -n "$latest" ]; then
             newest="$(printf '%s\n%s\n' "$actual" "$latest" | sort -V | tail -n1)"
-            if [ "$newest" != "$actual" ] && [ -z "$OUTDATED_DEP" ]; then
-                OUTDATED_DEP="$dep"
-            fi
+            [ "$newest" != "$actual" ] && OUTDATED_DEP="$matched_key"
         fi
     fi
 done < "$WORKDIR/resources.txt"
 
-# ---------------------------------------------------------------------
-# Report only what was actually observed on the target. No hardcoded
-# guesses: if the target couldn't be reached, or the critical library
-# / an outdated dependency wasn't found, say so on stderr and exit
-# non-zero instead of printing a fabricated result.
-# ---------------------------------------------------------------------
-if [ -z "$CRITICAL_LINE" ]; then
-    echo "error: could not determine loaded version of ${CRITICAL_LIB} from ${TARGET}" >&2
-    exit 1
-fi
-if [ -z "$OUTDATED_DEP" ]; then
-    echo "error: no outdated dependency detected on ${TARGET}" >&2
+if [ -z "$CRITICAL_LINE" ] || [ -z "$OUTDATED_DEP" ]; then
+    echo "error: insufficient signal from ${TARGET} to report both flags" >&2
     exit 1
 fi
 
