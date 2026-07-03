@@ -1,0 +1,40 @@
+# Environmental CVSS Recalibration
+
+**Client:** MediPath Diagnostics — Engagement VS-MPD-26-041
+**Input:** Sarah Chen's inherited base CVSS v3.1 assessments (`sarahs_raw_findings.md`) recalibrated against the MediPath Client Context Dossier
+**Method:** FIRST.org CVSS v3.1 calculator, Environmental metric group — Modified Base Metrics (MAV/MAC/MPR/MUI/MS/MC/MI/MA) combined with Security Requirements (CR/IR/AR) derived from the asset criticality and regulatory map, producing a Modified Impact Subscore and environmental score. Exploit Code Maturity, Remediation Level and Report Confidence are left "Not Defined" (multiplier 1.0) — no exploit-maturity or patch-status evidence was supplied for this engagement.
+**Scope note:** This pass only recalibrates severity. No finding is retired, merged, or chained here — that work belongs to the later triage and consolidation tasks. F-07 in particular is scored, not decided.
+
+| Finding | Sarah base (severity) | Environmental (severity) | Delta | Justification |
+| --- | --- | --- | --- | --- |
+| F-01 | 8.1 (High) | 8.8 (High) | ↑ | Diagnostic result records carry a "very high" confidentiality *and* integrity rating in the regulatory map, and no listed control (CDN/WAF, 82%-coverage SSO/MFA) validates tenant ownership at the data-access layer for an already-authenticated laboratory operator. Because the IDOR path itself is untouched by any compensating control, the health-data security requirement lifts the score above Sarah's generic base. |
+| F-02 | 6.1 (Medium) | 7.6 (High) | ↑ | The organization chart and compensating-controls list confirm support analysts can reach case data across multiple laboratory tenants, so a triggered stored-content execution has a materially larger blast radius than a single-tenant XSS, even with MFA and managed workstations reducing account-takeover risk. The Content-Security-Policy is still report-only rather than enforcing, so the environmental confidentiality impact is raised to reflect that wider cross-tenant reach. |
+| F-03 | 8.8 (High) | 8.0 (High) | ↓ | The compensating-controls table documents the private integration network as limiting reachability of hospital connector traffic, confining a realistic attacker to that segment rather than the open network Sarah's vector assumed. The excessive token scope and 180-day lifetime against very-high-criticality connector credentials keep this a serious finding, but the network control's evidenced coverage justifies lowering the environmental score from the base. |
+| F-04 | 8.2 (High) | 7.5 (High) | ↓ | The architecture overview and compensating-controls entry both describe a managed mTLS egress gateway that independently validates the upstream certificate and restricts destinations before traffic reaches the connector worker — a real precondition Sarah's isolated configuration reading couldn't capture. Because the dossier still flags bypass resistance and fail-closed behavior as unverified, the finding is downgraded rather than dismissed, resolving Sarah's own doubt in favor of "real but reduced" risk. |
+| F-05 | 7.5 (High) | 7.7 (High) | ↑ | The source-IP allowlist narrows who can send events, but the compensating-controls table explicitly notes that network identity is not equivalent to signed message integrity, so a forged status update from an allowed range remains fully possible. The sample-status workflow's "very high" integrity requirement for the diagnostic pathway outweighs that modest access precondition, pushing the environmental score up. |
+| F-06 | 6.5 (Medium) | 8.3 (High) | ↑ | Object-storage encryption is documented as not correcting excessive retention or inappropriate authorization, so it earns no credit against 30 days of live access to complete diagnostic export packages. Because diagnostic result records carry a "very high" confidentiality requirement and the retention mismatch directly implicates HDS/RGPD accountability, the environmental score rises sharply from Sarah's medium base. |
+| F-07 | 9.1 (Critical) | 6.1 (Medium) | ↓ | The dossier documents a specific, evidenced production control set around bulk export — DPO ticket, WebAuthn step-up, dual approval, case-specific key, seven-day expiry, immutable audit log — consistent with Sarah's note that this is an approved emergency/regulatory workflow rather than a raw vulnerability. Because the engagement's test role was pre-approved specifically to exercise the control and it is not yet confirmed that every production path enforces the same approvals, the score is substantially lowered but kept live pending that architectural confirmation rather than retired outright. |
+| F-08 | 5.3 (Medium) | 5.3 (Medium) | = | Neither the CDN/WAF nor the 82%-coverage SSO/MFA control touches the recovery flow's differing responses, since the compensating-controls table itself states that local accounts and enumeration "still require treatment" regardless of authentication method. The affected identity data does not reach the health-data or diagnostic-workflow sensitivity tiers that drive escalation elsewhere in this matrix, so no environmental factor moves the score. |
+| F-09 | 7.2 (High) | 7.9 (High) | ↑ | No listed control addresses the real-time gap between a role downgrade and authorization-cache expiry — the quarterly access review is explicitly noted as not providing immediate revocation, and MFA/managed workstations only govern initial authentication, not standing session privilege. The administrative console's "very high" confidentiality and integrity rating in the regulatory map raises the environmental score to reflect genuinely unmitigated privileged access during the 27-minute window. |
+| F-10 | 8.0 (High) | 8.0 (High) | = | The compensating-controls table lists no control covering analytics-service reachability from the application network, and the asset itself is rated only "medium/high" confidentiality rather than the "very high" tier applied to health-data and credential assets elsewhere, so neither a mitigating nor an aggravating factor moves the score. Its potential role as a pivot point toward F-01 (result lookup) and F-03 (broad connector token) is noted for the later attack-chain and consolidation work rather than folded into this recalibration. |
+
+---
+
+## Modified metrics reference
+
+For traceability, the table below records the Modified Base Metrics and Security Requirements (CR/IR/AR) applied on top of each base vector to reach the environmental score. Where a metric is not listed, it is unchanged from Sarah's base vector.
+
+| Finding | Modified metrics vs. base | CR / IR / AR | Rationale in one line |
+| --- | --- | --- | --- |
+| F-01 | none (base metrics held) | H / H / M | Diagnostic result records = very-high C/I, high A per regulatory map. |
+| F-02 | MC: L → H | M / M / M | Cross-tenant support-analyst reach widens realistic confidentiality impact. |
+| F-03 | MAV: N → A | H / H / M | Private integration network confines reachability (documented control). |
+| F-04 | MAC: L → H | H / H / M | Managed mTLS gateway adds an independent validation precondition. |
+| F-05 | MAC: L → H | M / H / H | IP allowlist adds a precondition; workflow integrity requirement still high. |
+| F-06 | none (base metrics held) | H / — / — | Diagnostic export = very-high confidentiality asset; encryption doesn't fix retention. |
+| F-07 | MAC: L → H, MI: H → N | H / M / M | Approval/step-up workflow adds a precondition; action is export (read), not write. |
+| F-08 | none | M / M / M | No applicable control shifts exposure; asset sensitivity is unremarkable. |
+| F-09 | none (base metrics held) | H / H / M | Administrative console = very-high C/I per regulatory map; no real-time control. |
+| F-10 | none | M / M / M | Analytics service = medium/high tier only; no listed compensating control. |
+
+CR/IR/AR scale: **H** = 1.5 (asset rated "very high" for that property in the regulatory map), **M** = 1.0 (asset rated "high" or "medium," CVSS default), **L** = 0.5 (not used in this engagement — no MediPath asset in scope was rated "low").
