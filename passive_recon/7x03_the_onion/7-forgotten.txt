@@ -1,0 +1,7 @@
+# Trace 1: portal.otono.example /static/js/otono-portal.js suggests the existence of a legacy endpoint via an old JS reference.
+# Trace 2: forgotten.otono.example resolves (A 127.30.0.50), despite being unlinked from no navigation or sitemap.
+# Trace 3: forgotten.otono.example responds live (HTTP 200) and inspecting the response reveals the internal path Rails.root: /var/www/otono-sync.
+# Convergence: an undeclared legacy synchronisation service was left running and exposed.
+
+# Undeclared service: forgotten.otono.example
+# First trace: old-js-reference
