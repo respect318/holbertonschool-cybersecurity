@@ -1,0 +1,15 @@
+# Service: legacy.otono.example:80
+# Declared: nginx/1.25.3
+# Expected behaviour of nginx:
+  - Nginx default error pages (simple HTML, no ServerSignature footer).
+  - Nginx specific ETag formats.
+
+# Observed behaviour:
+  - The error page footer reveals: Apache/2.2.15 (CentOS) Server at legacy.otono.example Port 80
+  - The ETag format follows the classic Apache inode-size-mtime structure.
+  - The error responses return an Apache 2.2 HTML 2.0 DOCTYPE error page.
+
+# Contradiction: the Server header announces nginx/1.25.3, but the actual behavioral probes definitively match legacy Apache HTTP Server signatures.
+
+# Lying header value: nginx/1.25.3
+# Actual technology: Apache/2.2.15
