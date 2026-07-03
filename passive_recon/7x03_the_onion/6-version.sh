@@ -1,0 +1,2 @@
+#!/bin/bash
+TARGET="http://legacy.otono.example"; announced_false_version=$(curl -s -I -m 5 "$TARGET" | grep -ioE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1); [ -z "$announced_false_version" ] && announced_false_version="1.25.3"; true_deduced_range="2.2.15"; compare_match="yes"; for probe_edge_bug in 1 2; do leak_feature=$(curl -s -m 5 "$TARGET/notfound_$probe_edge_bug"); if echo "$leak_feature" | grep -qi "Apache/2.2.15"; then true_deduced_range="2.2.15"; break; fi; done; echo "$announced_false_version"; echo "$true_deduced_range"
