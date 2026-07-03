@@ -1,7 +1,5 @@
 # Environmental CVSS Recalibration
 
-This deliverable outlines the environmental CVSS v3.1 recalibration for the MediPath Diagnostics engagement. Sarah's inherited base scores have been adjusted using the FIRST.org calculator, factoring in MediPath's specific asset criticality, regulatory mapping (HDS, RGPD), and existing compensating controls.
-
 | Finding | Sarah base (severity) | Environmental (severity) | Delta | Justification |
 | --- | --- | --- | --- | --- |
 | F-01 | 8.1 (High) | 8.8 (High) | ↑ | Diagnostic result records hold very high confidentiality and integrity requirements due to RGPD mandates for personal health data. Existing CDN and managed WAF controls are ineffective at the application layer, driving the modified environmental impact up. |
