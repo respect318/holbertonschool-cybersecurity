@@ -1,0 +1,7 @@
+# Signal 1: The response sets a _session_id cookie, which implies the Rails default session cookie name.
+# Signal 2: The HTTP headers include X-Runtime: 0.013827, which implies the standard Rack/Rails middleware response-time header.
+# Signal 3: Triggering a not-found page yields a Routing Error that leaks the internal path Rails.root: /var/www/otono-sync.
+# Convergence: three independent Rails signatures converge on the same stack.
+
+# Backend framework: Ruby on Rails
+# Server-side language: Ruby
