@@ -1,0 +1,9 @@
+# DB signal 1: a malformed query yields Mysql2::Error: ERROR 1054 (42S22), which implies MySQL error code 1054 / SQLSTATE 42S22.
+# DB signal 2: The stack trace references the Ruby mysql2 adapter, which implies the database engine.
+# Conclusion: MySQL
+#
+# Infrastructure signal: the X-Served-By response header alternates between node-a and node-b across repeated identical requests.
+# Implies: more than one backend node behind a balancer (round-robin).
+#
+# Database engine: MySQL
+# Infrastructure: load-balanced:x-served-by-rotation
