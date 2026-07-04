@@ -1,44 +1,47 @@
 #!/bin/bash
+# 2-frontend.sh
+# Extracts actually-loaded dependency version and compares with declared version.
+# Evaluates sourceMappingURL, integrity, or JSON declarations.
+# Finds outdated frontend resources.
 
-# 1. Bəyan edilmiş (declared) versiyaların olduğu JSON faylını çəkirik
-deps=$(curl -s http://portal.otono.example/static/deps.json)
+portal_url="http://portal.otono.example"
+deps_json=$(curl -s "$portal_url/static/deps.json")
 
-# 2. Portalın HTML-indən bütün JS fayllarının adlarını tapırıq
-scripts=$(curl -s http://portal.otono.example | grep -oP '(?<=src=")[^"]+\.js')
+# Discover loaded front-end resources (search for src in .js)
+scripts=$(curl -s "$portal_url" | grep -oP '(?<=src=")[^"]+\.js')
 
-# --- SƏTİR 1: Dissonansın tapılması ---
+# --- LINE 1: Find dissonance between actual loaded version and declared version ---
 for script in $scripts; do
-    # Faylın adından kitabxananın adını çıxarırıq (məs: vue.min.js -> vue)
     lib_name=$(basename "$script" .min.js)
     
-    # Faylın içindəki həqiqi versiyanı tapırıq
-    actual_ver=$(curl -s "http://portal.otono.example$script" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+    # Extract actually-loaded version
+    actual_version=$(curl -s "$portal_url$script" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
     
-    if [ -n "$actual_ver" ]; then
-        # JSON-dan elan edilmiş versiyanı çəkirik
-        declared_ver=$(echo "$deps" | grep -i "\"$lib_name" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+")
+    if [ -n "$actual_version" ]; then
+        declared_version=$(echo "$deps_json" | grep -i "\"$lib_name" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+")
         
-        # Əgər fərqlənirlərsə, ekrana çap edib dövrü dayandırırıq
-        if [ -n "$declared_ver" ] && [ "$actual_ver" != "$declared_ver" ]; then
-            echo "$lib_name/$actual_ver"
+        if [ -n "$declared_version" ] && [ "$actual_version" != "$declared_version" ]; then
+            # Output the dissonance
+            echo "${lib_name^}/$actual_version"
             break
         fi
     fi
 done
 
-# --- SƏTİR 2: Köhnəlmiş kitabxananın tapılması ---
+# --- LINE 2: Find outdated dependency ---
 for script in $scripts; do
     lib_name=$(basename "$script" .min.js)
-    actual_ver=$(curl -s "http://portal.otono.example$script" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
     
-    if [ -n "$actual_ver" ]; then
-        # EOL API-yə müraciət edib ən son versiyanı alırıq
-        latest_ver=$(curl -s "http://eol-api.otono.internal/api/${lib_name}.json" | grep -o '"latest":"[^"]*"' | cut -d'"' -f4)
+    actual_version=$(curl -s "$portal_url$script" | grep -E -o "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+    
+    if [ -n "$actual_version" ]; then
+        latest_version=$(curl -s "http://eol-api.otono.internal/api/${lib_name}.json" | grep -o '"latest":"[^"]*"' | cut -d'"' -f4)
         
-        if [ -n "$latest_ver" ]; then
-            # Həqiqi və API-dən gələn versiyaları müqayisə edirik
-            lowest=$(printf '%s\n' "$actual_ver" "$latest_ver" | sort -V | head -n 1)
-            if [ "$lowest" == "$actual_ver" ] && [ "$actual_ver" != "$latest_ver" ]; then
+        if [ -n "$latest_version" ]; then
+            # Compare versions using sort -V
+            lowest=$(printf '%s\n' "$actual_version" "$latest_version" | sort -V | head -n 1)
+            if [ "$lowest" == "$actual_version" ] && [ "$actual_version" != "$latest_version" ]; then
+                # Output the outdated library name
                 echo "$lib_name"
                 break
             fi
