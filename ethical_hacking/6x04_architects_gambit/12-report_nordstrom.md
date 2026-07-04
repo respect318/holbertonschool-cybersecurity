@@ -1,3 +1,4 @@
+
 # Engagement Report, Nordstrøm Power Group
 For: Elin Solberg (CISO) and the Nordstrøm board
 
@@ -137,3 +138,4 @@ We treat this section as part of the deliverable, not a disclaimer buried at the
 
 - Phase 1: `flag{npg_phase1_public_surface_mapped}`, `flag{npg_phase1_supplier_portal_foothold}`
 - Phase 2: `flag{npg_phase2_german_api_exposure}`, `flag{npg_phase2_ot_pivot_potential_validated}`, `flag{npg_phase2_cleanup_verified}`
+.
