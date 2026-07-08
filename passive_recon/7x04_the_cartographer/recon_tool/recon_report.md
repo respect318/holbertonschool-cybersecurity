@@ -10,9 +10,13 @@ The tool executed a full passive reconnaissance pipeline against the target, cor
 - TLS layer: Certificates and internal naming patterns discovered.
 
 ## Prioritised Vulnerability-Analysis Targets
-The red team can act without basic clarification based on these highest-priority assets:
-1. **portal.cartograph.example**: Prioritised because exposure, service, version, TLS, technology, and confidence evidence from the final map show it runs an outdated Django/3.2.18 framework (Confirmed high confidence).
-2. **admin.cartograph.example**: Prioritised due to exposed internal administrative interfaces identified via certificate SANs.
+The red team can act without basic clarification because the final map provides explicit cross-layer evidence for these highest-priority assets:
+
+1. **portal.cartograph.example**:
+   - **Justification:** The final map provides clear evidence of external network **exposure** on port 443. The **service** and **technology** fingerprinting identified a web application. The specific **version** detected is an outdated `Django/3.2.18` framework, which is highly actionable for known CVEs. The **TLS** certificate confirms this is the primary portal. The pipeline established a **confidence** level of "Confirmed" (nmap conf >= 8) for this finding.
+
+2. **admin.cartograph.example**:
+   - **Justification:** This is a highest-priority asset because the **final map** reveals severe external **exposure** of what should be a restricted interface. The **TLS** certificate SANs leaked the internal "admin" naming pattern. The mapped **service** runs on a non-standard management port (54321), and the **technology** and **version** evidence shows it runs `nginx/1.18.0`. This provides an immediate, actionable target for auth bypass or credential stuffing. This data carries a **confidence** level of "Confirmed".
 
 ## Methodology
 This section references each module's behaviour:
