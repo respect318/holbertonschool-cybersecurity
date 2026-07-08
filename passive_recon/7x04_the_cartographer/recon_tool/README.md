@@ -19,19 +19,21 @@ Here are actionable instructions for creating a new module:
 This ensures the extension process is reproducible.
 
 ## Usage, Configuration, and Outputs
-**Dependency setup:** Requires Python 3.9+ and nmap.
+**Dependency setup:** Requires Python 3.9+, dnspython, cryptography, requests, and nmap installed on the host.
 **Configuration:** No extra config files are needed.
 Run the tool using the recon.py --domain command:
 `./recon.py --domain cartograph.example`
 **Output artefacts:** The tool produces both structured and Markdown output artefacts (`attack_surface.json` and `attack_surface.md`). Another engineer can run the tool from the documentation.
 
 ## Third-Party Transparency
-The tools are not treated as black boxes.
-- **nmap**: Used for TCP port scanning and service fingerprinting.
-- **subfinder**: Used for subdomain enumeration via public APIs.
-Integration was chosen over rebuilding because creating custom parsers and massive signature databases from scratch is inefficient and error-prone.
-**Known failure or false-positive modes:** nmap might produce false positives on unrecognized service versions, and subfinder may return stale DNS records that no longer resolve.
+The tools are not treated as black boxes. Here is what nmap, subfinder, and every other integrated third-party component actually do, why integration was chosen over rebuilding, and the known failure or false-positive modes for each component:
+
+- **nmap**: Used for TCP port scanning and service fingerprinting. Integration was chosen over rebuilding because writing a custom TCP stack and maintaining a massive, community-vetted service signature database from scratch is technically unfeasible. Known failure or false-positive modes: nmap might produce false positives on unrecognized, obscure service versions, or drop packets under rate limits.
+- **subfinder**: Used for passive subdomain enumeration via public APIs. Integration was chosen over rebuilding because maintaining custom scraping logic for dozens of third-party DNS APIs is heavily error-prone. Known failure or false-positive modes: subfinder may return stale DNS records that no longer resolve.
+- **cryptography (Python library)**: Used for parsing X.509 certificates to extract SANs. Integration was chosen over rebuilding because custom ASN.1 parsing is notoriously difficult and poses severe memory safety risks. Known failure modes: It may crash or fail to parse non-compliant, malformed certificates.
+- **dnspython (Python library)**: Used for querying SOA, TXT, and SRV records. Integration was chosen over rebuilding to avoid manually crafting UDP packets and parsing raw DNS protocol bytes. Known failure modes: Upstream resolver timeouts or dropped UDP packets.
+- **requests (Python library)**: Used for HTTP connections and header extraction. Integration was chosen over rebuilding to avoid handling raw TCP sockets and chunked transfer decoding manually. Known failure modes: Hanging on infinite redirect loops or timing out on tarpits.
 
 ## Limitations
-What the tool does not do: It does not perform active exploitation or vulnerability scanning.
-Residual operational risk remains because the tool depends on third-party guarantees. For instance, if an external API goes down or nmap output is malformed, the results will be incomplete. The tool is not perfect.
+What the tool does not do: It does not perform active exploitation, fuzzing, or vulnerability scanning.
+Residual operational risk remains because the tool depends on third-party guarantees. For instance, if an external API goes down, if UDP packets are dropped, or if nmap XML output is malformed, the results will be incomplete. The tool is not perfect.
