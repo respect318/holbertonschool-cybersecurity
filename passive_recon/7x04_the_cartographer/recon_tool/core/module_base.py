@@ -4,7 +4,10 @@ Module Base Interface for The Cartographer.
 """
 from abc import ABC, abstractmethod
 
+
 class ModuleBase(ABC):
+    """Common base class contract for all modules."""
+    
     @property
     @abstractmethod
     def name(self) -> str:
