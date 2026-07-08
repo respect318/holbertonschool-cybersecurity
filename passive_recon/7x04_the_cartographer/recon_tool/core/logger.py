@@ -4,6 +4,7 @@ Traceability logger for The Cartographer.
 """
 import logging
 
+
 def get_logger(name="Cartographer"):
     logger = logging.getLogger(name)
     if not logger.handlers:
@@ -13,3 +14,9 @@ def get_logger(name="Cartographer"):
         handler.setFormatter(formatter)
         logger.addHandler(handler)
     return logger
+
+def log_info(msg):
+    get_logger().info(msg)
+
+def log_error(msg):
+    get_logger().error(msg)

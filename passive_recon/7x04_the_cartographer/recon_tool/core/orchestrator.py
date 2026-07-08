@@ -1,14 +1,15 @@
 #!/usr/bin/python3
 """
 Pipeline Orchestrator for The Cartographer.
-Resolves module dependencies and safely executes them.
+Resolves dependencies and safely executes modules.
 """
 from core.logger import get_logger
 
+
 class Orchestrator:
-    def __init__(self, state, scope_guard=None):
+    def __init__(self, state, scope=None):
         self.state = state
-        self.scope = scope_guard
+        self.scope = scope
         self.modules = {}
         self.logger = get_logger("Orchestrator")
 
@@ -24,7 +25,7 @@ class Orchestrator:
         for name, module in self.modules.items():
             for dep in module.dependencies:
                 if dep not in self.modules:
-                    raise ValueError(f"Missing dependency: {dep} required by {name}")
+                    raise ValueError(f"Missing dependency: {dep}")
                 adj_list[dep].append(name)
                 in_degree[name] += 1
 
@@ -41,12 +42,12 @@ class Orchestrator:
                     queue.append(neighbor)
 
         if len(execution_order) != len(self.modules):
-            raise ValueError("Circular dependency detected! Pipeline execution aborted.")
+            raise ValueError("Circular dependency detected")
 
         return execution_order
 
     def execute(self):
-        """Execute modules safely, handling exceptions to preserve pipeline flow."""
+        """Execute modules safely, catch exceptions, log errors, and continue."""
         execution_order = self.resolve_dependencies()
         
         for name in execution_order:
@@ -57,9 +58,10 @@ class Orchestrator:
                 module.run(self.state)
                 self.logger.info(f"Successfully finished module: {name}")
             except Exception as e:
-                # Error handling: Catch exception, log it, and CONTINUE pipeline
-                error_msg = f"Module {name} failed with exception: {str(e)}"
+                # Catch the exception, log it, and continue to the next module
+                error_msg = f"Module {name} failed: {str(e)}"
                 self.logger.error(error_msg)
                 self.state.errors.append(error_msg)
+                continue
                 
         return execution_order
