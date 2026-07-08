@@ -3,30 +3,33 @@
 Entry point for The Cartographer.
 """
 import argparse
-import sys
 from core.state import State
 from core.scope import ScopeGuard
 from core.orchestrator import Orchestrator
-from core.logger import get_logger
+
+# Modulları bura import edirik
 from modules.dns_module import DNSModule
+from modules.subdomain_module import SubdomainModule
 
 if __name__ == "__main__":
+    # Terminaldan gələn arqumentləri (komandaları) oxuyuruq
     parser = argparse.ArgumentParser(description="The Cartographer - Passive Recon")
     parser.add_argument('--domain', required=True, help="Target authorized domain")
     parser.add_argument('--module', help="Specific module to run (optional)")
     args = parser.parse_args()
 
-    # Initialize foundations
+    # Nüvə sistemlərini (State və ScopeGuard) işə salırıq
     state = State()
     state.add_domain(args.domain)
     
     scope = ScopeGuard(args.domain)
     orchestrator = Orchestrator(state, scope)
     
-    # Register modules
+    # Bütün modullarımızı Orkestratora qeydiyyatdan keçiririk
     orchestrator.register(DNSModule())
+    orchestrator.register(SubdomainModule())
     
-    # Execute
+    # Skripti tam işə salırıq
     print(f"Starting pipeline against {args.domain}...")
     orchestrator.execute()
     print("Pipeline finished.")
