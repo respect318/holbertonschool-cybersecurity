@@ -1,0 +1,16 @@
+student@ip-10-42-88-206:~/passive_recon/7x04_the_cartographer/recon_tool$ ./recon.py --domain cartograph.example
+Starting pipeline against cartograph.example...
+2026-07-08 11:49:21,385 - [INFO] - Starting module: dns
+2026-07-08 11:49:21,388 - [INFO] - Starting module: subdomain
+2026-07-08 11:49:21,388 - [INFO] - Starting module: portscan
+[INFO] Skipping heavy nmap scan to save time...
+2026-07-08 11:49:21,388 - [INFO] - Starting module: http
+[SERVER_FLAG] nginx/1.18.0
+[FRAMEWORK_FLAG] Django/3.2.18
+2026-07-08 11:49:21,497 - [INFO] - Starting module: tls
+[SAN_FLAG] internal-mgmt.cartograph.example
+[SAN_FLAG] internal-mgmt.cartograph.example
+[SELF_SIGNED_FLAG] no-self-signed
+admin.cartograph.example
+Django/3.2.18
+4
