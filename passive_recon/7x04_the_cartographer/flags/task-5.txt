@@ -1,0 +1,25 @@
+student@ip-10-42-234-4:~/passive_recon/7x04_the_cartographer/recon_tool$ ./recon.py --domain cartograph.example --module subdomain
+Starting pipeline against cartograph.example...
+2026-07-08 08:03:26,354 - [INFO] - Starting execution of module: dns
+2026-07-08 08:03:26,355 - [INFO] - [*] Resolving DNS records for: cartograph.example
+2026-07-08 08:03:26,356 - [INFO] - [+] Found A record: 127.40.0.10
+2026-07-08 08:03:26,358 - [INFO] - [+] Found AAAA record: ::1
+2026-07-08 08:03:26,359 - [INFO] - [+] Found MX record: 10 mail.cartograph.example.
+2026-07-08 08:03:26,360 - [INFO] - [+] Found TXT record: v=spf1 include:_spf.cartograph.example -all
+2026-07-08 08:03:26,362 - [INFO] - [+] Found NS record: ns1.cartograph.example.
+2026-07-08 08:03:26,363 - [INFO] - [+] Found SOA record: ns1.cartograph.example. hostmaster.cartograph.example. 2026040101 3600 1800 1209600 3600
+2026-07-08 08:03:26,364 - [INFO] - [+] Found CAA record: 0 issue "letsencrypt.org
+2026-07-08 08:03:26,365 - [INFO] - [+] Found DMARC record: v=DMARC1; p=none; rua=mailto:dmarc@cartograph.example
+2026-07-08 08:03:26,366 - [INFO] - [+] Found SRV record for _sip._tcp.cartograph.example: 10 5 5060 sip.cartograph.example.
+2026-07-08 08:03:26,367 - [INFO] - [+] Found SRV record for _autodiscover._tcp.cartograph.example: 10 5 443 portal.cartograph.example.
+2026-07-08 08:03:26,369 - [INFO] - Successfully finished module: dns
+2026-07-08 08:03:26,369 - [INFO] - Starting execution of module: subdomain
+[WILDCARD_FLAG] no-wildcard
+[WILDCARD_FLAG] no-wildcard
+[WILDCARD_FLAG] no-wildcard
+[WILDCARD_FLAG] 127.40.0.70
+[INTERNAL_FLAG] admin.cartograph.example
+[INTERNAL_FLAG] internal-svc.cartograph.example
+[WILDCARD_FLAG] no-wildcard
+2026-07-08 08:03:28,256 - [INFO] - Successfully finished module: subdomain
+Pipeline finished.
