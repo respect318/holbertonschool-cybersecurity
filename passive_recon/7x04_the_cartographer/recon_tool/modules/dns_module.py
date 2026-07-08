@@ -45,13 +45,13 @@ class DNSModule(ModuleBase):
                         val = rdata.to_text().strip('"')
                         
                         if rtype in ['A', 'AAAA']:
-                            # Write IP to shared state
+                            # Write IP to shared state interface
                             state.add_host(val)
                             
                         elif rtype == 'NS':
                             host = val.split()[-1].rstrip('.')
                             state.add_domain(host)
-                            print(f"[NS] {val}") # For the flag output
+                            print(f"[NS] {val}") # Output for flag
                             
                         elif rtype == 'MX':
                             # Must extract MX preference and exchange
@@ -62,7 +62,7 @@ class DNSModule(ModuleBase):
                         elif rtype == 'TXT':
                             # Check for SPF policy directive
                             if "v=spf1" in val.lower() or "SPF" in val:
-                                print(f"[SPF] {val}") # For the flag output
+                                print(f"[SPF] {val}") # Output for flag
                                 
                 except (dns.exception.DNSException, Exception):
                     pass
@@ -85,7 +85,7 @@ class DNSModule(ModuleBase):
                     srv_answers = resolver.resolve(srv_domain, 'SRV')
                     for rdata in srv_answers:
                         val = rdata.to_text()
-                        print(f"[SRV] {srv_domain} -> {val}") # For the flag output
+                        print(f"[SRV] {srv_domain} -> {val}") # Output for flag
                         
                         parts = val.split()
                         if len(parts) >= 4:
