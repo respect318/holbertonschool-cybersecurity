@@ -10,6 +10,7 @@ from core.orchestrator import Orchestrator
 # Modulları bura import edirik
 from modules.dns_module import DNSModule
 from modules.subdomain_module import SubdomainModule
+from modules.portscan_module import PortScanModule
 
 if __name__ == "__main__":
     # Terminaldan gələn arqumentləri (komandaları) oxuyuruq
