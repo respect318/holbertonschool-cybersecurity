@@ -8,11 +8,13 @@ OLDEST_DATE="9999-99-99"
 MOST_OUTDATED_COMP=""
 
 for comp_ver in $COMPONENTS; do
-    COMP_NAME="${comp_ver%%/*}"
-    COMP_VER="${comp_ver##*/}"
+    COMP_NAME=$(echo "$comp_ver" | cut -d'/' -f1)
+    COMP_VER=$(echo "$comp_ver" | cut -d'/' -f2)
     
     RESPONSE=$(curl -s "https://endoflife.date/api/${COMP_NAME}/${COMP_VER}.json")
-    EOL_DATE=$(echo "$RESPONSE" | grep -oP '"eol":"\K[^"]+')
+    
+    # JSON-u jq ile oxuyuruq
+    EOL_DATE=$(echo "$RESPONSE" | jq -r '.eol')
     
     if [[ -n "$EOL_DATE" && "$EOL_DATE" != "false" && "$EOL_DATE" != "null" ]]; then
         if [[ "$EOL_DATE" < "$OLDEST_DATE" ]]; then
