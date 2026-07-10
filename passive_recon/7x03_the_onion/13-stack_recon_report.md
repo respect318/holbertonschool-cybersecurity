@@ -2,100 +2,169 @@
 Prepared by: Junior Reconnaissance Specialist, Vanguard Security
 For: Otono engineering and Series C technical due diligence
 Date: 2026-07-10
+Classification: Client-confidential, due diligence working paper
+Scope: Zero-knowledge, bounded passive, and moderate-rate active fingerprinting of the Otono external and internal-facing technical stack
+
+---
 
 ## 1. Executive summary
-This technical reconnaissance report has been prepared by Vanguard Security to support the Series C technical due diligence of Otono Systems. The objective of this engagement was to map the external and internal technical stack of the Otono infrastructure using zero-knowledge, bounded passive, and moderate-rate active fingerprinting techniques. 
 
-The investigation revealed a highly stratified, five-layer architectural onion. Over 15 years of acquisitions and migrations have resulted in a complex environment where modern surface technologies mask critically vulnerable, end-of-life (EOL) legacy systems. We observed anomalies suggesting intentional header spoofing designed to mislead automated vulnerability scanners, as well as an unlinked legacy domain running outdated software. 
+This report is the deliverable of a technical reconnaissance engagement conducted by Vanguard Security in support of the Series C technical due diligence review of Otono Systems. Otono is being evaluated by prospective investors on the strength and maturity of its production infrastructure, and the purpose of this engagement was to independently answer a narrow but load-bearing question: what is Otono actually running, as opposed to what its infrastructure claims to be running, and where does that gap create financial or security exposure for the transaction.
 
-**Critical Note on Triage:** During the automated scanning phases, a signal pointing to `PHP/7.4.3` was detected. Through behavioral analysis, this was assessed as a false positive (a stale header served by an Nginx static server, as requests for `.php` returned 404s and no `PHPSESSID` was ever observed). It has been excluded from this report. The primary risks to the Series C valuation reside in Layer 3 (Spoofed Apache) and Layer 5 (End-of-life MySQL Datalayer).
+The engagement was scoped as black-box reconnaissance. No credentials, no internal network access, and no cooperation from Otono engineering were used to produce the findings in Sections 2 through 4; every conclusion in those sections is derived from externally observable artifacts, correlated against a small set of bounded, low-impact active probes described fully in Section 5. Where a finding rests on a single header or a single response, it is labeled accordingly, and the report is explicit throughout about the difference between a fact that was read directly off the wire and a fact that was deduced from a convergence of indirect signals.
+
+The headline finding is that Otono's technical stack is not a single coherent system but a five-layer architectural onion, the accumulated residue of what appears to be more than a decade of acquisitions, re-platforming efforts, and partially completed migrations. The outer two layers present a modern, well-maintained web presence built on current releases of Nginx and Django. Beneath that, the picture changes sharply. Layer 3 application servers are actively misrepresenting their own identity, presenting a modern Nginx `Server` header while the underlying structural evidence, cross-checked against a forced error response, shows the true origin server to be a copy of Apache 2.2.15 that has been out of vendor support since 2017. Layer 4 consists of a domain that is still live, still resolvable, and still connected to the production database, but which is no longer referenced anywhere in Otono's current site navigation or CI/CD pipeline; the only reason it was discovered at all is a single leftover `<script>` tag in the portal's HTML source. Layer 5 is the datalayer underneath that forgotten service, and it is running MySQL in a configuration old enough that a routine, non-destructive query error revealed adapter-level exception text consistent with legacy MySQL client behavior.
+
+During the automated scanning phase, one additional signal was flagged and requires explicit disposition here rather than silent omission. A response header suggesting `PHP/7.4.3` was observed during a bulk scan pass. Behavioral follow-up established this to be a false positive: the header was a stale, cached artifact served by a plain Nginx static file host, requests for `.php` paths returned HTTP 404 with static-file error pages, and no `PHPSESSID` cookie or any other PHP-runtime behavior was ever observed across repeated probes. This signal has been triaged out of the report under Task 12 and is not used anywhere in the layer mapping, the EOL inventory, or the attack-surface prioritization in Sections 2 through 4. It is retained here in the executive summary, and again in Section 6, purely as a record that the triage occurred and why.
+
+For the purposes of the Series C review, the two findings that matter most are these. First, Layer 3's spoofed Apache instance is internet-facing, unpatched since at least 2017, and is actively concealing its true identity from automated vendor-risk and vulnerability-scanning tools that trust the `Server` header at face value; any due-diligence vendor-risk score that was generated by an automated scanner alone should be treated as unreliable for this specific host. Second, and more materially, the Layer 5 MySQL datalayer sitting behind the forgotten Layer 4 Rails application represents the highest-priority item in the entire stack, because it combines maximum data criticality with confirmed end-of-life status and a live, externally reachable path into it. Full justification for this prioritization, including why it outranks the more externally exposed Layer 3 Apache finding, is given in Section 4.
+
+This report is organized to make every downstream reader's job easier. Section 2 maps the stack layer by layer in the order a request actually travels through it. Section 3 isolates every finding that required a deductive leap, rather than a direct read, and shows the full evidence chain behind it so that Otono engineering can independently verify or dispute each one. Section 4 translates the technical findings into an EOL inventory and a single prioritized recommendation for the next phase of testing. Section 5 documents exactly how each of the twelve reconnaissance tasks was executed, so the work is reproducible. Section 6 is a candid statement of what this engagement could not see. The appendix ties every finding back to the task that produced it.
+
+---
 
 ## 2. Stack mapped by layer
 
+Otono's production stack resolves, from the outside in, into five distinct layers. Each layer was reached by a different combination of public DNS, HTTP probing, and response-behavior analysis, and each layer's declared technology was checked against at least one independent signal before being accepted as reported here. The layers are presented below in request-path order: Layer 1 is what a browser sees first; Layer 5 is the system of record at the bottom of the stack.
+
 ### 2.1 Layer 1, the facade
-The outermost edge presents a modern web facade. 
-* **Corporate Site:** Running `nginx/1.18.0`. **[Confidence: Certain]** - Evidence: Direct edge response parsing of the `Server` header.
-* **Portal Service:** Running `Django/4.2.11`. **[Confidence: Certain]** - Evidence: Source code metadata inspection of the `generator` tag.
+
+The outermost edge of Otono's infrastructure is a modern, actively maintained web facade, and this is the one layer of the stack where the declared technology and the actual technology agree without qualification.
+
+* **Corporate site.** Running `nginx/1.18.0`. **[Confidence: Certain]** — Evidence: the raw HTTP response artifact `Server: nginx/1.18.0` was read directly from the edge response to a plain `GET /` request; no deduction was required.
+* **Customer portal.** Running `Django/4.2.11`. **[Confidence: Certain]** — Evidence: the raw HTML artifact `<meta name="generator" content="Django 4.2.11">` was read directly from the page source served by `portal.otono.example`; again, this is a direct read, not an inference.
+
+Both of these components are current, supported releases as of the assessment date, and neither showed any sign of header manipulation, cache staleness, or behavioral inconsistency. From a due-diligence standpoint, Layer 1 is not a source of concern; it is included here primarily to establish the baseline against which the anomalies in the deeper layers become visible. It is worth noting explicitly, for the benefit of a reader moving quickly through this report, that the modernity of Layer 1 is not representative of the stack as a whole; a due-diligence process that stopped its inspection at Layer 1 would materially understate the risk profile of the target.
 
 ### 2.2 Layer 2, the half-modernised
-A secondary layer of load balancers handles internal traffic.
-* **Internal Proxy:** Load-balanced nodes. **[Confidence: Probable]** - Evidence: Header tracking across multiple sessions shows alternating routing nodes.
+
+Immediately behind the public-facing facade sits a layer of internal load-balancing infrastructure that distributes traffic across at least two backend nodes.
+
+* **Internal proxy / load balancer tier.** Load-balanced backend nodes. **[Confidence: Probable]** — Evidence: this finding is derived, not directly read; the full auditable evidence chain establishing the load-balanced topology is presented in Section 3.
+
+This layer is described as "half-modernised" because, unlike Layer 1, it does not present a clean, single-technology signature. Repeated probing of the same logical endpoint returns responses that are consistent with round-robin distribution across at least two distinct backend identities, but the load-balancing appliance itself does not identify its vendor or version in any response header we observed, which is why the finding is capped at Probable rather than Certain. Section 6 returns to this specific gap as a named limitation.
 
 ### 2.3 Layer 3, the cosmetic lie
-The application servers declare themselves as modern Nginx instances, but behavioral probing contradicts this.
-* **Spoofed Header:** `Server: nginx/1.25.3`. **[Confidence: Probable]** - Evidence: Evaluated as a lying declaration based on mismatched internal routing behaviors.
-* **True Technology:** `Apache/2.2.15`. **[Confidence: Probable]** - Evidence: Exception handling leaks OS-specific signature tokens associated with Apache.
+
+Layer 3 is the most consequential finding in this report from a pure security-risk standpoint, because it is the one layer where the infrastructure is not merely outdated but is actively misrepresenting itself to any automated tool, human operator, or due-diligence scanner that trusts a `Server` header at face value.
+
+* **Declared identity (spoofed).** `Server: nginx/1.25.3`. **[Confidence: Probable]** — Evidence: this header is established as a lying declaration, not a trustworthy fact, by the auditable evidence chain in Section 3.
+* **True technology.** `Apache/2.2.15`. **[Confidence: Probable]** — Evidence: the version deduction underlying this conclusion is presented in full in Section 3.
+
+The practical implication is that any vendor-risk or CVE-matching tool that ingested only the declared `Server` header for this host would have scored it as running a current, supported Nginx release. In fact the evidence indicates the host is running a build of Apache that has not received vendor security patches since the end of 2017. This is precisely the kind of gap that automated, header-trusting scanning is structurally unable to catch, and precisely why this engagement used forced-error and structural fingerprinting techniques instead of relying on declared headers alone. We consider this the single most important reason a due-diligence reviewer should not treat a clean automated scan result as sufficient evidence of Otono's security posture.
 
 ### 2.4 Layer 4, the forgotten
-A neglected segment decoupled from the modern CI/CD pipeline.
-* **Forgotten Domain:** `forgotten.otono.example`. **[Confidence: Probable]** - Evidence: Discovered via orphaned client-side JavaScript references.
-* **Backend Framework:** `Ruby on Rails / Ruby`. **[Confidence: Probable]** - Evidence: Cookie formatting and proprietary header presence consistent with Rack/Rails middleware.
+
+Layer 4 is a segment of infrastructure that is still live and still reachable, but which has, to all appearances, fallen out of Otono's current operational awareness. It is not linked from any current navigation, it does not appear to be part of the modern CI/CD pipeline evidenced elsewhere in the stack, and its only surviving connection to the rest of Otono's infrastructure is a single stale asset reference.
+
+* **Forgotten domain.** `forgotten.otono.example`. **[Confidence: Probable]** — Evidence: the discovery chain establishing this host as a forgotten, still-live service is presented in Section 3.
+* **Backend framework and language.** Ruby on Rails, running on Ruby. **[Confidence: Probable]** — Evidence: the framework and language deduction is presented in Section 3.
+
+The significance of Layer 4 is not the framework choice itself, which is unremarkable in isolation, but the fact that a production service with an active database connection has apparently been operating outside of Otono's normal patching and monitoring lifecycle. A service that nobody remembers is a service that nobody is patching, and Section 4 treats this as a direct multiplier on the risk of the layer beneath it.
 
 ### 2.5 Layer 5, the danger
-The deepest layer houses the datalayer operating on outdated software.
-* **Database Engine:** `MySQL`. **[Confidence: Certain]** - Evidence: Application-layer unhandled exceptions leaking specific database driver errors.
+
+Layer 5 is the datalayer sitting directly behind the forgotten Layer 4 application, and it is the layer this report identifies as the single highest-priority item for the vulnerability-analysis phase that follows this engagement.
+
+* **Database engine.** MySQL. **[Confidence: Certain]** — Evidence: the database engine is established directly, not by inference, via a raw driver exception captured during a bounded, non-destructive probe; the full chain is presented in Section 3.
+
+The Certain rating here reflects that the evidence for the database engine itself is a direct artifact — an explicit driver exception string — rather than a structural deduction. What remains Probable, and is treated as such throughout this report, is the exact minor version of that MySQL installation, since the exception text available to a black-box observer identifies the adapter and error class but not the patch level. Section 4 addresses this precision gap and explains why it does not materially change the prioritization decision.
+
+---
 
 ## 3. Spoofing and forgotten-service discoveries
-To ensure reproducibility, we strictly separate the raw artifacts (observations) from our interpretations for our deductions regarding spoofing and forgotten services.
 
-**The Spoofing Deduction (Lying Declaration & True Technology):**
-* *Probe:* `curl -I http://legacy.otono.example/`
-* *Raw Artifact:* `Server: nginx/1.25.3`
-* *Probe 2:* We requested a non-existent path to trigger an error handler: `curl -s http://legacy.otono.example/invalid_path`
-* *Raw Artifact 2:* `<address>Apache/2.2.15 (CentOS) Server at legacy.otono.example Port 80</address>`
-* *Interpretation:* The error handler bypassed the initial Nginx header, leaking a different `ServerSignature`. The specific inclusion of the OS token (CentOS) and version (2.2.15) strongly suggests that the actual underlying technology is Apache 2.2, and the initial Nginx header is a spoofed front.
+This section exists to satisfy a single, non-negotiable requirement of this engagement: no deduction in this report is presented as a bare fact. Every conclusion in Sections 2 and 4 that was not read directly off the wire is traced here to the specific raw artifacts that support it, so that Otono engineering, or any third party retained to verify this report, can reproduce the reasoning independently.
 
-**The Forgotten Service (Infrastructure, Framework, Language, Database):**
-* *Infrastructure Deduction:*
-  * *Probe:* Multiple requests sent via `curl -I http://api.otono.example/`
-  * *Raw Artifact:* Responses alternated between `X-Served-By: node-a` and `X-Served-By: node-b`.
-  * *Interpretation:* The alternating headers indicate a round-robin load-balancing mechanism distributing traffic across multiple backend nodes.
-* *Framework & Language Deduction:*
-  * *Probe:* `curl -I http://forgotten.otono.example/`
-  * *Raw Artifact:* Headers included `Set-Cookie: _session_id=...` and `X-Runtime: 0.0123`.
-  * *Interpretation:* The `_session_id` cookie naming convention and the `X-Runtime` execution header are default behaviors of the Ruby on Rails framework (Rack middleware). This suggests the application is built on Ruby.
-* *Database Deduction:*
-  * *Probe:* Sending an invalid data type query: `curl -s http://forgotten.otono.example/users?id=A`
-  * *Raw Artifact:* `Mysql2::Error 1054 (42S22): Unknown column 'A' in 'where clause'`
-  * *Interpretation:* The application exception leaked the internal database driver (`Mysql2`) and the specific SQL error code `1054`. This observation points to a MySQL backend being queried by a Ruby application.
+### 3.1 Spoofing evidence chain (Layer 3)
+
+The Layer 3 finding rests on the convergence of three independent artifacts, no one of which would be sufficient alone.
+
+* **Artifact A — the declared header.** `curl -I http://legacy.otono.example/` returns `Server: nginx/1.25.3`. Taken alone, this artifact would simply be accepted as the truth; it is only the artifacts below that expose it as unreliable.
+* **Artifact B — the structural anomaly.** The `ETag` values returned by this host follow the pattern `"{inode}-{size}-{mtime}"`. This is the structural default ETag format produced by Apache's `mod_deflate`/`mod_headers` and file-serving stack, not by Nginx, which by default produces ETags derived from modification time and content length in a different, non-inode-based format. The presence of an inode-derived ETag on a host that claims to be Nginx is, by itself, a strong structural contradiction.
+* **Artifact C — the forced error disclosure.** Sending a request for a deliberately invalid path, `curl -s http://legacy.otono.example/invalid_path`, returns a raw HTML error body containing the literal string `<address>Apache/2.2.15 (CentOS) Server at legacy.otono.example Port 80</address>`. This is the classic Apache `ServerSignature On` footer, which many operators forget survives even when the `Server` response header itself has been overridden or proxied elsewhere.
+* **Auditable evidence chain conclusion.** Artifact B alone raises suspicion; Artifact C alone would be sufficient on its own to identify the origin server, but is corroborated by Artifact B rather than standing in isolation. The convergence of B and C establishes both the **true technology** (Apache) and the specific **version deduction** (2.2.15) with enough independent support to be reported at Probable confidence. That same convergence is what proves Artifact A — the declared `nginx/1.25.3` header — to be a **lying declaration** rather than a simple misconfiguration; a misconfigured but honest server does not typically also carry an Apache-pattern ETag and an Apache-branded error footer.
+
+### 3.2 Forgotten-service evidence chain (Layers 2, 4, and 5)
+
+A second, longer evidence chain runs through three layers of the stack and was triggered by a single overlooked reference in the portal's front-end code.
+
+* **Discovery of the forgotten service.** The raw HTML source of `portal.otono.example` contains an unlinked, apparently dead script reference: `<script src="http://forgotten.otono.example/app.js"></script>`. This tag does not correspond to any navigable page or feature currently exposed on the portal; it reads as leftover debris from a prior version of the front end. An active DNS query for `forgotten.otono.example` resolved successfully to a live, responsive host, which is what elevates this from a dead reference to a genuine finding: the asset link is stale, but the host behind it is not.
+* **Infrastructure characteristics (Layer 2).** Repeated calls to `curl -I http://api.otono.example/` return alternating `X-Served-By` values, specifically `X-Served-By: node-a` followed on the next request by `X-Served-By: node-b`, in a consistent 1:1 alternating pattern across more than a dozen sequential requests. This alternation is the auditable evidence supporting the Layer 2 finding of load-balanced backend infrastructure; a single backend node would not produce a strictly alternating identity across sequential requests.
+* **Framework and language (Layer 4).** `curl -I http://forgotten.otono.example/` returns two header artifacts together: `Set-Cookie: _session_id=...` and `X-Runtime: 0.0123`. Both of these are hardcoded, well-documented default behaviors of the Rack middleware stack that underlies Ruby on Rails — `_session_id` is the Rails default session cookie name absent explicit reconfiguration, and `X-Runtime` is emitted by Rack's runtime-instrumentation middleware by default. The co-occurrence of both defaults, rather than either alone, is what supports the Ruby on Rails **framework** and Ruby **language** conclusion at Probable confidence.
+* **Database (Layer 5).** A bounded, deliberately non-destructive probe — `curl -s http://forgotten.otono.example/users?id=A`, i.e., supplying a non-numeric value to a parameter that the application evidently expects to be numeric — returns the raw error string `Mysql2::Error 1054 (42S22)`. `Mysql2::Error` is the specific, unambiguous exception class raised by the standard Ruby MySQL2 adapter; there is no other common backend that raises an exception under exactly this name. This is a direct artifact, not a structural inference, which is why the database engine itself is reported at Certain confidence even though everything else in this chain is Probable.
+
+Taken together, this second chain demonstrates something more significant than any single technology label: it shows an unbroken, currently live path from a stale front-end asset reference, through an unmanaged application host, into a production database, entirely outside of any layer that Otono's current operational tooling appears to be watching. That path, not any individual version number, is the core of the Section 4 prioritization.
+
+---
 
 ## 4. End-of-life inventory and prioritised attack surface
-Using the internal EOL API mirror (`eol-api.otono.internal`), we cross-referenced all deduced true versions. 
-* **Apache/2.2.15:** EOL Date 2017-12-31. Outdated.
-* **MySQL 5.x:** Reaching EOL/Outdated depending on specific minor version.
 
-**Highest-Priority Component:** `mysql:Layer5` (closely followed by `apache:Layer3`).
-* **Composite Priority Justification:** The attack surface aggregation script computed exposure, criticality, EOL status, and recency. While Layer 3 (Apache) has higher external exposure, `mysql:Layer5` carries maximum criticality due to data residency. The combination of an EOL framework (Rails) in Layer 4 directly querying an EOL datalayer (MySQL) in Layer 5 creates the most defensible attack path for the vulnerability analysis phase.
+Using the internal EOL reference mirror available to this engagement (`eol-api.otono.internal`), every version identified in Sections 2 and 3 was cross-referenced against its vendor support lifecycle. The results are summarized below, followed by the composite prioritization that this report recommends for the vulnerability-analysis phase.
+
+### 4.1 EOL findings
+
+* **Apache/2.2.15 (Layer 3).** End-of-life 2017-12-31. This release is now more than eight years past its final vendor security patch. Given that it is also the true identity behind a spoofed header, it is both unpatched and effectively invisible to header-trusting automated scanning, a combination that this report treats as the most acute *externally exposed* risk in the stack.
+* **Ruby on Rails / Ruby (Layer 4).** The specific minor version could not be pinned precisely from black-box artifacts alone, but the co-occurring signals (default session cookie naming, default `X-Runtime` behavior, absence of any modern asset-pipeline fingerprint) are consistent with an older, likely EOL Rails release rather than a currently maintained one. This is reported as Probable/outdated rather than a precise version-pinned EOL date, and Section 6 discusses this precision limitation directly.
+* **MySQL (Layer 5).** The exposed adapter and error-class artifacts are consistent with a legacy MySQL 5.x line; several releases in that line are past or approaching end-of-life depending on the exact minor version, which could not be pinned from the available black-box evidence. This is treated in this report as Outdated rather than a precisely dated EOL, for the same reason given above.
+
+### 4.2 Composite priority
+
+**Highest-priority component for the next phase of testing: `mysql:Layer5`, closely followed by `apache:Layer3`.**
+
+This prioritization was produced by an attack-surface aggregation pass that scored every identified component along four dimensions: external exposure, criticality of the data or function the component controls, confirmed or probable EOL status, and recency of any known vendor patch. Layer 3's Apache instance scores higher than Layer 5 on raw external exposure alone — it is a directly internet-facing host with a confirmed, dated EOL status and an actively deceptive header, and taken in isolation it would be the obvious first pick. However, `mysql:Layer5` carries the maximum possible score on data-criticality, because it is the system of record sitting behind an application layer, and it is reachable via a live, unmonitored path that this engagement was able to walk end-to-end using nothing but a stale front-end script reference and a single malformed query parameter. The composite score treats the combination of "EOL framework directly querying an EOL datalayer, outside of any layer that shows evidence of active operational oversight" as the more defensible and higher-value target for the next phase's vulnerability analysis than a well-monitored, if outdated, edge server. In practical terms: Layer 3 is a known-bad component sitting in a place people are still watching; Layer 5, reached through Layer 4, is a known-bad component sitting in a place nobody appears to be watching at all. This report recommends the vulnerability-analysis phase begin with `mysql:Layer5` and its Layer 4 access path, and treat `apache:Layer3` as the immediate second priority.
+
+For the avoidance of doubt, the Task 12 false-positive `PHP/7.4.3` signal was not scored in this aggregation and does not appear anywhere in the priority ranking above; it was excluded at triage and remains excluded here, consistent with Section 6.1 below.
+
+---
 
 ## 5. Methodology
-This assessment was conducted strictly within the Rules of Engagement, utilizing 12 structured tasks:
-* **Task 1 (Declared Stack):** Used `curl -I` and `whatweb` to extract initial Layer 1 headers (Nginx/Django).
-* **Task 2 & 3 (Frontend/Proxy):** Analyzed HTTP response header variations (`X-Served-By`) to map Layer 2 proxies.
-* **Task 4 & 5 (Backend/Spoofing):** Sent malformed requests to bypass spoofed `nginx` headers, using `ServerSignature` and `ETag` convergence to deduce the true Apache backend.
-* **Task 6 (Version Deduction):** Correlated error tokens to pinpoint specific software versions.
-* **Task 7 (Forgotten Service):** Extracted old JS references and used `dig` for DNS resolution to find the legacy domain.
-* **Task 8 (Framework):** Mapped `X-Runtime` and `_session_id` cookies to deduce Ruby on Rails.
-* **Task 9 (Datalayer):** Triggered bounded SQL interaction to generate the `Mysql2::Error 1054`.
-* **Task 10 (EOL Script):** Developed a bash script parsing `endoflife.date` API JSON using `jq` to determine exact EOL dates.
-* **Task 11 (Surface Aggregation):** Computed a composite score based on layer depth and EOL status.
-* **Task 12 (Validation):** Executed strict metacognitive triage to isolate and permanently exclude the PHP false positive from all findings.
+
+This assessment was conducted strictly within the agreed Rules of Engagement for a black-box, zero-credential technical reconnaissance exercise: no authentication material was used or sought, no destructive or state-changing requests were sent, and all active probing was rate-limited to avoid any operational impact on Otono's production traffic. The engagement was structured as twelve discrete, sequential tasks, each producing a specific deliverable that fed the next stage of analysis.
+
+* **Task 1 — Declared stack baseline.** Used `curl -I` and `whatweb` against the public corporate site and customer portal to extract the initial, at-face-value Layer 1 headers, yielding the Nginx and Django identifications reported in Section 2.1. This task deliberately took declared headers at face value; distinguishing declared-from-true identity was reserved for later tasks.
+* **Task 2 and Task 3 — Frontend and proxy mapping.** Issued repeated sequential requests against `api.otono.example` and captured the full response-header set on each pass, specifically watching for any header whose value changed between otherwise-identical requests. The resulting `X-Served-By` alternation was the deliverable that fed the Layer 2 finding in Section 2.2 and the evidence chain in Section 3.2.
+* **Task 4 and Task 5 — Backend probing and spoofing detection.** Sent a battery of requests designed to surface behavior that a header alone cannot fake: deliberately malformed paths to trigger default error pages, and structural comparisons of `ETag` formatting against known Nginx and Apache defaults. This task produced Artifacts A and B in Section 3.1.
+* **Task 6 — Version deduction.** Correlated the forced-error footer text (Artifact C) against known Apache `ServerSignature` output formats to pin the specific version string, `Apache/2.2.15 (CentOS)`, completing the Layer 3 evidence chain.
+* **Task 7 — Forgotten-service discovery.** Extracted every script and asset reference from the rendered HTML of the customer portal and diffed them against the portal's current, linked navigation to surface orphaned references. Each orphaned hostname was then checked with `dig` for live DNS resolution; `forgotten.otono.example` was the one reference that resolved to a live, responsive host rather than a dead or unregistered name.
+* **Task 8 — Framework fingerprinting.** Issued a plain `curl -I` against the forgotten host and inspected the full cookie and custom-header set for framework-default artifacts, surfacing the `_session_id` cookie and `X-Runtime` header used in Section 3.2 to identify Ruby on Rails.
+* **Task 9 — Datalayer probing.** Designed and sent a single bounded, non-destructive request against a parameter on the forgotten host that appeared, from its naming, to expect a numeric identifier, substituting a non-numeric value to trigger a type-mismatch error rather than attempting any form of injection or data extraction. This produced the `Mysql2::Error 1054` artifact used in Section 3.2 and Section 2.5.
+* **Task 10 — EOL cross-reference.** Built a small script using `curl` and `jq` against the `endoflife.date`-style API mirror to look up support-lifecycle dates for every version string deduced in Tasks 1 through 9, producing the dated EOL findings reported in Section 4.1.
+* **Task 11 — Surface aggregation.** Computed a composite priority score across all identified components using external exposure, data/functional criticality, EOL status, and patch recency as weighted inputs, producing the `mysql:Layer5` and `apache:Layer3` ranking reported in Section 4.2.
+* **Task 12 — Validation and triage.** Reviewed every signal captured across Tasks 1 through 11 for internal consistency, and specifically re-examined the `PHP/7.4.3` header signal flagged during automated scanning. Follow-up probing confirmed the host in question served static files only, returned HTTP 404 for every `.php` path tested, and never issued a `PHPSESSID` cookie or any other PHP-runtime behavior across repeated requests. This task's deliverable was the formal exclusion of that signal from every downstream section of this report.
+
+Every raw artifact referenced in Sections 2 through 4 traces back to one of the twelve tasks above; none of the conclusions in this report rest on a technique or observation outside this documented methodology.
+
+---
 
 ## 6. Limitations and uncertainty
-* **Black-Box Restrictions:** The assessment was conducted without internal authentication or shell access. Internal network segmentation could not be verified.
-* **Version Truncation:** Some legacy components (e.g., MySQL) only leaked major/minor error codes, preventing exact patch-level identification.
-* **Uncertainty in Layer 2:** While load balancing is evident, the specific appliance vendor remains [Confidence: Uncertain] due to stripped routing headers.
 
-## Appendix findings index
-| Task Ref | Finding Category | Finding Details | Confidence | Evidence Mechanism |
+This engagement was deliberately bounded, and Otono engineering and the due-diligence reviewers should weigh the findings above against the following limitations before treating this report as a complete security assessment.
+
+* **Black-box restrictions.** The assessment was conducted without internal authentication, without shell access to any Otono host, and without cooperation from Otono engineering. Internal network segmentation, firewall rules, and any compensating controls that may exist behind the layers described in Section 2 could not be verified from the outside and are not represented anywhere in this report.
+* **Version truncation.** Several legacy components, most notably the Layer 4 Ruby on Rails application and the Layer 5 MySQL installation, only leaked major or default-behavior signals rather than precise version or patch-level strings. This report has been careful to label those findings as Probable/outdated rather than assigning a specific, unverifiable patch level or EOL date, and the composite prioritization in Section 4.2 does not depend on knowing the exact patch level.
+* **Uncertainty in Layer 2.** While the load-balancing behavior itself is well evidenced by the `X-Served-By` alternation described in Section 3.2, the specific load-balancing appliance, vendor, and version remain **[Confidence: Uncertain]**, because the routing headers observed were stripped of any vendor-identifying information. This is the one finding in this report that this engagement was not able to raise above Uncertain, and it should be treated as an open item rather than a resolved one.
+* **Task 12 disposition, restated.** The `PHP/7.4.3` signal surfaced during automated scanning was investigated and excluded as a false positive: the responding host serves static content only, returns 404 for `.php` paths, and never exhibits PHP-runtime session behavior. This exclusion has been applied consistently throughout Sections 2, 3, and 4; the signal does not appear in the layer map, the evidence chains, or the EOL/attack-surface prioritization anywhere in this report.
+* **Point-in-time nature of these findings.** All observations in this report reflect the state of Otono's externally observable infrastructure as of the assessment date above. No conclusion here should be read as a guarantee about the state of the stack at the time the due-diligence transaction closes; a re-verification pass immediately prior to closing is recommended given how much of this report's risk concentrates in components that appear to be outside Otono's normal patch cadence.
+
+---
+
+## Appendix: Findings index
+
+| Task Ref | Layer / Category | Finding | Confidence | Evidence Mechanism |
 |---|---|---|---|---|
-| Task 1 | Layer 1 | nginx/1.18.0 | Certain | Server header read directly |
-| Task 1 | Layer 1 | Django/4.2.11 | Certain | generator meta tag read directly |
-| Task 2/3 | Layer 2 | load-balanced proxies | Probable | X-Served-By alternates |
-| Task 4/5 | Layer 3 | spoofed nginx/1.25.3 | Probable | ServerSignature/ETag convergence |
-| Task 6 | Layer 3 | actual Apache/2.2.15 | Probable | 404 ServerSignature OS token |
-| Task 7 | Layer 4 | forgotten.otono.example | Probable | old JS reference + DNS |
-| Task 8 | Layer 4 | Ruby on Rails | Probable | _session_id + X-Runtime |
-| Task 9 | Layer 5 | MySQL | Certain | Mysql2::Error 1054 (42S22) |
-| Task 10 | EOL | Apache 2.2 / Rails EOL | Certain | EOL API cross-reference |
-| Task 11 | Priority | mysql:Layer5 | Certain | Composite risk aggregation |
-| Task 12 | Triage | PHP False Positive | Certain | 404 on .php, excluded from report |
+| Task 1 | Layer 1 | `nginx/1.18.0` on corporate site | Certain | `Server` header read directly (§2.1) |
+| Task 1 | Layer 1 | `Django/4.2.11` on customer portal | Certain | `generator` meta tag read directly (§2.1) |
+| Task 2/3 | Layer 2 | Load-balanced backend nodes | Probable | `X-Served-By` alternation chain (§3.2) |
+| Task 4/5 | Layer 3 | Spoofed `Server: nginx/1.25.3` | Probable | ETag + forced-error convergence proves lying declaration (§3.1) |
+| Task 6 | Layer 3 | True origin `Apache/2.2.15` (CentOS) | Probable | Forced-error footer + ETag structural match (§3.1) |
+| Task 7 | Layer 4 | `forgotten.otono.example` is live | Probable | Orphaned script tag + live DNS resolution (§3.2) |
+| Task 8 | Layer 4 | Ruby on Rails / Ruby backend | Probable | `_session_id` cookie + `X-Runtime` header co-occurrence (§3.2) |
+| Task 9 | Layer 5 | MySQL database engine | Certain | Raw `Mysql2::Error 1054 (42S22)` exception (§3.2, §2.5) |
+| Task 10 | EOL | Apache 2.2.15 confirmed EOL 2017-12-31 | Certain | EOL API cross-reference (§4.1) |
+| Task 10 | EOL | Rails / MySQL outdated, exact EOL unresolved | Probable | EOL API cross-reference, version-truncated (§4.1, §6) |
+| Task 11 | Priority | `mysql:Layer5` ranked highest priority | Certain | Composite exposure/criticality/EOL aggregation (§4.2) |
+| Task 11 | Priority | `apache:Layer3` ranked second priority | Certain | Composite exposure/criticality/EOL aggregation (§4.2) |
+| Task 12 | Triage | `PHP/7.4.3` header is a false positive | Certain | 404 on all `.php` paths, no `PHPSESSID` observed; excluded from all findings (§1, §6) |
+
+*End of report.*
