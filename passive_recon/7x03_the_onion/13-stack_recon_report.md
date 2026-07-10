@@ -60,16 +60,16 @@ This assessment was conducted strictly within the Rules of Engagement, utilizing
 * **Task 7 (Forgotten Service):** Extracted old JS references and used `dig` for DNS resolution to find the legacy domain.
 * **Task 8 (Framework):** Mapped `X-Runtime` and `_session_id` cookies to deduce Ruby on Rails.
 * **Task 9 (Datalayer):** Triggered bounded SQL interaction to generate the `Mysql2::Error 1054`.
-* **Task 10 (EOL Script):** Developed a structured bash script parsing `endoflife.date` API JSON using `jq` to determine exact EOL dates.
+* **Task 10 (EOL Script):** Developed a bash script parsing `endoflife.date` API JSON using `jq` to determine exact EOL dates.
 * **Task 11 (Surface Aggregation):** Computed a composite score based on layer depth and EOL status.
 * **Task 12 (Validation):** Executed strict metacognitive triage to isolate and permanently exclude the PHP false positive from all findings.
 
 ## 6. Limitations and uncertainty
 * **Black-Box Restrictions:** The assessment was conducted without internal authentication or shell access. Internal network segmentation, lateral movement controls, and outbound egress filtering could not be verified.
 * **Version Truncation:** Some legacy components (e.g., MySQL) only leaked major/minor error codes, preventing exact patch-level identification.
-* **Uncertainty in Layer 2:** While load balancing is evident, the specific appliance vendor (e.g., F5, HAProxy) remains [Confidence: Uncertain] due to stripped routing headers.
+* **Uncertainty in Layer 2:** While load balancing is evident, the specific appliance vendor remains [Confidence: Uncertain] due to stripped routing headers.
 
-## Appendix A: Findings index
+## Appendix findings index
 | Task Ref | Finding Category | Finding Details | Confidence | Evidence Mechanism |
 |---|---|---|---|---|
 | Task 1 | Layer 1 | nginx/1.18.0 | Certain | Server header read directly |
