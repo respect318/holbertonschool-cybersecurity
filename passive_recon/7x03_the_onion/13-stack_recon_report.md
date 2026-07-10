@@ -149,7 +149,7 @@ This engagement was deliberately bounded, and Otono engineering and the due-dili
 
 ---
 
-## Appendix: Findings index
+## Appendix findings index
 
 | Task Ref | Layer / Category | Finding | Confidence | Evidence Mechanism |
 |---|---|---|---|---|
