@@ -1,11 +1,15 @@
 # Confidence table
-# | Task | Finding | Confidence | Evidence |
-# | 1 | Nginx and Django headers | uncertain | header read directly, easily spoofed |
-# | 4 | Backend language | probable | behavioural analysis and error handling |
-# | 6 | Exact versions | probable | converging probes and local EOL API match |
-# | 9 | MySQL datalayer | probable | database connection patterns |
-#
-# False positive: django
-# Why excluded: The initial scan revealed a Django/4.2.11 header. However, in professional fingerprinting, explicitly declared exact framework versions on the outer edge (Layer 1) are highly suspicious. Deeper behavioural analysis contradicts this signal, indicating that the Django header is a deliberate spoof designed to mislead automated vulnerability scanners and script kiddies. Therefore, it is excluded from the final attack surface report.
-#
-# False positive: django
+| Task | Finding | Confidence | Evidence |
+| 1 | otono.example nginx/1.18.0 | certain | Server header read directly |
+| 1 | portal Django/4.2.11 | certain | generator meta tag read directly |
+| 5 | legacy Server nginx/1.25.3 is spoofed | probable | ServerSignature + ETag + DOCTYPE converge |
+| 5 | actual Apache/2.2.15 | probable | 404 ServerSignature OS token |
+| 7 | forgotten.otono.example legacy svc | probable | old JS reference + DNS + live response |
+| 8 | Ruby on Rails / Ruby | probable | _session_id + X-Runtime + Routing Error |
+| 9  | MySQL | certain | Mysql2::Error 1054 (42S22) |
+| 9  | load-balanced | probable | X-Served-By alternates node-a/node-b |
+
+False-positive analysis:
+During the initial scans, a stale X-Powered-By: PHP/7.4.3 header was discovered. However, further testing reveals that requests for .php return 404 and no PHPSESSID cookie is ever set. The environment is actually just nginx/1.18.0 serving static HTML. Because there is no PHP actually present in this layer, it is excluded from the report.
+
+False positive: php
