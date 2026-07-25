@@ -1,4 +1,4 @@
-## Reconnaissance Report, Vellum Press portal
+# Reconnaissance Report, Vellum Press portal
 For: Sofia Reyes and the engagement file
 
 ## 1. Engagement overview
