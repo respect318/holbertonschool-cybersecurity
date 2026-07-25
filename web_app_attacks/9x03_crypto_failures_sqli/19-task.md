@@ -1,0 +1,7 @@
+The stored passwords were hashed with a fast, general-purpose algorithm and no per-password salt, so identical passwords produced identical hashes and offline cracking against precomputed tables or GPU brute-force ran fast enough to recover real values. That's what made the crack practical, not just "weak hashes" — a slow function or a salt alone would each have blunted this, and neither was present.
+
+The fix is to store passwords with Argon2id: a unique, cryptographically random salt per password, a memory- and time-cost tuned to be deliberately slow, and no reversible path back to the original from the hash. Since existing hashes can't be safely upgraded in place, migration means rehashing on next successful login or forcing a reset for accounts that can't be verified that way.
+
+The injection that handed me the store is fixed separately, in the query itself: replace string-concatenated SQL with parameterized queries or prepared statements, so user input is always bound as data and never interpreted as SQL syntax, backed by least-privilege database permissions.
+
+These are different kinds of fix because they sit at different layers. Injection is an input-to-query construction failure, fixed where the application talks to the database. Weak storage is a cryptographic data-protection failure, fixed in hashing design and migration. They chained together here, but parameterizing the query doesn't make old hashes safe, and stronger hashing wouldn't have stopped the injection.
