@@ -1,0 +1,4 @@
+{
+  "context": "dom",
+  "payload": "<img src=x onerror=\"fetch('/x/proof/'+window.__vendara_proof)\">"
+}
