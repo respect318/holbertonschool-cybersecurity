@@ -1,0 +1,118 @@
+# What the Bank Would Have Seen — Audit Trail Reconstruction
+
+## Scope of this review
+
+This report reconstructs, from the `/api/v2/audit/events` and
+`/api/v2/monitoring/alerts` endpoints alone (i.e. what an investigator with
+only application-level visibility would have), how much of the F01–F12
+chain would have been visible after the fact, correctly attributed to the
+actor who performed it, and actually surfaced as an alert.
+
+Query used throughout: `GET /api/v2/audit/events` (own session), cross-
+referenced against every money-moving or privilege-changing step performed
+during the engagement.
+
+## What the audit trail actually contains
+
+Across the full chain — deprecated-surface reads, identifier enumeration,
+mass assignment, transfer amendment, reversal replay, the balance race,
+and the full payment flow — the audit log recorded exactly two kinds of
+event for the entire engagement:
+
+```json
+{"action": "login", "actor": "20001041", "severity": "info", "detail": "session opened"}
+{"action": "segment_change", "actor": "20001041", "severity": "high", "detail": "segment changed to PRIVATE"}
+```
+
+Nothing else appears. This is the entire basis for the three failure modes
+below.
+
+---
+
+## Failure mode 1 — Unlogged
+
+The following money-moving or data-disclosing actions produced **no audit
+event at all**, despite each one being either a direct financial operation
+or a disclosure of another customer's financial data:
+
+- `GET /api/v1/customers/{id}` and `GET /api/v1/accounts/{iban}` —
+  reading another customer's profile, balance, and card PAN through the
+  deprecated surface (F01/F02/F04). The victim's own timeline would show
+  nothing; the bank would have no record that this data was ever accessed
+  by anyone other than the account owner.
+- `POST /api/v2/beneficiaries/verify` — the checksum-oracle enumeration
+  used to discover live account identifiers (F03). A sweep of hundreds of
+  candidate IBANs left no trace.
+- `PATCH /api/v2/transfers/{id}` (post-authorization amount amendment,
+  F06) and `POST /api/v2/transfers/{id}/reverse` (replayed reversal,
+  F07) — both directly move money and both are silent in the log.
+- The concurrent `/validate` dispatch that produced a negative balance
+  (F08) — a balance driven below zero left no distinguishable event from
+  an ordinary validation.
+- `POST /securecheck/api/authenticate` and `POST /checkout/authorize` —
+  the entire payment chain, including the final €4,800 authorization on a
+  card that was never the tester's own, produced no entry in
+  `/api/v2/audit/events`.
+
+**Conclusion:** every step in the chain that actually moves money or
+discloses another customer's data is unlogged. Only two non-financial,
+self-referential actions (logging in, changing one's own profile field)
+are ever recorded.
+
+---
+
+## Failure mode 2 — Mis-attributed
+
+Because the only events that exist are scoped to the acting session's own
+`actor` (`20001041`, the tester's own customer number), there is a
+structural attribution gap: the audit trail has no concept of "this actor
+acted on someone else's data or funds." An event log entry for reading
+`GET /api/v1/customers/1087` — had one existed — would need to name **two**
+principals (the reader and the record's owner) to be useful for
+attribution; the schema observed only ever carries a single `actor` field
+tied to the session holder, with no `subject`/`target` field distinguishing
+"acted on my own record" from "acted on someone else's." Victim 1087's own
+audit history, if queried, would show no indication that their card was
+ever used in a transaction they did not initiate — the log has nowhere to
+put that fact even in principle.
+
+---
+
+## Failure mode 3 — Logged but never alerted
+
+The one event that **was** logged with an elevated severity —
+`segment_change`, `severity: "high"` — never produced a corresponding
+entry in `/api/v2/monitoring/alerts`, which returned `{"alerts": []}`
+immediately after the event was recorded and for the remainder of the
+session. The severity tagging shows the system was designed to recognize
+this class of event as notable; the alert pipeline simply never converts
+that recognition into anything an analyst would see. This is the clearest
+evidence of a detection gap that is not a visibility gap: the data existed,
+labeled as significant, and was never surfaced.
+
+---
+
+## The single event that would have broken the chain earliest
+
+`segment_change` (`RETAIL → PRIVATE`, via mass assignment on
+`PATCH /api/v2/customers/me`) is both the earliest **logged** event in the
+full attack chain and the only one carrying a severity high enough to
+justify an alert. Every step before it (surface mapping, identifier
+enumeration) is reconnaissance with no logged trace; every step after it
+(payment authentication, high-value authorization) is unlogged entirely.
+Had the alerting pipeline actually fired on this one `high`-severity event,
+an analyst would have had a chance to intervene *before* the payment flow
+was ever reached — this is the earliest point at which the bank's own
+instrumentation had the information needed to break the chain, and the
+point at which it failed to act on it.
+
+---
+
+## Summary
+
+| Failure mode | Evidence |
+|---|---|
+| Unlogged | v1 reads, IBAN enumeration, transfer amendment, reversal replay, balance race, entire payment flow — zero audit events |
+| Mis-attributed | Audit schema carries only a single self-referential `actor`; no field exists to record "acted on another principal's data/funds" |
+| Logged but never alerted | `segment_change`, severity `high`, never appears in `/api/v2/monitoring/alerts` |
+| Earliest breakable point | `segment_change` — the only high-severity, logged event preceding the payment flow |
