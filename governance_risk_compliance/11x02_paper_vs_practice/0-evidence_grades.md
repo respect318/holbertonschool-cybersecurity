@@ -15,14 +15,14 @@ Justification: No documented offboarding procedure exists; tickets are raised "w
 E05 — category: PR.DS · status: Implemented
 Justification: Nightly snapshots with 35-day retention, plus a quarterly restore test with a signed runbook and a successful, timed result. This is the full lifecycle — created, protected, maintained, and tested — with evidence, not just a policy claim.
 
-E06 — category: DE.CM · status: Partial
-Justification: Organization-wide cloud audit logging is enabled and technically functioning. However, alerts route to an unowned Slack channel, and two high-severity alerts from last month remain unacknowledged. Detection exists; response does not.
+E06 — category: DE.AE · status: Partial
+Justification: Cloud audit logging is technically enabled organization-wide, but the core failure is on the analysis side: alerts route to a Slack channel with no on-call ownership, and two high-severity alerts from last month remain unacknowledged. The gap is in recognizing and characterizing adverse events, not in the logging mechanism itself.
 
 E07 — category: RS.MA · status: Absent
 Justification: A phishing incident was handled informally by "whoever was around," with no ticket, no timeline, and no post-incident review. There is no repeatable or defensible incident management process — only ad hoc, undocumented action.
 
 E08 — category: GV.SC · status: Partial
-Justification: One vendor contract includes strong terms (72-hour breach notification, annual SOC 2 requirement), but this was negotiated for a single vendor by legal. No vendor inventory or standard supply-chain security requirements exist across vendors.
+Justification: One vendor contract includes strong terms (72-hour breach notification, annual SOC 2 requirement), but this was negotiated for a single vendor by legal, with no vendor inventory or standard supply-chain security requirements applied across vendors. The organization-wide supply chain risk management program this category calls for does not exist; only an isolated exception does.
 
 E09 — category: GV.RM · status: Absent
 Justification: Risk discussion was deferred for three consecutive board quarters, and no risk register exists anywhere in the company. There is no evidence of an operating risk management process, only repeated deferral.
@@ -30,8 +30,8 @@ Justification: Risk discussion was deferred for three consecutive board quarters
 E10 — category: PR.AT · status: Partial
 Justification: One all-hands security session occurred 14 months ago with 60% attendance and no completion tracking, and new joiners receive no training at all. Some awareness activity exists, but it is stale, unmeasured, and not onboarded into the employee lifecycle.
 
-E11 — category: PR.DS · status: Partial
-Justification: Full-disk encryption is at 100% on laptops, and object storage has default encryption enabled — strong technical baseline. However, two buckets were previously found publicly readable, fixed only reactively, with no configuration-review process created afterward to prevent recurrence.
+E11 — category: PR.PS · status: Partial
+Justification: Full-disk encryption is at 100% on laptops and object storage has default encryption enabled, which is a strong baseline. But the defining finding is that two buckets were previously found publicly readable and were fixed reactively with no configuration-review process created afterward — a platform security-configuration governance gap, not an encryption gap, and one that remains exposed to recurrence.
 
 E12 — category: GV.RR · status: Absent
-Justification: There is no CISO, and security responsibility is informally split between the DevOps lead (an estimated 10% of their time) and the CTO, with nothing about this arrangement documented anywhere. No defensible accountability structure exists.
+Justification: There is no CISO, and security responsibility is informally split between the DevOps lead (an estimated 10% of their time) and the CTO, with nothing about this arrangement documented anywhere. No defensible structure for cybersecurity roles, responsibilities, and authorities exists (cf. GV.RR-02).
