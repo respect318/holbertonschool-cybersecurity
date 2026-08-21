@@ -1,10 +1,10 @@
 | ID | Asset | Threat | Vulnerability | Existing controls |
 |----|-------|--------|----------------|--------------------|
-| R1 | Funds moved through finance's supplier payment process (~40 payments/month) | Phishing attacker impersonating the CFO to trigger a fraudulent payment (CEO fraud) | No callback-verification procedure for new or changed payment beneficiaries; email filtering is basic | Basic email filtering only; no callback verification in place |
-| R2 | Claims processing platform and the claim payouts it supports | Ransomware infecting the claims platform | Claims run on two aging Windows servers; backup restore has never been tested | Nightly backups exist, but restore capability is unverified |
-| R3 | Claim photos and policyholder PII stored on field laptops | Theft or loss of a field laptop | Full-disk encryption deployed on only about half the fleet | Full-disk encryption on roughly half of the 30 laptops |
-| R4 | Commercial policyholder list held in the CRM | A departing employee exfiltrating data before or after leaving | CRM access is broad by default; no DLP; offboarding can take up to two weeks to remove access | None identified |
-| R5 | Customer-facing self-service portal and its cloud storage/access configuration | An attacker exploiting a portal misconfiguration | Cloud storage and access configuration have never been reviewed since the contractor-built go-live | None identified |
-| R6 | Agents' ability to quote policies across all branches | Outage of the single SaaS quoting-engine vendor | No offline fallback if the vendor is unavailable | None identified |
-| R7 | Public marketing website | DDoS attack on the public site | Not specified in the scenario | None identified |
-| R8 | Archived health data (special category) in closed claims files | Regulatory action or exposure resulting from non-compliant handling of retained health data | No retention policy applied to decades of closed claims; subject-access requests take weeks to fulfill | None identified |
+| R1 | Supplier payment funds | CEO-fraud phishing | No callback verification for new/changed beneficiaries; basic email filtering | Basic email filtering |
+| R2 | Claims processing platform | Ransomware | Aging Windows servers; backup restore untested | Nightly backups (restore untested) |
+| R3 | Claim photos and policyholder PII on field laptops | Laptop theft or loss | Full-disk encryption on only ~half the fleet | Full-disk encryption (~50% of fleet) |
+| R4 | Commercial policyholder list (CRM) | Departing-insider data exfiltration | Broad default CRM access; no DLP; offboarding delay up to 2 weeks | None identified |
+| R5 | Customer self-service portal and cloud config | Portal misconfiguration exploitation | No config review since go-live | None identified |
+| R6 | Cross-branch quoting capability | SaaS quoting-vendor outage | No offline fallback; single vendor dependency | None identified |
+| R7 | Public marketing website | DDoS attack | Not specified | None identified |
+| R8 | Archived health data (special category) | Regulatory exposure from retention non-compliance | No retention policy applied; slow subject-access request fulfillment | None identified |
