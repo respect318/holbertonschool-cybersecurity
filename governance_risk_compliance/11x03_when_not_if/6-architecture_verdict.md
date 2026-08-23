@@ -23,9 +23,11 @@ board itself defined as escalation-to-existential.
 **Recovery point.** The nightly full backup sits on the same directory
 infrastructure as production, so it is not a copy the attacker cannot
 reach and does not count toward RPO. The only qualifying copy is the
-weekly offline immutable backup, **26 hours old** at incident start. EDI
-partners can replay only 4 hours of order traffic; the remaining 22
-hours would need manual re-keying from paper. Both equations fail.
+weekly offline immutable backup, 26 hours old at incident start — the
+**achieved RPO is 26 hours**, against an **EDI-imposed RPO target of 4
+hours**: a 22-hour miss. Order traffic beyond the 4-hour replay window
+would need manual re-keying from paper. Both the RTO and the RPO
+equations fail.
 
 ## The fix
 
