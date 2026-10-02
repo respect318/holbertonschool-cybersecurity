@@ -1,5 +1,48 @@
 # Fenwick SOC Analyst Reconstruction — FDS-ETL-02
 
+## Collection and forwarding configuration (read before ranking anything)
+
+    ls -la /etc/audit/plugins.d/
+    cat /etc/audit/plugins.d/*.conf
+
+Every audisp dispatcher plugin on this host is `active = no`:
+`au-remote.conf` (remote audit forwarding), `syslog.conf`
+(audisp-to-syslog bridge), `af_unix.conf`, and
+`audispd-zos-remote.conf`. This means every auditd event — everything
+collected under keys like `rawdisk`, `identity`, `priv_esc`, `etl_job`
+— is written only to the local `/var/log/audit/audit.log` file and
+goes nowhere else. There is no live console or SIEM feed fed by
+auditd on this host as currently configured; an analyst only sees
+these events by logging in and running `ausearch`/`aureport` directly,
+after the fact.
+
+Separately:
+
+    systemctl status rsyslog
+    ● rsyslog.service ... Active: active (running)
+
+    cat /etc/rsyslog.conf
+    auth,authpriv.*    /var/log/auth.log
+
+    grep -E "forward|@@" /etc/rsyslog.conf /etc/rsyslog.d/*
+    (no output)
+
+rsyslog is running and does route `auth`/`authpriv` facility messages
+(which is what PAM uses for `su`, `sudo`, login events) to
+`/var/log/auth.log`, but there is no remote forwarding rule (`@` or
+`@@` target) anywhere in its configuration. So rsyslog, too, only
+writes locally.
+
+**This changes what "visibility" means on this host.** Nothing
+produced by either logging layer leaves this machine in real time,
+and there is no evidence of a live-monitored console or alerting
+pipeline at all — only two local, after-the-fact record stores:
+`audit.log` (auditd) and `auth.log` (rsyslog, fed by PAM). The
+distinction between the roads taken is therefore not "triggered an
+alert vs. stayed silent" — it is "left a record in one or both of
+these local stores, recoverable by an analyst who comes looking" vs.
+"left no record in either."
+
 ## Reading the trail: what each road actually wrote
 
 ### Road 1 — disk group / raw block device read (debugfs)
@@ -12,13 +55,13 @@
     type=EXECVE ... a0="debugfs" a1="-R" a2=636174202F726F6F742F726F6F742E666C6167 a3="/dev/sda2"
     type=SYSCALL ... comm="debugfs" exe="/usr/sbin/debugfs" auid=1000 uid=1000 ... key="rawdisk"
 
-This is complete: the raw block-device watch fires on open, and a
-dedicated execve rule fires on invoking `/usr/sbin/debugfs`, capturing
-the full command line (hex-decoded, this is `cat /root/root.flag`),
-the invoking UID, and the audit login ID (auid=1000, tying it to the
-svc-etl session that logged in, even through the later privilege
-change). An analyst watching this host's `ausearch -k rawdisk` feed,
-or any SIEM ingesting this key, would see this the moment it happened.
+Collected into `audit.log` via auditd, which — per the forwarding
+check above — has no active dispatcher. This record exists, is
+complete (full command line decoded, invoking auid tied to the
+svc-etl login session), but reaches no console. An analyst recovers
+it only by logging into this host and querying `ausearch -k rawdisk`
+specifically; nothing about this event reaches rsyslog, auth.log, or
+anywhere off-host.
 
 ### Road 3 — cap_dac_override write to /etc/passwd, then su to the planted account
     grep backdoor /var/log/auth.log
@@ -26,14 +69,16 @@ or any SIEM ingesting this key, would see this the moment it happened.
     2026-10-02T06:50:53 FDS-ETL-02 su[1483]: (to backdoor) svc-etl on pts/0
     2026-10-02T06:50:53 FDS-ETL-02 su[1483]: pam_unix(su:session): session opened for user backdoor(uid=0) by svc-etl(uid=1000)
 
-PAM logs every `su` attempt and outcome to auth.log by default,
-independent of any auditd rule Fenwick wrote specifically for this
-host. The "blank password" line is a standing anomaly signature on its
-own — this account should never have existed, and PAM flags the
-authentication method it used (none) in the same line. The actual
-`/etc/passwd` write that created the account is additionally caught
-by the dedicated `-w /etc/passwd -p wa -k identity` watch, so this
-road leaves two independent records, not one.
+This record exists in `auth.log`, written by PAM via the
+`auth,authpriv.*` rsyslog rule — a different collection path than
+auditd entirely, and one that is independent of every auditd rule on
+this host. The underlying `/etc/passwd` write is also independently
+caught by auditd's `-w /etc/passwd -p wa -k identity` watch
+(`ausearch -k identity` would show it), so this road leaves two
+separate local records through two unrelated mechanisms, neither of
+which is forwarded anywhere either — but an analyst with only
+`auth.log` access (no auditd access at all) would still catch this
+road, whereas they would never catch Road 1 through that file alone.
 
 ### Road 4 (the quiet one) — SUID binary + writable RUNPATH shared-library hijack
     auditctl -l | grep -E "plugins-1f9aa1|fds-etl-verify"
@@ -45,80 +90,78 @@ road leaves two independent records, not one.
     grep -i fds-etl-verify /var/log/auth.log
     (no output)
 
-Nothing. There is no watch on the RUNPATH directory
-(`/opt/fds/plugins-1f9aa1`), and no execve rule on the SUID binary
-itself. The privilege escalation happens inside the dynamic linker's
-normal library resolution at process start — not a syscall class or a
-file path this host's ruleset was built to watch. Running the exact
-same escalation twice, at different times, produced zero matching
-records in any of the three places the other two roads showed up in.
+Nothing, in either local store. No auditd watch covers the RUNPATH
+directory or the SUID binary, and no PAM event fires because the
+privilege change never goes through `sudo` or `su` — the dynamic
+linker loads the (replaced) shared library as part of a normal SUID
+exec, which is ordinary process behavior neither collection mechanism
+is configured to flag. Running the exact same escalation twice, at
+different times, produced zero matching records in audit.log and zero
+in auth.log.
 
-## Ranking, most to least visible
+## Ranking, most to least visible (via the records this host actually keeps)
 
-1. **Road 1 (debugfs/rawdisk)** — loudest. Two independent audit
-   mechanisms (a file/device watch AND a dedicated execve rule) both
-   fire, and the execve rule logs the full command line in cleartext.
-   An analyst does not need to correlate anything; one `ausearch -k
-   rawdisk` query reconstructs the entire action.
-2. **Road 3 (backdoor via cap_dac_override)** — loud, but through a
-   different mechanism: PAM's own authentication logging, not a
-   custom auditd rule. Still trivially visible (plain grep of
-   auth.log), but an analyst relying only on `auditctl -l` output to
-   know what's watched would miss that this road is covered too,
-   since the coverage comes from PAM rather than from a rule Fenwick
-   wrote for this host specifically. The underlying write to
-   /etc/passwd is independently caught by the `identity` watch,
-   making this road doubly redundant in coverage.
-3. **Road 4 (RUNPATH shared-library hijack)** — invisible. No file
-   watch, no execve rule, and no PAM event, because the privileged
-   action never goes through sudo, su, or a watched path — it happens
-   inside a normal SUID exec and a normal library load, both of which
-   are expected, everyday behavior on this host.
+1. **Road 3 (backdoor via cap_dac_override)** — most recoverable.
+   Caught by PAM/rsyslog independently of any auditd rule, AND by a
+   dedicated auditd `identity` watch — two unrelated mechanisms, so it
+   survives even if an analyst only has access to one of the two local
+   log stores.
+2. **Road 1 (debugfs/rawdisk)** — fully recorded, but through a single
+   mechanism only (auditd). An analyst without access to
+   `/var/log/audit/audit.log`, or without knowing to query the
+   `rawdisk` key specifically, would never see it; it never touches
+   auth.log or any other file.
+3. **Road 4 (RUNPATH shared-library hijack)** — recoverable through
+   neither local store. No record exists anywhere on this host for an
+   analyst to find, regardless of which logs they have access to or
+   how thoroughly they search.
 
 ## Why the difference
-Fenwick's ruleset is built around specific **paths** (`/dev/sda2`,
-`/etc/passwd`, `/usr/sbin/debugfs`) and one specific **binary**
-(`sudo`). PAM adds a second, independent layer that covers
-authentication events regardless of auditd rules. Neither layer
-watches **library resolution behavior** — a SUID binary loading a
-shared object from a writable RUNPATH directory is indistinguishable,
-to this ruleset, from any other legitimate dynamic linking happening
-constantly on the system. Visibility here tracks what specific
-objects a rule names, not how "exotic" the underlying technique is;
-Road 4 is not technically obscure, it is simply outside every object
-this host's rules currently name.
+No road on this host triggers anything in real time — that capability
+does not exist here, since every audisp forwarding plugin is disabled
+and rsyslog has no remote target. Visibility here is purely a function
+of whether an action passes through one of the two mechanisms that
+write locally at all: a matching auditd rule (keyed to a specific
+path or binary), or a PAM-driven authentication event (keyed to the
+`auth`/`authpriv` facility, independent of auditd entirely). Road 3
+passes through both. Road 1 passes through only the first. Road 4
+passes through neither, because loading a shared library via a SUID
+binary's RUNPATH is not a syscall class, path, or authentication event
+either mechanism was built to watch.
 
 ## Proposed rule for the quiet road
 
 The rule must not key on `/opt/fds/plugins-1f9aa1` or
-`fds-etl-verify` by name — on the next host those will be different
-paths and a different binary, and a filename-keyed rule would miss
-every other SUID binary with the same underlying weakness.
+`fds-etl-verify` by name — on a different host built from the same
+template these would be different paths and a different binary, and a
+filename-keyed rule would miss every other SUID binary sharing the
+same underlying weakness.
 
-Key it on the mechanism instead: a setuid/setgid root binary loading
-a shared library from a directory writable by a non-root user. This
-is detectable in two complementary ways:
+Key it on the mechanism: a setuid/setgid root binary with a library
+search path (RUNPATH/RPATH) pointing into a directory writable by a
+non-root principal. Two complementary pieces, both necessary given
+this host's existing configuration has no forwarding at all:
 
-1. **Static, periodic check (cheapest, catches it before exploitation):**
-   enumerate every SUID/SGID binary on the host (`find / -perm -4000
-   -o -perm -2000`), resolve each one's RUNPATH/RPATH and its full
-   library dependency tree (`readelf -d`, `ldd`), and alert on any
-   case where a resolved library path's containing directory is
-   group- or world-writable by a non-root principal. This needs no
-   runtime instrumentation, just periodic re-scanning, since the
-   writable-directory condition is what creates the vulnerability
-   regardless of whether it has been exploited yet.
+1. **Static, periodic check:** enumerate every SUID/SGID binary
+   (`find / -perm -4000 -o -perm -2000`), resolve each one's
+   RUNPATH/RPATH and library dependencies (`readelf -d`, `ldd`), and
+   alert when a resolved library's containing directory is group- or
+   world-writable by anyone other than root. This needs no new
+   collection infrastructure — it finds the exposure itself, before
+   exploitation, independent of whether auditd or rsyslog ever see
+   anything.
+2. **Runtime auditd watch, generated from the static scan:** add
+   `-w <dir> -p wa -k suid_runpath_write` for each directory the scan
+   flags, so a write to any currently-risky RUNPATH directory is
+   caught the moment it happens — but only if Fenwick first enables
+   the `au-remote` or `syslog` audisp plugin (currently `active = no`
+   on this host), since otherwise this new rule would suffer the
+   exact same forwarding gap as the `rawdisk` rule already does.
 
-2. **Runtime audit rule (catches active exploitation):** add an
-   auditd watch on write access (`-p wa`) to any directory that
-   currently appears as a RUNPATH/RPATH target of a SUID/SGID binary,
-   generated dynamically from the static scan above rather than
-   hardcoded, so it tracks whichever directories are actually at
-   risk on this host at any given time rather than one instance's
-   specific path.
-
-Either approach keys on the condition — "writable directory in a
-privileged binary's library search path" — not on today's filenames,
-so it would catch the same class of weakness on a different binary,
-in a different directory, on a different host built from the same
-template.
+This keys on the condition — a privileged binary's library search path
+resolving into a writable directory — not on today's filenames, so it
+catches the same class of weakness on a different binary, in a
+different directory, on a different host built from the same
+template; and it does not repeat this host's existing mistake of
+collecting an event locally with no path for an analyst to see it
+without already knowing to look.
