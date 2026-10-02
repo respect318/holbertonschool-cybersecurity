@@ -63,6 +63,22 @@ it only by logging into this host and querying `ausearch -k rawdisk`
 specifically; nothing about this event reaches rsyslog, auth.log, or
 anywhere off-host.
 
+### Road 2 — SUID root shell at /tmp/rootbash2
+    auditctl -l | grep -i rootbash
+    (no output — no rule references this path or any generic SUID/execve condition)
+
+    ausearch -x /tmp/rootbash2
+    (no output)
+
+    grep -i rootbash /var/log/auth.log
+    (no output)
+
+Nothing, in either local store. There is no auditd rule watching `/tmp`
+or matching a generic SUID-execution condition, and invoking a setuid
+binary directly (`/tmp/rootbash2 -p`) never goes through `sudo` or
+`su`, so PAM never fires either. This road is as unrecoverable from
+this host's records as Road 4.
+
 ### Road 3 — cap_dac_override write to /etc/passwd, then su to the planted account
     grep backdoor /var/log/auth.log
     2026-10-02T06:50:53 FDS-ETL-02 su: pam_unix(su:auth): user [backdoor] has blank password; authenticated without it
@@ -111,10 +127,23 @@ in auth.log.
    `/var/log/audit/audit.log`, or without knowing to query the
    `rawdisk` key specifically, would never see it; it never touches
    auth.log or any other file.
-3. **Road 4 (RUNPATH shared-library hijack)** — recoverable through
-   neither local store. No record exists anywhere on this host for an
-   analyst to find, regardless of which logs they have access to or
-   how thoroughly they search.
+3. **Road 2 (SUID shell at /tmp/rootbash2) and Road 4 (RUNPATH
+   shared-library hijack) — tied, least visible.** Neither leaves any
+   record in either local store. Both bypass every collection
+   mechanism this host has for the same underlying reason: neither
+   goes through `sudo`/`su` (so PAM never fires), and neither matches
+   any path, device, or binary an auditd rule names (so auditd never
+   fires). The difference between them is not visibility but
+   mechanism — Road 2 is a pre-existing setuid binary an analyst could
+   still find by enumerating SUID files on disk, while Road 4 exploits
+   a legitimate, correctly-configured SUID binary via a writable
+   library search path, leaving no anomalous file for static
+   enumeration to flag either. Road 4 is treated as the quieter of the
+   two for the detection rule below, since Road 2's artifact (an
+   unexplained SUID binary sitting in /tmp) is at least discoverable
+   by a one-time filesystem sweep, whereas Road 4's weakness is a
+   property of an otherwise-legitimate binary and only shows up by
+   specifically checking library search paths for writability.
 
 ## Why the difference
 No road on this host triggers anything in real time — that capability
@@ -124,10 +153,10 @@ of whether an action passes through one of the two mechanisms that
 write locally at all: a matching auditd rule (keyed to a specific
 path or binary), or a PAM-driven authentication event (keyed to the
 `auth`/`authpriv` facility, independent of auditd entirely). Road 3
-passes through both. Road 1 passes through only the first. Road 4
-passes through neither, because loading a shared library via a SUID
-binary's RUNPATH is not a syscall class, path, or authentication event
-either mechanism was built to watch.
+passes through both. Road 1 passes through only the first. Roads 2 and
+4 pass through neither, because a direct setuid binary invocation and
+a RUNPATH library load are not syscall classes, paths, or
+authentication events either mechanism was built to watch.
 
 ## Proposed rule for the quiet road
 
