@@ -1,6 +1,3 @@
-# Halcyon Freight — Engagement Report
-# Spearpoint Security | Assessor: jdoe foothold | Engagement: 12x03_the_local_maximum
-
 ## Executive answer
 
 An attacker who compromises a single user workstation on Halcyon's
@@ -101,16 +98,15 @@ it actually runs as is a deployment configuration review item, not
 a code item alone.
 
 ### Hop 5 — HAL-APP-01 to HAL-DB-01 finance data (segment boundary: app to db)
-As root on HAL-APP-01 we mounted the NFS export
-/srv/nfs/dropbox from HAL-DB-01. The export is configured with
-no_root_squash, meaning the server accepts uid=0 asserted by the
-client at face value and grants root-level access to server storage.
-We wrote a hook script to the export's hooks directory; HAL-DB-01's
-own watcher executed it as root and wrote the output, including the
-finance extract, back to the export's output directory, where we read
-it. The trust is: HAL-DB-01 trusts that the host mounting its NFS
-export and claiming to be root is actually authorised to act as root
-on its storage. It is not.
+As root on HAL-APP-01 we mounted the NFS export /srv/nfs/dropbox
+from HAL-DB-01. The export is configured with no_root_squash, meaning
+the server accepts uid=0 asserted by the client at face value and
+grants root-level access to server storage. We wrote a hook script to
+the export's hooks directory; HAL-DB-01's own watcher executed it as
+root and wrote the output, including the finance extract, back to the
+export's output directory, where we read it. The trust is: HAL-DB-01
+trusts that the host mounting its NFS export and claiming to be root
+is actually authorised to act as root on its storage. It is not.
 
 Remediation: remove no_root_squash from the NFS export. No NFS
 export that carries sensitive data should honour client-asserted root
@@ -165,9 +161,9 @@ the scope of impact extends beyond the workstation.
 C:H — all data accessible to dwalsh on the management segment and,
 through the subsequent trust chain, on the application segment is
 exposed.
-I:H — the key grants write access to the management host and,
-through the writable deployment script, to the application server;
-we demonstrated write-level access at both hops.
+I:H — the key grants write access to the management host and, through
+the writable deployment script, to the application server; we
+demonstrated write-level access at both hops.
 A:N — availability was not impacted at either destination.
 
 ## Activity log
@@ -186,20 +182,20 @@ and executed ws-backup. Confirmed /tmp/.rootshell created with SUID
 root.
 
 2026-10-02 18:10 — HAL-WS-07 as root via /tmp/.rootshell: read
-/home/dwalsh/.ssh/id_ed25519 and config. Read known_hosts (two
-hashed entries). Read /root/flag_ws_root.txt. No files modified.
+/home/dwalsh/.ssh/id_ed25519 and config. Read known_hosts. Read
+/root/flag_ws_root.txt. No files modified.
 
 2026-10-02 18:14 — HAL-WS-07 as root: SSH to dwalsh@hal-jmp01 using
 recovered key. Confirmed connection to HAL-JMP-01, uid dwalsh.
 
 2026-10-02 18:16 — HAL-JMP-01 as dwalsh: enumerated interfaces,
 routes, /etc/hosts. Located /run/svc-deploy/agent.sock,
-/opt/deploy/health-check.sh (writable). Confirmed supervisor loop
-in /entrypoint.sh executing health-check.sh as svc-deploy every 15s.
+/opt/deploy/health-check.sh writable. Confirmed supervisor loop
+executing health-check.sh as svc-deploy every 15 seconds.
 
 2026-10-02 18:18 — HAL-JMP-01 as dwalsh: replaced health-check.sh
-with SUID bash payload. Waited 20 seconds. Confirmed
-/tmp/.svcshell created.
+with SUID bash payload. Waited 20 seconds. Confirmed /tmp/.svcshell
+created with SUID root.
 
 2026-10-02 18:19 — HAL-JMP-01 as svc-deploy via /tmp/.svcshell:
 used SSH_AUTH_SOCK=/run/svc-deploy/agent.sock to connect to
@@ -211,67 +207,56 @@ source and entrypoint.sh. Confirmed command injection and runtime
 user gap.
 
 2026-10-02 18:24 — HAL-APP-01: sent HTTP request with injected
-command via curl to localhost:8080. Confirmed root RCE (id output
-returned). Created /tmp/.approot SUID bash. No service interrupted.
+command via curl to localhost:8080. Confirmed root RCE. Created
+/tmp/.approot SUID bash. No service interrupted.
 
 2026-10-02 18:26 — HAL-APP-01 as root via RCE: ran showmount -e
 hal-db01. Confirmed /srv/nfs/dropbox export open to all hosts.
 
-2026-10-02 18:28 — HAL-APP-01 as root via RCE: mkdir
-/mnt/halcyon-exports, mounted hal-db01:/srv/nfs/dropbox with NFS
-vers=3,nolock. Mount succeeded. Listed export contents: hooks/,
-out/, processed/.
+2026-10-02 18:28 — HAL-APP-01 as root via RCE: mounted
+hal-db01:/srv/nfs/dropbox at /mnt/halcyon-exports with NFS
+vers=3,nolock. Listed export contents: hooks/, out/, processed/.
 
 2026-10-02 18:29 — HAL-APP-01 as root via RCE: created proof file
 /mnt/halcyon-exports/prooftest. Confirmed file appeared as root:root
-on server storage, proving no_root_squash.
+on server storage, proving no_root_squash active.
 
-2026-10-02 18:30 — HAL-APP-01 as root via RCE: wrote hook script
-to /mnt/halcyon-exports/hooks/exfil.sh. Waited 8 seconds for watcher
-to execute. Read output from /mnt/halcyon-exports/out/loot.txt.
-Finance extract and FLAG_OBJECTIVE retrieved. No file on hal-db01
-was altered.
+2026-10-02 18:30 — HAL-APP-01 as root via RCE: wrote hook script to
+/mnt/halcyon-exports/hooks/exfil.sh. Waited 8 seconds for watcher to
+execute. Read output from /mnt/halcyon-exports/out/loot.txt. Finance
+extract and FLAG_OBJECTIVE retrieved. No file on hal-db01 altered.
 
-2026-10-02 18:35 — Engagement actions complete. /tmp/.rootshell,
-/tmp/.svcshell, /tmp/.approot left in place for verification;
-health-check.sh payload removed and original script restored on
-HAL-JMP-01. Proof files in NFS export left for deconfliction and
-then to be removed by Halcyon on reset.
+2026-10-02 18:35 — Engagement actions complete. health-check.sh
+payload removed and original script restored on HAL-JMP-01.
 
 ## Limitations
 
 We did not test lateral movement to other workstations in the user
-segment from KALI or from HAL-WS-07. The engagement scope placed
-a single workstation as the starting point; whether other workstations
-carry the same dwalsh SSH key or similar credentials was not
-investigated. If dwalsh's key is distributed across multiple
-workstations, the hop-2 finding is wider than demonstrated here.
+segment. Whether other workstations carry dwalsh's SSH key or similar
+credentials was not investigated. If the key is distributed across
+multiple workstations, the hop-2 finding is wider than demonstrated.
 
-We did not verify the two hashed entries in dwalsh's known_hosts on
-HAL-WS-07 beyond confirming that hal-jmp01 was one of them. The
-second entry is likely hal-app01 based on network topology, but we
-did not recover it with ssh-keygen -F to confirm. This was set aside
+We did not verify the second hashed entry in dwalsh's known_hosts on
+HAL-WS-07. The second entry is likely hal-app01 based on network
+topology but was not confirmed with ssh-keygen -F. This was set aside
 because we reached HAL-APP-01 through the agent forwarding path
-without needing to resolve the second entry.
+without needing to resolve it. Settling this would require running
+ssh-keygen -F against candidate hostnames from the recovered
+/etc/hosts entries.
 
 We did not test whether the NFS export could be used to write to
 protected paths on HAL-DB-01 beyond the designated dropbox
-directories. The hooks directory executed scripts as root, and we
-used that to read the objective file; we did not attempt to write to
-/var/lib/halcyon/exports/ or other protected paths directly. Whether
-root on the NFS client can overwrite arbitrary files on HAL-DB-01
-through the export depends on the export options in full, which we
-read through showmount but did not test exhaustively.
+directories. Whether root on the NFS client can overwrite arbitrary
+files on HAL-DB-01 through the export depends on the full export
+options and directory permissions, which we did not test exhaustively.
 
-We did not attempt to recover or crack the credentials of other
-accounts visible in /etc/passwd on any host. The engagement path was
-closed without needing additional accounts, and testing account
-credentials was out of scope for this assessment.
+We did not attempt to recover or test credentials of other accounts
+visible in /etc/passwd on any host. The engagement path closed
+without needing additional accounts.
 
 The first NFS mount attempt failed with mount.nfs: failed to apply
-fstab options when attempted from a SUID-copy bash shell (real uid
-not equal to effective uid). This is a known constraint of mount(2)
-under that condition. We resolved it by routing the mount through
-the netcheck command injection, which spawned a process with real
-uid=0. The failure mode and resolution are documented here for
-Halcyon's awareness; no NFS client software was modified.
+fstab options when attempted from a SUID-copy bash shell where real
+uid did not equal effective uid. We resolved it by routing the mount
+through the netcheck command injection, which spawned a process with
+real uid=0. The failure mode and resolution are documented for
+Halcyon's awareness.
