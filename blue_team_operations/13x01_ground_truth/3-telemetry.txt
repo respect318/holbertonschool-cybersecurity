@@ -1,0 +1,4 @@
+process: live - Sysmon EID 1 (Process Create), e.g. _id 1Q3CEaEBNzXg_u6-MT2n at 2026-10-06T15:08:19.801Z, image C:\Windows\System32\conhost.exe (3876 events)
+file: live - Sysmon EID 11 (File Create), e.g. _id Qg3CEaEBNzXg_u6-Ijrl at 2026-10-06T15:08:17.255Z, image C:\Program Files\Google\Chrome\Application\chrome.exe (2636 events)
+registry: live - Sysmon EID 13 (Registry value set), e.g. _id Ng3BEaEBNzXg_u6-_Cws at 2026-10-06T15:08:07.689Z, image OUTLOOK.EXE (1314 events)
+network: live - Sysmon EID 3 (Network connection), e.g. _id Ag3CEaEBNzXg_u6-bE-e at 2026-10-06T15:08:35.133Z, image C:\Users\sdumont\AppData\Roaming\iblenor.exe (6606 events)
