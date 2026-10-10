@@ -1,4 +1,3 @@
-agent_id: 002
-agent_name: portway-ws-114
-status: active (registered with manager wazuh.manager)
+agent: 002 (portway-ws-114)
+status: active
 enrollment_timestamp: 2026-10-10T16:54:41
