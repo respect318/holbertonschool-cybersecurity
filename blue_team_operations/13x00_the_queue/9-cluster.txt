@@ -1,0 +1,31 @@
+CLUSTER — single actor, 2026-10-10 ~02:41-03:32 UTC
+
+cluster_alerts (open queue, linked by shared evidence):
+  HAL-753699  Multiple authentication failures from one source   02:41:00
+  HAL-157752  Successful VPN authentication outside hours         02:41:35
+  HAL-214031  External remote-service access                      02:58:00
+  HAL-467427  Rapid directory enumeration queries                 03:32:30
+related (auto-closed, same source/identity, no JA3 field): HAL-751883 (off-hours logon wrongly closed on AS64512 allowlist)
+
+shared_indicators (checkable, present across the cluster, not one event):
+  client_fingerprint: ja3:ea60867eab8e161a12a37de50c3c72fc  (strongest link)
+  source.ip:          198.51.100.12   (ASN AS64512)
+  source.geo:         VN  (outside Halcyon's 4 workforce countries IE/PL/FR/GB)
+  identity:           u.ferreira  (the one account the spray broke, then reused)
+  host reached:       remote-gw02.halcyon.internal
+  time:               one off-hours window ~02:41-03:32, same source throughout
+  -> same quiet indicator repeating from the same place at the same wrong hour = one actor, not similar alert types.
+
+what_the_actor_optimised_for:
+  An ordinary-looking, low-noise entry point. They came in through the VPN portal —
+  the everyday remote-access path staff use daily — so a logon there reads as routine,
+  and the failed attempts read as normal bad passwords. Operating from an allowlisted
+  partner ASN (AS64512) further kept the success from drawing attention (it got one
+  sibling auto-closed, HAL-751883). Where else to look in the 24h window: every logon,
+  remote-access and directory event tied to this JA3 / 198.51.100.12 / u.ferreira, and
+  anything u.ferreira touched after the enumeration.
+
+furthest_evidenced_stage:
+  Discovery — directory enumeration (22 queries in ~90s at 03:31-03:32). Confirmed entry
+  and internal reconnaissance only; NO evidence of lateral movement, credential theft,
+  data access, persistence, or exfiltration — u.ferreira has no activity after 03:32:30.
