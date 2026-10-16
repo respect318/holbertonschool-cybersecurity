@@ -1,0 +1,19 @@
+FLAG_ACCOUNT=u.ferreira
+  evidence: the one account that succeeded from 198.51.100.12 after the failure run
+  query: kestrel-query -i kestrel-vpn-cohort 'source.ip:"198.51.100.12" AND event.outcome:success'
+  result: 3 successes, all u.ferreira (VPN 02:41:35, remote-gw 02:58:00, VPN 03:07:00)
+
+FLAG_ACTOR_IP=198.51.100.12
+  evidence: source of 34 failures + 3 successes over 22:29 -> 03:07 (~4h38m) against ~29 accounts
+  geo: VN (outside Halcyon's 4 workforce countries IE/PL/FR/GB); off business hours (08:00-18:00)
+  query: kestrel-query -i kestrel-vpn-cohort --json 'source.ip:"198.51.100.12"'  (aggregated outcome/accounts/first/last)
+
+sequence:
+  34 failures across ~29 accounts (incl. default names admin/root/guest/operator/support/test = spray signature)
+  then u.ferreira succeeds 02:41:35, pivots to remote-gw02 02:58:00, directory enumeration 03:32:30
+
+pivoted_on: ja3:ea60867eab8e161a12a37de50c3c72fc (TLS client fingerprint)
+  why strongest: stable across IP/account changes; ties the VPN and directory activity to one actor
+  query: kestrel-query -i kestrel-alerts-cohort 'evidence.client_fingerprint:"ja3:ea60867eab8e161a12a37de50c3c72fc"'
+
+shared_alerts: HAL-753699, HAL-157752, HAL-214031, HAL-467427
