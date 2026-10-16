@@ -1,4 +1,4 @@
-Task 1 — The Maliciousness Rubric (theory ready; EXAMPLE-A/B pending lab)
+.Task 1 — The Maliciousness Rubric (theory ready; EXAMPLE-A/B pending lab)
 
 A verdict is derived, not asserted — provenance × lineage × behaviour × network. “It used PowerShell” is not a finding, because a legitimate process and a malicious one can use the same interpreter and score identically on the tool. The four factors:
 

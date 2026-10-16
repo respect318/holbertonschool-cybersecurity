@@ -1,4 +1,4 @@
-Task 0 — What an Agent Sees 
+..Task 0 — What an Agent Sees 
 
 EDR evolution — AV → EPP → EDR → XDR:
 
