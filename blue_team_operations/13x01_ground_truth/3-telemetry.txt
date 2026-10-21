@@ -1,4 +1,4 @@
-Syscollector: <scan timestamp> — <N packages / processes / ports>
-SCA: <scan timestamp> — <policy, N passed/failed>
-FIM: <event timestamp> — <file path changed>
-Logcollector: <event timestamp> — <log source + rule>
+process: 2026-10-20T03:53:25 — Sysmon process create, image=C:\Windows\System32\taskhostw.exe (agent 001)
+network: <Time> — Sysmon network connect, destinationIp=<...>
+file: <Time> — Sysmon file create, targetFilename=<...>
+registry: <Time> — Sysmon registry set, targetObject=<...>
