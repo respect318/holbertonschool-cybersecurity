@@ -1,3 +1,3 @@
-agent: PORTWAY-WS-114 (ID 001)
+agent: PORTWAY-WS-114
 status: active
-enrollment_timestamp: 2026-10-20T07:51:29 UTC
+enrolled: 2026-10-20T07:51:29 UTC
