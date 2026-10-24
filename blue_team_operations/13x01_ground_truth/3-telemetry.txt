@@ -1,4 +1,4 @@
-process: 2026-10-20T03:53:25 — Sysmon process create, image=C:\Windows\System32\taskhostw.exe (agent 001)
-network: <Time> — Sysmon network connect, destinationIp=<...>
-file: <Time> — Sysmon file create, targetFilename=<...>
-registry: <Time> — Sysmon registry set, targetObject=<...>
+process: Sysmon EID 1 process creation - powershell.exe spawned by wscript.exe, ProcessGuid {a0e0be61-dffb-40af-9c7b-f0a6c40d4ea5}, 2026-09-18T07:55:03
+file: Sysmon EID 11 file create - C:\Users\sdumont\AppData\Roaming\iblenor.exe
+registry: Sysmon EID 13 registry value set - HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Tavistock9
+network: Sysmon EID 3 network connection - iblenor.exe to 198.51.100.47:443 (cdn-halcyon-sync.example), 2026-09-18T16:15:33 [silent stream fixed: corrected ossec.conf typo sysmon-netwrok.json -> sysmon-network.json and restarted the agent]
