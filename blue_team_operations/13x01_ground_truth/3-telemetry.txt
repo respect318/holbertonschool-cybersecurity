@@ -1,4 +1,4 @@
-process: Sysmon EID 1 (process creation) received - powershell.exe, ProcessGuid {a0e0be61-dffb-40af-9c7b-f0a6c40d4ea5}, parent wscript.exe, on PORTWAY-WS-114 (2026-09-18T07:55:03)
-file: Sysmon EID 11 (file create) received - C:\Users\sdumont\AppData\Roaming\iblenor.exe written on PORTWAY-WS-114
-registry: Sysmon EID 13 (registry value set) received - HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Tavistock9 set on PORTWAY-WS-114
-network: Sysmon EID 3 (network connection) received - iblenor.exe to 198.51.100.47:443 (cdn-halcyon-sync.example) on PORTWAY-WS-114 (2026-09-18T16:15:33)
+process: Sysmon EID 1 process-creation on PORTWAY-WS-114, received by the manager 2026-10-20T03:53:24 - powershell.exe (parent wscript.exe, ProcessGuid {a0e0be61-dffb-40af-9c7b-f0a6c40d4ea5})
+file: Sysmon EID 11 file-create on PORTWAY-WS-114, received by the manager 2026-10-20T03:53:19 - C:\Users\sdumont\AppData\Roaming\iblenor.exe
+registry: Sysmon EID 13 registry-value-set on PORTWAY-WS-114, received by the manager 2026-10-20T03:53:09 - HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Tavistock9
+network: Sysmon EID 3 network-connection on PORTWAY-WS-114, received by the manager 2026-10-24T05:31:19 - iblenor.exe to 198.51.100.47:443 (cdn-halcyon-sync.example)
