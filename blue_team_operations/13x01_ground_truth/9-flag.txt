@@ -1,0 +1,20 @@
+FLAG_TWIN_CLEARED
+
+Twin chain: Northmoor Deploy Agent -> powershell.exe
+nmdeploy-agent.exe (C:\Program Files\Northmoor\DeployAgent\nmdeploy-agent.exe)
+ -> powershell.exe pid 19292, user PORTWAY\svc_nmdeploy, stage script pkg_7708.ps1
+
+Verdict: BENIGN (legitimate administrative activity, cleared on evidence, NOT quietly escalated).
+
+Provenance (clears it):
+- Parent is the signed Northmoor service binary nmdeploy-agent.exe under C:\Program Files\Northmoor\DeployAgent\, launched by the deploy service - NOT a user-clicked wscript.exe running a Downloads\*.js lure.
+- It runs as the svc_nmdeploy service account at High integrity and executes the signed Northmoor stage/manifest pkg_7708.ps1 (valid signer / certificate chain).
+- It never drops an executable into AppData\Roaming and never writes an HKCU...\Run persistence value (the malicious chain did both: iblenor.exe + Run\Tavistock9).
+
+Network (clears it):
+- Its EID 3 (Sysmon network) connections are internal-only, to internal Portway hosts on 10.42.8.0/24 (10.42.8.2, 10.42.8.10, 10.42.8.20, 10.42.8.30).
+- It did not beacon to the external C2 198.51.100.47 (cdn-halcyon-sync.example) and made no external connection at all.
+
+Why benign (falsifiable): this chain is separated from the malicious one by provenance (a signed service parent + service account, not a user-launched interpreter off a Downloads lure) and by where it talked (internal hosts only, never the external C2) - and NOT by the interpreter, which is the same signed powershell.exe in both. Anyone can test the claim: take this ProcessGuid, pull its EID 1 parent and its EID 3 destinations; if the parent is the signed nmdeploy-agent.exe and every destination is internal 10.42.8.0/24, it is benign.
+
+Single change that would have flipped the verdict: if this chain had made even one EID 3 connection to the external C2 198.51.100.47 (instead of internal-only), that one change would have made my verdict MALICIOUS.
