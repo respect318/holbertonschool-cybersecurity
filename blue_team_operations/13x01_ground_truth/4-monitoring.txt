@@ -1,0 +1,11 @@
+C:\Users\sdumont\AppData\Roaming - user-writable; the payload iblenor.exe was dropped here (file EID 11)
+C:\Users\sdumont\AppData\Local\Temp - user-writable staging; common dropper working directory
+C:\Users\sdumont\Downloads - entry point; the lure PORTWAY-DISPATCH-UPDATE.js ran from here
+C:\ProgramData - broadly writable staging used by both deployment tooling and attackers
+C:\Users\Public - user-writable, no profile needed; common shared drop location
+C:\Users\sdumont\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup - per-user autostart persistence
+C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup - all-users autostart persistence
+C:\Windows\System32\Tasks - scheduled-task persistence
+HKLM\Software\Microsoft\Windows\CurrentVersion\Run - machine-wide Run-key persistence
+HKLM\Software\Microsoft\Windows\CurrentVersion\RunOnce - machine-wide RunOnce persistence
+HKEY_USERS\...\Software\Microsoft\Windows\CurrentVersion\Run - per-user Run key; the implant set HKCU\...\Run\Tavistock9 here (registry EID 13)
