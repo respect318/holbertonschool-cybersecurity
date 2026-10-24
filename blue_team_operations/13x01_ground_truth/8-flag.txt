@@ -1,1 +1,14 @@
-pkg_7714{49fb0168-6c51-42f0-96fe-e45280d8b907}
+FLAG_RESOLVED
+
+Node: pkg_7714
+ProcessGuid: {49fb0168-6c51-42f0-96fe-e45280d8b907}
+pid 19348, user PORTWAY\svc_nmdeploy, logs C:\ProgramData\Northmoor\logs\pkg_7714.log
+
+Confidence before looking: ~50/50
+
+Predicted MALICIOUS: an EID 3 connection to the external attacker C2
+Predicted BENIGN: EID 3 only to internal Portway hosts like the real pkg_7708, with a signed Northmoor manifest
+
+Found: EID 3 by {49fb0168-6c51-42f0-96fe-e45280d8b907} to 198.51.100.47 cdn-halcyon-sync.example tcp/443, utcTime 2026-09-18 13:00:01
+
+Verdict: MALICIOUS
