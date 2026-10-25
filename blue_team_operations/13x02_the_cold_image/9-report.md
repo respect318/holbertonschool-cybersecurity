@@ -39,8 +39,8 @@ The destination `198.51.100.47` has appeared at two prior Kestrel engagements at
 **F4 — Privileged client documents were accessed and gathered on the host. (proven)**
 `fls` enumerated a staging directory, `C:\Users\mfarleu\AppData\Local\Temp\cnv_2m8k\` (MFT entries 83–93), containing nine privileged matter documents — identifiers AC_2023_0904, AC_2023_1122, AC_2024_0208, AC_2024_0342, AC_2024_0417, AC_2024_0555, AC_2024_0631, AC_2024_0688, AC_2024_0771 — and an archive built from them, `cnv_2m8k.7z`. Access is corroborated by `$MFT` access times on the source matters. The documents are referenced by identifier only; no content is reproduced.
 
-**F5 — The intrusion began on 2026-09-19. (proven)**
-See §3; the corrected start time is established by the dropper's `$FILE_NAME` creation time, not the value the actor wrote.
+**F5 — The intrusion began on 2026-09-19 08:00:00 UTC. (proven)**
+This is established by direct artefacts, not by reasoning over the tampered value. The dropper's `$FILE_NAME` creation time — written by NTFS at record creation and not reachable through the Windows timestamp API — records 2026-09-19 08:00:00 UTC; it is a direct filesystem artefact. The stomped `$SI` value (2019) is the disproved one and is not relied on for this date. The start time is independently corroborated by two further direct artefacts: the prefetch file `SPOOLSVD.EXE-5961B8FD.pf`, which Windows writes only on actual execution, and the dropper's MFT entry (66), which sits in the same recently-allocated range as the 2026 staging files (entries 84–93). The proven tier rests on these artefacts; the tampered `$SI` is evidence of forgery (see §3), not the basis of this finding.
 
 ## 3. The tampering
 
