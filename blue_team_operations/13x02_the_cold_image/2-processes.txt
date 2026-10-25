@@ -1,5 +1,5 @@
-powershell.exe PID 3040, PPID 2624 — "-NoExit -File C:\Windows\Temp\c2listener.ps1": interactive PowerShell running a script out of C:\Windows\Temp, started 15:37:49, ~22 min after boot.
-powershell.exe PID 1676, PPID 2624 — "-NoExit -File C:\Windows\Temp\c2client.ps1": second PowerShell running a Temp script, started 15:47:48, crashed at capture (WerFault PID 1396 targets it).
-benign_loader.exe PID 2596, PPID 2624 — present in psscan but absent from pslist (terminated/unlinked), created and exited in the same second 15:48:08 with 0 threads, reassuring name under the same shell as the two Temp scripts.
-powershell.exe PID 612, PPID 1676 — 0 threads, created and exited 15:48:08, short-lived child of the c2client PowerShell at the moment of capture.
-WerFault.exe PID 1396, PPID 1676 — crash reporter for the c2client PowerShell at 15:48:08, worth explaining since it marks the implant process crashing at acquisition.
+powershell.exe PID 3040, PPID 2624 — runs C:\Windows\Temp\c2listener.ps1
+powershell.exe PID 1676, PPID 2624 — runs C:\Windows\Temp\c2client.ps1
+benign_loader.exe PID 2596, PPID 2624 — in psscan, not pslist; unlinked/terminated
+powershell.exe PID 612, PPID 1676 — 0 threads, instant exit, child of c2client
+WerFault.exe PID 1396, PPID 1676 — crash of the c2client PowerShell
