@@ -1,0 +1,20 @@
+FLAG_TAMPER
+Tampered artefact: C:\ProgramData\ConfigBroker\spoolsvd.exe  (MFT entry 66; masquerades as the Windows print spooler spoolsv.exe)
+
+The corroborating pair (the disagreement that proves forgery):
+- $STANDARD_INFORMATION Created: 2019-03-14 04:12:07 UTC
+- $FILE_NAME Created:            2026-09-19 08:00:00 UTC
+$SI precedes $FN, which is impossible without intervention: $FN is written by the filesystem when the MFT record is created and is not reachable through the ordinary Windows timestamp API, while $SI is trivially settable. The $SI value was stomped; $FN was not. The proof is the pair's disagreement, not either value alone. (All four $SI timestamps collapsed to one identical value - a further stomping tell.)
+
+True value it was hiding:
+- Real creation / intrusion start = $FN Created = 2026-09-19 08:00:00 UTC.
+
+Conclusion the forgery was designed to produce:
+- Back-dating $SI to 2019 was meant to make the analyst read the dropper as a years-old, in-scope-irrelevant file, pushing the intrusion start out of the engagement window and mis-ordering the whole timeline so the real activity looks unrelated.
+
+Independent corroboration (second, un-fakeable sources):
+- MFT-entry adjacency: the dropper sits at entry 66, in the same recently-allocated range as the 2026 intrusion staging files (entries 84-93, Users\mfarleu\...\Temp\cnv_2m8k\). A genuine 2019 file cannot occupy the same fresh MFT range as files created in 2026.
+- Prefetch Windows\Prefetch\SPOOLSVD.EXE-5961B8FD.pf confirms the binary actually executed (its run time corroborates 2026, not 2019).
+
+Source: TZ=UTC istat -o 0 /evidence/disk.img 66  (both attribute sets printed by default); corroboration via fls.
+Proof tier: proven - the $SI/$FN disagreement is a direct, non-disputable artefact of tampering; the corrected start time 2026-09-19 is proven by $FN and corroborated by MFT adjacency + prefetch.
