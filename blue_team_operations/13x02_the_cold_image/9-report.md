@@ -27,14 +27,14 @@ Examination used Volatility 3 (2.28.2) against the memory image, with the kernel
 
 Every finding below carries a proof tier: **proven** (a direct artefact establishes it beyond dispute), **supported** (corroborated inference, strong but not certain), or **inferred** (consistent with the evidence but not established).
 
-**F1 — An injected implant was resident in memory. (proven)**
-`windows.malfind` identified an unbacked `PAGE_EXECUTE_READWRITE` private memory region (base `0x2068f4b0000`) inside `powershell.exe`, PID 1676, containing an x86-64 shellcode stub (`fc 48 83 e4 f0 e8 …`). The region is private and has no mapped file, so the code was loaded into the process rather than launched from disk. `windows.psscan` recovered a terminated helper, `benign_loader.exe` (PID 2596), that performed the injection and had already exited; `windows.pslist` does not show it. This is the artefact a disk image could never have produced.
+**F1 — Executable code was present in a process's private, unbacked memory. (proven)**
+The direct artefact is a `PAGE_EXECUTE_READWRITE` private memory region (base `0x2068f4b0000`) inside `powershell.exe`, PID 1676, that is backed by no file on disk and contains executable bytes (`fc 48 83 e4 f0 e8 …`), recovered by `windows.malfind`. A private, executable, unbacked region in a process is injected code by definition — the proven claim is the region itself, not an interpretation of it. Corroboration (not part of the proven claim): `windows.psscan` recovers a terminated `benign_loader.exe` (PID 2596) consistent with having created it, which `windows.pslist` cannot see. This is the artefact a disk image could never have produced.
 
 **F2 — A command-and-control channel was live at the moment of capture. (proven)**
 `windows.netscan` recorded a TCP connection to `198.51.100.47:443` in state `ESTABLISHED`, owned by PID 1676 — the same process carrying the injected region. The connection is a direct memory artefact of a live channel at capture.
 
-**F3 — The same C2 indicator recurs across three victims. (supported)**
-The destination `198.51.100.47` has appeared at two prior Kestrel engagements at other clients. An indicator recurring across three victims points to a single actor and is of material value to the firm. This is attribution by indicator continuity, not by signature, so it is supported rather than proven.
+**F3 — The C2 destination matches an indicator seen at two prior engagements. (supported)**
+The bounded, checkable fact is only this: the destination recovered in F2 (`198.51.100.47`) is the same address recorded at two earlier Kestrel engagements at other clients. That match is direct. The step from a matching indicator to "the same actor" is an inference, not a signature identification, so the finding is tiered **supported** rather than proven, and no named actor is asserted here.
 
 **F4 — Privileged client documents were accessed and gathered on the host. (proven)**
 `fls` enumerated a staging directory, `C:\Users\mfarleu\AppData\Local\Temp\cnv_2m8k\` (MFT entries 83–93), containing nine privileged matter documents — identifiers AC_2023_0904, AC_2023_1122, AC_2024_0208, AC_2024_0342, AC_2024_0417, AC_2024_0555, AC_2024_0631, AC_2024_0688, AC_2024_0771 — and an archive built from them, `cnv_2m8k.7z`. Access is corroborated by `$MFT` access times on the source matters. The documents are referenced by identifier only; no content is reproduced.
