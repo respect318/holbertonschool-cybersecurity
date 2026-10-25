@@ -1,0 +1,9 @@
+FLAG_IMPLANT
+Process: powershell.exe  PID 1676  (PPID 2624, the sconfig logon shell)
+Command line: powershell.exe -NoExit -File C:\Windows\Temp\c2client.ps1
+Injection evidence (windows.malfind):
+- PAGE_EXECUTE_READWRITE private VadS region, base 0x2068f4b0000, PrivateMemory:1, no mapped file (unbacked executable memory).
+- Region begins with x64 shellcode stub: fc 48 83 e4 f0 e8 00 00 00 00 59 90 90 90 90 cc (cld / align stack / call-pop stager + NOP sled + int3 padding) - code loaded into the process, not launched from a file on disk.
+- Lineage: windows.psscan recovers a TERMINATED benign_loader.exe (PID 2596, PPID 2624) that performed the injection; windows.pslist does not show it (already exited) - the injected process has no file to find.
+Plugin: vol -f /evidence/memory.raw windows.malfind --pid 1676  (owner confirmed by windows.pstree / windows.cmdline; loader by windows.psscan)
+Proof tier: proven - a direct artefact (unbacked RWX region carrying shellcode inside a named process, plus the recovered loader) establishes it and is not disputable.
