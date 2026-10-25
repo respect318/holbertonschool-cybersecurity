@@ -1,0 +1,21 @@
+FLAG_STAGED
+Staging location: C:\Users\mfarleu\AppData\Local\Temp\cnv_2m8k\  (disk.img, MFT entries 83-93)
+What was collected there (by identifier, not content): 9 privileged client matter documents —
+  AC_2023_0904, AC_2023_1122, AC_2024_0208, AC_2024_0342, AC_2024_0417, AC_2024_0555, AC_2024_0631, AC_2024_0688, AC_2024_0771 (.dat, MFT entries 84-92)
+  plus the archive built from them: cnv_2m8k.7z (MFT entry 93).
+Custody reference: incident KD-FF81C69, disk.img sha256 9ca5f5f45bb0aa409b0a4790de4b44729dbdf7b2cbac8daeceb11346f58c926d.
+What this establishes (proven): the privileged matters were accessed, collected into one directory, and archived on the host.
+Source: fls / Sleuth Kit on disk.img; access corroborated by $MFT access times on the source matters.
+
+FLAG_OVERREACH
+The conclusion I am most tempted to draw and cannot: "the privileged data was exfiltrated — it left the network."
+Why the evidence does not carry it: three distinct facts are proven, and none of them is transfer.
+  1. A C2 channel existed and was live at capture (netscan 198.51.100.47:443 ESTABLISHED, PID 1676) — this proves capability, not that bytes moved over it.
+  2. The documents were gathered and archived next to that channel (cnv_2m8k\ + cnv_2m8k.7z) — this proves staging, not sending. The archive was NOT deleted, which is consistent with data that was prepared but has not been shown to leave.
+  3. A channel existing + data staged beside it does not establish that the archive was transmitted.
+The specific evidence that would have been required to prove exfiltration, and was never collected:
+  - a perimeter egress record with byte counts (proxy / firewall / NetFlow), or
+  - a completed-transfer artefact on the host (a BITS transfer job, an upload log, a sent-bytes record).
+ASHFORD-PARA-05 is a workstation; no such egress record exists in either image, and the memory capture did not include one. Therefore exfiltration is not establishable from this evidence.
+Proof tiers: access + staging + live channel = proven; exfiltration = declined (not supported, not inferred — the record that would establish it was never in scope).
+Bounded disclosure sentence: "Privileged client documents were accessed and gathered into an archive on the workstation, and an active command channel was present; the available evidence does not establish that any of that data was transmitted off the network."
