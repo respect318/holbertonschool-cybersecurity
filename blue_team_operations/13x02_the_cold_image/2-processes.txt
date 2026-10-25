@@ -1,8 +1,5 @@
-# 2-processes.txt — orientation (memory.raw; windows.pslist / psscan / pstree)
-# Capture 2026-09-24 15:48:09 UTC, boot ~15:15:44 UTC. Leads for a second look, not findings.
-
-powershell.exe PID 3040, PPID 2624 (sconfig Invoke-SConfigLogon shell) — "-NoExit -File C:\Windows\Temp\c2listener.ps1": interactive PowerShell running a script out of C:\Windows\Temp; started 15:37:49, ~22 min after boot.
-powershell.exe PID 1676, PPID 2624 (sconfig shell) — "-NoExit -File C:\Windows\Temp\c2client.ps1": second PowerShell running a Temp script; started 15:47:48; a WerFault (PID 1396) targets this PID, so it crashed right before capture.
-benign_loader.exe PID 2596, PPID 2624 (sconfig shell) — present in psscan but absent from pslist (terminated/unlinked); created and exited in the same second, 15:48:08, 0 threads; reassuring name under the same shell as the two Temp scripts.
-powershell.exe PID 612, PPID 1676 (c2client shell) — 0 threads, created+exited 15:48:08; short-lived child of the c2client PowerShell at the moment of capture.
-WerFault.exe PID 1396 (PPID 1676) and PID 2272 (PPID 2792) — crash reporters clustered at 15:48:08; the crash of the c2client PowerShell at acquisition time is worth explaining.
+powershell.exe PID 3040, PPID 2624 — "-NoExit -File C:\Windows\Temp\c2listener.ps1": interactive PowerShell running a script out of C:\Windows\Temp, started 15:37:49, ~22 min after boot.
+powershell.exe PID 1676, PPID 2624 — "-NoExit -File C:\Windows\Temp\c2client.ps1": second PowerShell running a Temp script, started 15:47:48, crashed at capture (WerFault PID 1396 targets it).
+benign_loader.exe PID 2596, PPID 2624 — present in psscan but absent from pslist (terminated/unlinked), created and exited in the same second 15:48:08 with 0 threads, reassuring name under the same shell as the two Temp scripts.
+powershell.exe PID 612, PPID 1676 — 0 threads, created and exited 15:48:08, short-lived child of the c2client PowerShell at the moment of capture.
+WerFault.exe PID 1396, PPID 1676 — crash reporter for the c2client PowerShell at 15:48:08, worth explaining since it marks the implant process crashing at acquisition.
