@@ -1,0 +1,7 @@
+FLAG_MEM_C2
+Destination: 198.51.100.47:443 (HTTPS)
+State at capture: ESTABLISHED - the connection was live at the moment of capture.
+Owning process: PID 1676 powershell.exe - the same implant process from 4-flag (holds the injected RWX region).
+Recovered from: windows.netscan on memory.raw. Network state does not survive power-off; it exists only because memory was captured first (Task 1 ordering). A disk image would not show it.
+Seen before: this same C2 address (198.51.100.47) appeared at two prior victims (Halcyon and Portway). An indicator recurring across three clients points to one actor and is worth more to Ashford and Crane than any single artefact on this host.
+Proof tier: proven for the destination + ESTABLISHED state + owning PID (direct memory artefacts); supported for same-actor attribution (indicator continuity, not a signature).
