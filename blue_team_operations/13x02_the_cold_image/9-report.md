@@ -14,8 +14,8 @@ Kestrel received two images of ASHFORD-PARA-05, acquired on 2026-09-23 by respon
 
 Before any analysis, both images were verified against the custody record. The recorded SHA-256 values were recomputed from the mounted evidence and matched exactly:
 
-- memory image: `bd7a7284…d83042`
-- disk image: `9ca5f5f4…f58c926d`
+- memory image (`/evidence/memory.raw`): `bd7a7284aad50ed6e1e5e847d023b4711d448d9cc9b7dd45cf1569d464d83042`
+- disk image (`/evidence/disk.img`): `9ca5f5f45bb0aa409b0a4790de4b44729dbdf7b2cbac8daeceb11346f58c926d`
 
 Both figures agree with `CUSTODY.txt` and `hashes.txt`, establishing that the evidence has not changed between acquisition and analysis. The evidence was mounted read-only throughout; no write to it is possible.
 
