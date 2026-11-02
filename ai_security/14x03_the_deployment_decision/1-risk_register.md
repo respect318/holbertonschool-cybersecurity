@@ -25,7 +25,7 @@
 | ID | Risk | Evidence | OWASP LLM | MITRE ATLAS |
 |----|------|----------|-----------|-------------|
 | G-1 | **No regulatory classification of the billing feature.** The feature processes regulated financial + personal data but has never been classified against the applicable regime, so obligations are unknown at launch. | `06` C-12 = No ("not yet performed") | LLM09 Misinformation | AML.T0048 (Compromise/absent assurance of AI software — governance gap at acquisition/deployment) |
-| G-2 | **No notice to the customer that they are interacting with an AI system.** No disclosure anywhere in the flow; funded work F6 is not in scope. Transparency is a live obligation, not a deferred one. | `01` §7 F6 (not funded); no disclosure event in `05` | LLM09 Misinformation | AML.T0048 (deployment without disclosure controls) |
+| G-2 | **No notice to the customer that they are interacting with an AI system.** No disclosure anywhere in the flow; funded work F6 is not in scope. Transparency is a live obligation, not a deferred one. | `01` §7 F6 (not funded); no disclosure event in `05` | LLM09 Misinformation | AML.T0058 (Masquerading / AI system presented without disclosure to the user) |
 | G-3 | **Third-party processing is governed by a weaker reality than the vendor presents.** The model card implies near-zero data exposure ("we do not use your API inputs to train"); the contract permits 30-day retention, up to 365 days for abuse-flagged requests with reviewer access, use of retained input to train abuse classifiers, and sub-processor access. Governance must bind to the contract, not the card. | `03` ("Your data") vs `04` cl. 4.1 / 4.2 / 5.2 / 6.1 / 6.2 | LLM03 Supply Chain | AML.T0010 (AI Supply Chain Compromise — third-party model service and its sub-processors) |
 
 ## Map
@@ -54,7 +54,7 @@
 | Ma-2 | **No reply-side regulated-field filter.** Scrubbing runs only on context *to* the model; there is no filter on model output *to* the customer. Residual exposure is bounded (regulated fields are already withheld from the model, so the model cannot echo them), but card_last4 / totals in replies are ungoverned. | `01` §5 (scrubber scope = model context only); `01` §7 F2 (not funded) | LLM02 Sensitive Information Disclosure | AML.T0057 (LLM Data Leakage — regulated values surfaced in the model reply) |
 | Ma-3 | **No kill switch or incident runbook for Assist.** If any of the above is exploited at launch, there is no defined containment path. | `01` §7 F5 (not funded) | LLM06 Excessive Agency | AML.T0053 (AI Agent Tool Invocation — no containment once an agent action goes wrong) |
 | Ma-4 | **Unbounded consumption on billing tools.** A per-session RPM limit exists (`rate_limit` events), but no spend or call budget on the billing tools themselves. | `05` `evt_000061`, `evt_000127`; `01` §7 F8 | LLM10 Unbounded Consumption | AML.T0034 (Cost Harvesting — denial-of-wallet via unbounded tool calls) |
-| Ma-5 | **Audit log has no retention policy or review surface.** Events are written (schema v3), but F10 (retention + review dashboard) is unfunded, so the log that proves everything above is itself ungoverned. | `01` §5 (audit), §7 F10; `06` C-11 = Yes (logging only) | LLM09 Misinformation | AML.T0048 (absent assurance — no durable record to detect or investigate misuse) |
+| Ma-5 | **Audit log has no retention policy or review surface.** Events are written (schema v3), but F10 (retention + review dashboard) is unfunded, so the log that proves everything above is itself ungoverned. | `01` §5 (audit), §7 F10; `06` C-11 = Yes (logging only) | LLM09 Misinformation | AML.T0024 (Exfiltration via AI Inference API — undetected because no durable audit trail exists to catch it) |
 
 ---
 
@@ -64,4 +64,14 @@ The compliance self-assessment claims a control (**C-09: tool inputs are schema-
 
 ## ATLAS technique mapping notes
 
-ATLAS techniques were selected per risk by mechanism, verified against `atlas.mitre.org` (Nov 2026): AML.T0051 LLM Prompt Injection (with .001 Indirect) for injection-channel risks; AML.T0020 Poison Training/RAG Data for retrieval-index poisoning; AML.T0057 LLM Data Leakage for retrieval/reply leakage; AML.T0024 Exfiltration via AI Inference API for off-boundary data export; AML.T0053 AI Agent Tool Invocation for agentic tool-action risks; AML.T0010 AI Supply Chain Compromise for the third-party model service; AML.T0034 Cost Harvesting for unbounded consumption; AML.T0043 Craft Adversarial Data for the missing adversarial-test pipeline; AML.T0048 for assurance/governance gaps with no more specific technique.
+ATLAS techniques were selected per risk by the attack mechanism each risk enables, verified against `atlas.mitre.org` (Nov 2026):
+- AML.T0051 LLM Prompt Injection (with .001 Indirect) — injection-channel risks (Me-1, Me-2, M-3). Note M-3 is a paper-control discrepancy; its ATLAS mapping is the injection that the missing validation would otherwise enable, not the paperwork itself.
+- AML.T0020 Poison Training/RAG Data — retrieval-index poisoning (M-4).
+- AML.T0057 LLM Data Leakage — content surfaced through the retrieval/model interface (M-5, Ma-2).
+- AML.T0024 Exfiltration via AI Inference API — data leaving to the inference endpoint (M-1), and the undetected-exfiltration exposure left by an ungoverned audit trail (Ma-5).
+- AML.T0053 AI Agent Tool Invocation — agentic tool-action risks (M-2, Ma-1, Ma-3).
+- AML.T0010 AI Supply Chain Compromise — the third-party model service and its sub-processors (G-3).
+- AML.T0034 Cost Harvesting — unbounded consumption (Ma-4).
+- AML.T0043 Craft Adversarial Data — the missing adversarial-test pipeline (Me-3).
+- AML.T0058 Masquerading — an AI system presented to the user without disclosure (G-2).
+- AML.T0048 Compromise of AI software assurance — used once, for the governance-classification gap with no more specific technique (G-1).
