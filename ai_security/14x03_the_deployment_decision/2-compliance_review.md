@@ -3,7 +3,7 @@
 **System:** `Assist` billing + payment expansion (Larkspur Software)
 **Reviewed:** `06-compliance-self-assessment.md`, cross-checked against `01-architecture.md`, `02-dataflow-diagram.md`, `05-sample-logs.jsonl`
 **Date:** 2026-11-01
-**Method:** Each asserted control is checked first against the architecture. Where the architecture is silent or contradicts it, the audit log is used to establish what actually happened. Nothing in the form counts until an artefact confirms it.
+**Method:** All twelve rows (C-01 to C-12) are checked individually. Each asserted control is checked first against the architecture. Where the architecture is silent or contradicts it, the audit log and data-flow document are used to establish what actually happened. Nothing in the form counts until an artefact confirms it — including the "No" answers, which are verified as truthful rather than taken at face value.
 
 ---
 
@@ -12,17 +12,17 @@
 | Id | Control claimed | Response | Verified against artefacts? | Verdict |
 |----|-----------------|----------|-----------------------------|---------|
 | C-01 | Accountable owner named for Assist | Yes | `01` header names the Assist platform team as owner | **Holds** |
-| C-02 | Changes go through peer review / release approval | Yes | Governance claim; not contradicted by any artefact (not independently verifiable here, but nothing disproves it) | Holds (unverifiable) |
+| C-02 | Changes go through peer review / release approval | Yes | Checked against `01`: the architecture header states "Status: approved for build review" and names the Assist platform team as owner, consistent with a release-approval process; no artefact contradicts it. The logs (`05`) are runtime events, not CI/release records, so they neither confirm nor refute the process — the architecture header is the only evidence, and it is consistent. | **Holds (architecture-consistent, no runtime evidence either way)** |
 | C-03 | Tool calls scoped to signed-in customer | Yes | `01` §3 identity binding; `05` `auth_denied / customer_ref_not_session_identity` at `evt_000085`, `evt_000135`, `evt_000161`, `evt_000180` | **Holds** |
 | C-04 | Regulated data encrypted in transit and at rest | Yes | `01` §4 (TLS + platform DB encryption); `02` shows TLS legs | **Holds** |
-| C-05 | DPA signed with model provider | Yes | `04` is the DPA excerpt | **Holds** |
-| C-06 | Sub-processors listed and approved | Yes | `04` cl. 6.1 references Schedule 2 | **Holds** |
+| C-05 | DPA signed with model provider | Yes | Checked against `04-dpa-excerpt.md`: the document is a signed Data Processing Addendum between Larkspur ("Customer") and Corvane Systems ("Provider"), clauses 3–6 present. A DPA exists and governs the relationship — claim confirmed by the artefact. | **Holds** |
+| C-06 | Sub-processors listed and approved | Yes | Checked against `04` cl. 6.1: it names Schedule 2 sub-processors (cloud hosting provider + a contracted content-review vendor) with the provider remaining responsible for them. The sub-processors are listed and contractually covered — claim confirmed. | **Holds** |
 | C-07 | Refunds require human approval before execution | Yes | `01` §5 (`human_required_all_amounts`); `05` every `issue_refund` has `approval.mode: human` + named approver; one `denied` (`evt_000275`) | **Holds** |
 | C-08 | Ingested content is source-verified | Yes | `01` §5 (allowlist + `docs-ci` signing); `05` `ingest_rejected / unverified_source` (`evt_000015`, `evt_000081`…), signed `ingest` (`evt_000094`, `evt_000225`) | **Holds** |
 | **C-09** | **Tool inputs are schema-validated before execution** | **Yes** | **Architecture contradicts it; logs disprove it (see §2)** | **FALSE** |
 | C-10 | Regulated fields stripped before the model call | Yes | `01` §5 (`regulated_field_scrubber_scope: all_model_context`); `02` (`paths_to_provider_without_scrubbing: none`); `05` `model_call` records `scrubbed: [iban, billing_address, tax_id]` (`evt_000031`, `evt_000078`, `evt_000125`) | **Holds** (before the model call only — see note) |
 | C-11 | Tool calls and approvals written to an audit log | Yes | `05` is the audit log, schema v3; approvals recorded | **Holds** |
-| C-12 | Regulatory classification performed | No | Honest "not yet performed" | Honest negative |
+| C-12 | Regulatory classification performed | No | Checked against the artefacts: the self-assessment answers "No — not yet performed," and this is consistent with the rest of the dossier — no regulatory classification appears in `01` (architecture is engineering-only), `02`, `04`, or anywhere else, and `01` §6/§7 lists no classification work funded. The "No" is truthful: the artefacts confirm the classification genuinely has not been done. | **Holds (truthful negative — confirmed absent across the dossier)** |
 
 Note on C-10: the claim is literally true for the direction it names — regulated fields are stripped *before the model call*. It is not evidence of end-to-end protection: there is no reply-side filter (`01` §7 F2 unfunded). Scoped as written, C-10 holds; it is not the false claim.
 
