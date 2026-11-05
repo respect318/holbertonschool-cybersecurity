@@ -1,3 +1,4 @@
+A-4706
 # 1 — Triage of the morning queue
 
 Each verdict from `assist triage` was checked against the alert's own
