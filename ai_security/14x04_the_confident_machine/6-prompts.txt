@@ -1,0 +1,8 @@
+No prompts were sent to the assistant for this task.
+
+The engagement data (client/regulated-log.jsonl) is regulated GLBA customer
+financial information. Under engagement contract clause 9.2 it must not be sent
+to any third-party processor, including AI services. The summary in
+6-client_summary.md was written by hand from reading the log directly (using
+jq/grep locally on the Rainier lab host), with no part of the log content placed
+in any assist prompt.
