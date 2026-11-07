@@ -1,0 +1,11 @@
+Draft executive-summary statements for the Cascadia engagement.
+
+[S-1] Cascadia documents a full set of controls for the patient-support agent: an input guard, a provenance check, per-tool authorisation, human approval and resource caps. The documentation is published at GET /config.
+
+[S-2] Critical: the per-session limits can be reset at will by rotating the session id through `/v2/session/rotate`, allowing unbounded consumption. Rated Critical because every patient-shaped record in the deployment is exposed.
+
+[S-3] The agent can call four tools: order_lookup, issue_refund, delete_record and db_query.
+
+[S-4] Every account, record and address in the deployment is fictional and synthetic. No real patient data was involved in this engagement.
+
+[S-5] Cascadia's published API reference lists eight routes and none of them asks the caller to log in as a Cascadia user.

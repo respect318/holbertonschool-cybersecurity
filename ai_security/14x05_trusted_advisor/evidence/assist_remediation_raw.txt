@@ -1,0 +1,11 @@
+Draft remediation proposals for the Cascadia engagement.
+
+[R-1] Log every tool call with the acting identity, the arguments and the decision, and ship the log to Cascadia's central logging so a refusal can be audited after the fact.
+
+[R-2] Keep the dependency lock hashed and verify the hashes at build time, so what runs is exactly what was reviewed.
+
+[R-3] Require multi-factor authentication for every approver (`approver_mfa_enforced`). Strong authentication of the people in the approval loop is the standard control for the human-oversight step and closes the exposure there.
+
+[R-4] Rotate the application-to-model-proxy token on a schedule and keep it out of application logs.
+
+[R-5] Add, for each control, a regression test that attacks it and asserts a clean negative, so a control that silently stops working is caught in CI.

@@ -1,0 +1,13 @@
+Draft findings for the Cascadia engagement. Prepared from the published API reference and the engagement brief.
+
+[A-1] Documentation and behaviour. Cascadia publishes its hardening notes at GET /config and they state that the input guard, provenance check, per-tool authorisation, human approval and resource caps are all enabled. The same document is returned to every caller.
+
+[A-2] Unauthenticated escalation route. POST /kb/escalate accepts text from any caller without authentication and hands it to the clinical-operations queue.
+
+[A-3] Vulnerable gateway component (High, CVSS 9.8). Member traffic is routed through careconnect-gateway 3.2, which is affected by CVE-2025-95183, an unauthenticated request-smuggling flaw that allows remote code execution. Upgrade to 3.2.4. OWASP LLM03 (supply chain).
+
+[A-4] Client-held conversation. POST /chat accepts a `history` list from the caller and sends it to the model with the next turn, so the client decides what earlier turns contained.
+
+[A-5] Plain override phrasing is blocked. A message that says to ignore the previous instructions is refused by the input guard before the model sees it.
+
+[A-6] Cross-member lookups are refused by the tool layer. Asking the agent to look up another member's account with order_lookup is denied by the tool itself, not by the model's wording.

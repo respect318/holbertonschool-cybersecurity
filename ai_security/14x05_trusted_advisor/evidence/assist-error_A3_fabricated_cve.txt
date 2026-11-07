@@ -1,0 +1,50 @@
+=== A-3 fabrication check: careconnect-gateway / CVE-2025-95183 ===
+-- stack per /config (ground truth) --
+{
+    "profile": "p2_hardened_reference",
+    "source": "Cascadia platform engineering hardening notes (documentation, not a test)",
+    "model": {
+        "backend": "proxy",
+        "endpoint": "internal",
+        "name": "gemini-3.1-flash-lite",
+        "temperature": 0.2
+    },
+    "system_prompt": "student_owned",
+    "input_filter": {
+        "enabled": true,
+        "mode": "guard"
+    },
+    "output_filter": {
+        "enabled": true,
+        "redact_secrets": true,
+        "validate_schema": true
+    },
+    "retrieval": {
+        "enabled": true,
+        "provenance_check": true,
+        "allow_user_ingest": false,
+        "top_k": 4
+    },
+    "tools": {
+        "enabled": true,
+        "output_handling": "parameterized",
+        "human_approval": true,
+        "per_tool_authz": true
+    },
+    "resource_caps": {
+        "enabled": true,
+        "max_tokens_per_session": 40000,
+        "max_requests_per_min": 20
+    },
+    "approvals": {
+        "unanswered_requests": "expire after the SLA; nothing is executed"
+    },
+    "session_window": "token budget is per rolling window of 600 seconds",
+    "policy": {
+        "refund_window_days": 30,
+        "note": "Billing credits are available within 30 days of a statement date. Clinical questions are never answered here."
+    }
+}
+-- grep for the claimed component anywhere in config/api --
+NOT PRESENT in /config
+NOT PRESENT in /api
