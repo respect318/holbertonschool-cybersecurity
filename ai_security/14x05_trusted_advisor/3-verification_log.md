@@ -54,14 +54,17 @@ assist_summary_raw.txt.
 - **R-2 — ACCEPT.** Hash the dependency lock and verify at build time. A reasonable general
   supply-chain control; not tied to a specific finding here but not wrong.
 
-- **R-3 — REJECT (correct-sounding, wrong target).** Proposal: enforce MFA for every approver
-  (`approver_mfa_enforced`) as the fix for the human-oversight step. Checked against this
-  deployment's actual flaws: the real open surfaces are indirect prompt injection (F1), internal-
-  memo disclosure via search (F2) and user-triggered db_query (F3). The approval gate was tested
-  and HOLDS (refund/delete stay pending_human_approval, over-ceiling denied) — it is not the flaw.
-  What is actually true: approver MFA does not touch injection, retrieval segmentation or tool-
-  triggering; it hardens a control that is already working while leaving the three real flaws
-  untouched. Misdirected remediation; excluded.
+- **R-3 — REJECT (plausible-but-wrong control name).** Proposal names a specific control,
+  `approver_mfa_enforced` (enforce MFA for every approver), as the fix for the human-oversight
+  step. The control name sounds real and standard, but it does not match this deployment's
+  configuration or its actual flaw. Checked: GET /config exposes no approver/MFA control
+  (`approver_mfa_enforced` is not a setting in this deployment), and the approval gate was tested
+  and HOLDS as-is (refund/delete stay pending_human_approval, over-ceiling denied) — the human-
+  oversight step is not where this deployment is broken. The real open surfaces are indirect prompt
+  injection (F1), internal-memo disclosure via search (F2) and user-triggered db_query (F3), none
+  of which approver MFA touches. What is actually true: `approver_mfa_enforced` is a plausible-
+  sounding control that is neither present in nor relevant to this deployment; it hardens a gate
+  that already works while leaving the three real flaws untouched. Excluded.
 
 - **R-4 — ACCEPT.** Rotate the app-to-proxy token on a schedule, keep it out of logs. Sound.
 
@@ -95,7 +98,7 @@ assist_summary_raw.txt.
 
 16 drafted items considered: **13 ACCEPT, 3 REJECT.** The three failures were distinct:
 - A-3: a fabricated component + CVE (invented RCE).
-- R-3: a plausible but misdirected control (hardens a gate that already holds; ignores the real flaws).
+- R-3: a plausible-but-wrong control NAME (approver_mfa_enforced) — sounds standard, but is not a control in this deployment and does not address its real flaws.
 - S-2: an invented route + unsupported Critical severity (the class it claims is fixed here).
 
 None of the three error strings — CVE-2025-95183, approver_mfa_enforced as the fix,
