@@ -1,0 +1,17 @@
+[
+    {
+        "ts": 1794219739.0607336,
+        "flag_name": "FLAG_POISON",
+        "flag": "FLAG{71b28b66ec3d5b44a46131560313952c}"
+    },
+    {
+        "ts": 1794219748.6612558,
+        "flag_name": "FLAG_EMBEDDING",
+        "flag": "FLAG{3b3d202524f950122f6ca898a2f5321c}"
+    },
+    {
+        "ts": 1794219801.4201133,
+        "flag_name": "FLAG_SUBTLE",
+        "flag": "FLAG{3f27810d8b37124dc84ec7bb128ece23}"
+    }
+]
