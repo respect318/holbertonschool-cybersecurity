@@ -1,4 +1,4 @@
-iTECHNIQUE
+TECHNIQUE
 T1021.002 - Remote Services: SMB/Windows Admin Shares (lateral movement via SMB admin shares and CIFS service access)
 
 DATA SOURCES THAT COVER THE TECHNIQUE
